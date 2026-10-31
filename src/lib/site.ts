@@ -46,8 +46,8 @@ export const DATA_UPDATED = '2026-10-29';
 export const SITE_FOUNDED = '2026-10-27';
 export const COMPLIANCE_NOTE = '使用任何网络服务请遵守所在地区适用的法律法规。本站只整理公开资料与测试记录，不提供网络接入服务。';
 
-/** 页头社交入口。GitHub 入口指向仓库的 Issues 页；href 为 null 时不显示该图标。 */
+/** 页头社交入口。GitHub 入口指向仓库的 Issue #1（资料汇总页）；href 为 null 时不显示该图标。 */
 export const SOCIAL_LINKS: readonly { key: 'telegram' | 'github'; label: string; href: string | null }[] = [
   { key: 'telegram', label: 'Telegram 交流群', href: 'https://t.me/+wENW-g34bXY2MjM1' },
-  { key: 'github', label: 'GitHub', href: 'https://github.com/wongkelvin1995-star/jichangjiedian.blog/issues' },
+  { key: 'github', label: 'GitHub', href: 'https://github.com/wongkelvin1995-star/jichangjiedian.blog/issues/1' },
 ];
