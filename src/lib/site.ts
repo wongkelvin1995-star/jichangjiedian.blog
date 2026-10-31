@@ -42,7 +42,7 @@ export const absoluteUrl = (path: string): string => new URL(path, SITE_URL).toS
 export const SITE_TAGLINE = `环球节点地图、${BRAND_COUNT}家机场资料与分时段网络表现研究`;
 
 /** 资料整理日期（数据集最近一次整理）。页面 lastmod 以各页面自己的真实日期为准，没有则回退到它。 */
-export const DATA_UPDATED = '2026-10-29';
+export const DATA_UPDATED = '2026-10-31';
 export const SITE_FOUNDED = '2026-10-27';
 export const COMPLIANCE_NOTE = '使用任何网络服务请遵守所在地区适用的法律法规。本站只整理公开资料与测试记录，不提供网络接入服务。';
 

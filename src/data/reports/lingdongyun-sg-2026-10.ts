@@ -15,7 +15,7 @@ export const LDY_REPORT_SLUG = 'singapore-speedtest-2026-10';
 export const LDY_REPORT_PATH = `/airports/lingdongyun/${LDY_REPORT_SLUG}/`;
 export const LDY_REPORT_TITLE = '灵动云新加坡节点测速报告：晚高峰复测、YouTube 720p与57节点在线记录';
 export const LDY_REPORT_PUBLISHED = '2026-10-27';
-export const LDY_REPORT_MODIFIED = '2026-10-28';
+export const LDY_REPORT_MODIFIED = '2026-10-31';
 
 const IMG = 'img-ldy-report';
 
