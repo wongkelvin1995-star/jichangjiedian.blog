@@ -260,6 +260,18 @@ const specialSources: SourceRecord[] = [
     notes: '34 家各一个优惠码，站长说明来自各服务商。本站只原样展示代码，不写折扣幅度与有效期；见 src/data/coupons.ts。',
   },
   {
+    sourceId: 'owner-2026-10-31-pricing',
+    kind: 'user-instruction',
+    title: '站长说明（2026-10-31）：微风清风改为 ¥99，部分套餐不可使用优惠码',
+    originUrl: null,
+    file: null,
+    receivedAt: '2026-10-31',
+    statedDate: '2026-10-31',
+    defaultGrade: 'C',
+    notes:
+      '站长说明两件事：一是微风网络的清风（年付小包）价格是 ¥99（此前采用的第三方评测页 2026-10-20 写 ¥137）；二是微风网络的清风、信风、长风，以及灵动云的穿云、闲云、惊云、飞云、至尊私人定制，都不能使用优惠码。这是站长说明，没有附服务商页面或截图，不等于独立证据；本站按说明列出并写明来源，购买前请以官网结算页为准。',
+  },
+  {
     sourceId: 'owner-2026-10-31',
     kind: 'user-instruction',
     title: '站长说明（2026-10-31）：灵动云线路含 IEPL 专线',

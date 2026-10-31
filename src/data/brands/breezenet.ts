@@ -5,6 +5,7 @@ const M = 'm23'; // 汇编资料
 const G = 'tp-2026-10-20-breezenet'; // 第三方评测页（页面写“最后核验更新 2026-10-20”）
 const O = 'owner-2026-10-28'; // 站长给出的节点清单
 const S = 'owner-sheet'; // 站长 Excel
+const PRICING = 'owner-2026-10-31-pricing'; // 站长 2026-10-31 说明：清风 ¥99；清风/信风/长风不可使用优惠码
 const plan = planFactory({ brandId: 'breezenet', src: G, recorded: '2026-10-20' });
 const ALL_PERIODS = '评测页写可选月付、季付、半年付、年付、两年付、三年付，但只给出月付价格；其他周期的价格本站不推算。';
 
@@ -17,7 +18,7 @@ export default seed({
   aliases: ['微风', '微风网络', '微风机场', 'breeze', 'breezenet', 'Breezenet', 'weifeng'],
   uploadFileNo: 23,
   summary:
-    '微风网络主打 IPLC 专线和 VLESS 协议，用自家客户端连接（不提供订阅链接）。站长给出的节点共 53 个：香港 14、日本 10（另有 4 个日本直连）、新加坡 10、美国 10、台湾 5。套餐有月付的乘风、破风、御风三档，年付的清风小包，以及两个不限时流量包。价格来自一家第三方评测站 2026-10-20 的记录，购买前请以官网结算页为准。',
+    '微风网络主打 IPLC 专线和 VLESS 协议，用自家客户端连接（不提供订阅链接）。站长给出的节点共 53 个：香港 14、日本 10（另有 4 个日本直连）、新加坡 10、美国 10、台湾 5。套餐有月付的乘风、破风、御风三档，年付的清风小包，以及两个不限时流量包。价格主要来自一家第三方评测站 2026-10-20 的记录，其中清风年付按站长 2026-10-31 的说明改为 ¥99。清风和两个流量包不能使用优惠码；购买前请以官网结算页为准。',
   identity: {
     status: 'name-confirmed',
     notes: [
@@ -27,7 +28,15 @@ export default seed({
   },
   plans: [
     plan('qingfeng', '清风（年付小包）', 'annual-small', [
-      { period: 'annual', price: 137, monthlyGB: 100, reset: '评测页：每月 100GB，只能按年购买', note: '年付总价 ¥137，折合每月约 ¥11.4。' },
+      {
+        period: 'annual',
+        price: 99,
+        monthlyGB: 100,
+        reset: '评测页：每月 100GB，只能按年购买',
+        src: PRICING,
+        recorded: '2026-10-31',
+        note: '年付总价 ¥99，折合每月约 ¥8.25（站长 2026-10-31 说明）。第三方评测页 2026-10-20 写的是 ¥137，见“来源冲突”。',
+      },
     ]),
     plan('chengfeng', '乘风', 'monthly-tier', [
       { period: 'monthly', price: 25, monthlyGB: 200, reset: '评测页：每月 200GB', note: `站长 Excel 记录的最低价套餐也是乘风 ¥25/月 200GB，两者一致。${ALL_PERIODS}` },
@@ -72,6 +81,12 @@ export default seed({
     {
       type: 'service-notice',
       severity: 'info',
+      text: '站长 2026-10-31 说明：清风（年付小包，¥99）、信风（¥200 / 270GB）、长风（¥370 / 570GB）都不能使用优惠码。乘风、破风、御风是否可用，本站没有资料，请在官网结算页确认。',
+      sourceIds: [PRICING],
+    },
+    {
+      type: 'service-notice',
+      severity: 'info',
       text: '付款方式（评测页）：支付宝、微信支付、USDT（TRC20）。注册需要邮箱验证。',
       sourceIds: [G],
     },
@@ -86,6 +101,16 @@ export default seed({
         { label: '汇编资料：破风 ¥57、御风 ¥127', sourceId: M, grade: 'D' },
       ],
       handling: '采用带日期的评测页价格；汇编资料只留作线索。',
+    },
+    {
+      conflictId: 'breezenet-qingfeng-price',
+      field: '清风（年付小包）价格',
+      summary: '站长 2026-10-31 说明清风年付是 ¥99；第三方评测页 2026-10-20 写的是 ¥137。',
+      variants: [
+        { label: '站长说明（2026-10-31）：清风年付 ¥99，折合每月约 ¥8.25', sourceId: PRICING, grade: 'C' },
+        { label: '第三方评测页（2026-10-20）：清风年付 ¥137', sourceId: G, grade: 'C' },
+      ],
+      handling: '采用日期更晚的站长说明 ¥99；评测页的 ¥137 只留在这里作对照，不用于计算。购买前请以官网结算页为准。',
     },
     {
       conflictId: 'breezenet-node-list',
@@ -103,5 +128,5 @@ export default seed({
     '评测页建议先买月付套餐，确认自己所在地区的网络能用，再考虑年付。本站也这样建议。',
   ],
   detailPage: 'open',
-  sourceIds: [T, M, G, O, S],
+  sourceIds: [T, M, G, O, S, PRICING],
 });

@@ -113,6 +113,12 @@ export default seed({
       sourceIds: [P],
     },
     {
+      type: 'service-notice',
+      severity: 'info',
+      text: '站长 2026-10-31 说明：穿云、闲云（小流量包）、惊云（标准流量包）、飞云（精英流量包）和至尊私人定制不能使用优惠码。拂风、驭浪、破晓、凌霄是否可用，本站没有资料，请在官网结算页确认。',
+      sourceIds: ['owner-2026-10-31-pricing'],
+    },
+    {
       type: 'data-gap',
       severity: 'warn',
       text: '2026-10-28 晚高峰的香港、新加坡、美国节点测速和香港 YouTube 观察有原始截图，已核验。较早的三份证据（第一次新加坡测速、节点状态、YouTube）只有站长整理图，原始截图已不保留，这三条记录在补齐前不标记为“已核验”。',
@@ -175,5 +181,5 @@ export default seed({
     '“套餐详解”里的“官网写明”都是服务商的宣传文字，本站没有逐项实测；日均流量、每 GB 折算价、套餐之间的价格对比由本站按标价计算，不代表速度或稳定性。',
   ],
   detailPage: 'open',
-  sourceIds: [T, M, IMG, 'owner-sheet', 'ldy-panel-chuanyun', P],
+  sourceIds: [T, M, IMG, 'owner-sheet', 'ldy-panel-chuanyun', P, 'owner-2026-10-31-pricing'],
 });

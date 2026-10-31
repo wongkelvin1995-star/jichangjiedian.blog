@@ -7,6 +7,7 @@
  */
 import AffiliateLink from './AffiliateLink.astro';
 import Coupon from './Coupon.astro';
+import { isNoCouponPlan, NO_COUPON_TEXT } from '../data/coupons';
 import Flames from './Flames.astro';
 import { mustGetBrand } from '../data/brands';
 import { OFFER_ROWS } from '../data/plan-calc';
@@ -197,6 +198,7 @@ const n = cards.length;
                   <div><dt>每 GB 折算</dt><dd class="num">{f.per}{f.annualPer && <span class="text-mute">（年付 {f.annualPer}）</span>}</dd></div>
                   <div><dt>速率 / 设备</dt><dd>不限速 / 不限</dd></div>
                 </dl>
+                {isNoCouponPlan(c.planId) && <p class="pd-card__nocoupon"><strong>{NO_COUPON_TEXT}</strong>（站长 2026-10-31 说明）</p>}
                 <p class="pd-card__cycles">
                   <span class="text-mute">付款周期：</span>
                   {c.rows.map((r, i) => (<>{i > 0 && ' · '}{periodLabel(r.period)} {fmtCNY(r.priceCNY)}</>))}

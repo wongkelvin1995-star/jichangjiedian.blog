@@ -1,5 +1,6 @@
 ---
 import { userNote } from '../lib/user-note';
+import { isNoCouponPlan, NO_COUPON_TEXT } from '../data/coupons';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GradeBadge from '../components/GradeBadge.astro';
 import { OFFER_ROWS, OFFER_STATS, PLAN_METHOD_TEXT } from '../data/plan-calc';
@@ -157,6 +158,7 @@ const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
                   <th scope="row" class="col-nowrap" data-label="机场"><a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a></th>
                   <td data-label="套餐">
                     {r.planName}
+                    {isNoCouponPlan(r.planId) && <span class="cell-sub cell-sub--warn">{NO_COUPON_TEXT}</span>}
                     {userNote(r.note) && <span class="cell-sub">{userNote(r.note).length > 60 ? userNote(r.note).slice(0, 58) + '…' : userNote(r.note)}</span>}
                   </td>
                   <td class="col-nowrap" data-label="周期">{periodLabel(r.period)}</td>

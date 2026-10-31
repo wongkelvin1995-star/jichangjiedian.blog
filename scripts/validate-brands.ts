@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { BRANDS } from '../src/data/brands';
 import { BRAND_INDEX } from '../src/data/brand-index';
 import { SOURCES, getSource } from '../src/data/source-registry';
+import { NO_COUPON_PLANS, NO_COUPON_SOURCE_ID } from '../src/data/coupons';
 import type { Brand, Claim, IdentityStatus, VerificationStatus } from '../src/data/types';
 import { Report } from './lib/report';
 
@@ -103,6 +104,18 @@ for (const b of BRANDS) {
       // 咨询报价（需联系客服确认）可以带页面上写的参考价，但必须有说明，且套餐对比页不会拿它做精确比较
       r.check(o.status !== 'consult' || !!o.note, `${where}：咨询报价必须写明说明`);
     }
+  }
+}
+
+// ------------------------------------------------------------------ 不可使用优惠码的套餐（站长 2026-10-31 说明）
+r.check(!!getSource(NO_COUPON_SOURCE_ID), `不可使用优惠码的来源“${NO_COUPON_SOURCE_ID}”不在来源登记表里`);
+for (const [slug, list] of Object.entries(NO_COUPON_PLANS)) {
+  const b = BRANDS.find((x) => x.slug === slug);
+  if (!r.check(!!b, `不可使用优惠码清单里的品牌 ${slug} 不存在`)) continue;
+  r.check(b!.sourceIds.includes(NO_COUPON_SOURCE_ID), `${b!.brandName}：有“不可使用优惠码”的套餐，品牌来源里却没有 ${NO_COUPON_SOURCE_ID}`);
+  r.check(new Set(list.map((x) => x.planId)).size === list.length, `${b!.brandName}：不可使用优惠码清单里有重复的套餐`);
+  for (const item of list) {
+    r.check(b!.plans.some((p) => p.planId === item.planId), `${b!.brandName}：不可使用优惠码清单里的套餐“${item.planId}”在套餐数据里找不到`);
   }
 }
 

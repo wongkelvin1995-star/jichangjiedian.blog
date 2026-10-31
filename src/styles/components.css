@@ -367,6 +367,7 @@ ul.chip-row {
   color: var(--text-mute);
   font-size: var(--fs-xs);
 }
+.cell-sub.cell-sub--warn { color: var(--sunset); }
 
 /* ------------------------------------------------------------ 数据表单（品牌档案） */
 .facts {
@@ -1151,6 +1152,7 @@ ul.chip-row {
 .coupon__label { font-weight: 600; color: var(--sunset); }
 .coupon__code { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 0.95em; font-weight: 700; letter-spacing: 0.04em; color: var(--text); background: rgba(var(--sunset-rgb), 0.14); border: 1px dashed rgba(var(--sunset-rgb), 0.6); border-radius: var(--r-sm); padding: 0.1em 0.5em; }
 .coupon__note { font-size: var(--fs-xs); color: var(--text-mute); }
+.coupon__except { flex-basis: 100%; font-size: var(--fs-xs); color: var(--sunset); }
 .coupon--compact { font-size: var(--fs-xs); }
 .bcard__coupon { margin: 0; }
 .featured__coupon { margin: var(--s3) 0 0; }
@@ -1176,4 +1178,6 @@ ul.chip-row {
 .pd-card__facts dt { color: var(--text-mute); font-size: var(--fs-xs); }
 .pd-card__facts dd { margin: 0; font-weight: 700; font-size: var(--fs-sm); }
 .pd-card__cycles, .pd-card__gist { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); line-height: 1.7; }
+.pd-card__nocoupon { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); line-height: 1.7; }
+.pd-card__nocoupon strong { color: var(--sunset); }
 .pd-card__gist strong { color: var(--text); }

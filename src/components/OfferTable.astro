@@ -5,6 +5,7 @@ import { OFFER_ROWS, PLAN_METHOD_TEXT } from '../data/plan-calc';
 import { OFFER_STATUS_LABEL } from '../data/labels';
 import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
 import { userNote } from '../lib/user-note';
+import { isNoCouponPlan, NO_COUPON_TEXT } from '../data/coupons';
 
 interface Props {
   brandSlug: string;
@@ -45,6 +46,7 @@ const traffic = (r: (typeof allRows)[number]) =>
               <tr id={r.offerId}>
                 <th scope="row">
                   {r.planName}
+                  {isNoCouponPlan(r.planId) && <span class="cell-sub cell-sub--warn">{NO_COUPON_TEXT}</span>}
                   {!simple && r.reasons.length > 0 && r.comparability !== 'exact' && (
                     <span class="cell-sub">{r.reasons.join('；')}</span>
                   )}

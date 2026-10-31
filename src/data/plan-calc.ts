@@ -13,6 +13,7 @@
 import { BRANDS } from './brands';
 import { BILLING_MONTHS } from './types';
 import type { BillingPeriod, Brand, EvidenceGrade, IdentityStatus, OfferStatus, PlanCategory, VerificationStatus } from './types';
+import { NO_COUPON_SUMMARY } from './coupons';
 
 export type Comparability = 'exact' | 'flagged' | 'excluded';
 
@@ -158,5 +159,6 @@ export const PLAN_METHOD_TEXT = [
   '周期内总流量：来源明确“每月重置”的额度 × 周期月数；来源明确是“总量/一次性”的额度直接取总量。',
   '每 GB 参考成本 = 付款周期总价 ÷ 周期内总流量，只在价格与流量都明确、且没有来源冲突时给出。',
   '所有价格都是页面标价（未叠加优惠码）；各家优惠码见品牌页，折扣幅度与实付以服务商结算页为准。',
+  NO_COUPON_SUMMARY,
   '本表只比较价格与流量，不是品牌质量或速度排名；套餐比较与测速不共用排名。',
 ] as const;
