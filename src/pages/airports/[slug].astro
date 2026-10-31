@@ -1,0 +1,337 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AffiliateLink from '../../components/AffiliateLink.astro';
+import FlameIcon from '../../components/FlameIcon.astro';
+import Flames from '../../components/Flames.astro';
+import Coupon from '../../components/Coupon.astro';
+import ClaimValue from '../../components/ClaimValue.astro';
+import GradeBadge from '../../components/GradeBadge.astro';
+import OfferTable from '../../components/OfferTable.astro';
+import PlanDetails from '../../components/PlanDetails.astro';
+import SiteRecordCards from '../../components/SiteRecordCards.astro';
+import ThirdPartyTable from '../../components/ThirdPartyTable.astro';
+import EvidenceGallery from '../../components/EvidenceGallery.astro';
+import { BRANDS, mustGetBrand } from '../../data/brands';
+import { AFFILIATE_NOTE, NOTICE_TYPE_LABEL } from '../../data/labels';
+import { claimOnlyForBrand, evidenceForBrand, recordsForBrand, snapshotsForBrand } from '../../data/test-records';
+import { SOURCE_KIND_LABEL, getSource } from '../../data/source-registry';
+import { LDY_REPORT_PATH, LDY_REPORT_TITLE } from '../../data/reports/lingdongyun-sg-2026-10';
+import { LDY_PEAK_PAGE_PATH, LDY_PEAK_PAGE_TITLE } from '../../data/reports/lingdongyun-peak-2026-10-28';
+import { regionSlugForCode } from '../../data/regions';
+import { loadPosts, postsForBrand } from '../../lib/content';
+import { fmtCNY, fmtDate } from '../../lib/format';
+import { brandPitch, faqLd } from '../../lib/brand-pitch';
+import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
+import { OWNER_MARK_SOURCE, ownerMarksFor } from '../../data/owner-marks';
+import { planDetailsFor } from '../../data/plan-details';
+
+export function getStaticPaths() {
+  return BRANDS.map((b) => ({ params: { slug: b.slug } }));
+}
+const brand = mustGetBrand(Astro.params.slug!);
+const open = brand.detailPage === 'open';
+const path = `/airports/${brand.slug}/`;
+
+const all = recordsForBrand(brand.slug);
+const siteRecs = all.filter((r) => r.sourceType === 'A' || r.sourceType === 'B');
+const tpRecs = all.filter((r) => r.sourceType === 'C' || r.sourceType === 'D');
+const claimOnly = claimOnlyForBrand(brand.slug);
+const snaps = snapshotsForBrand(brand.slug).map((s) => ({ snapshot: s, online: s.onlineNodes, total: s.totalNodes }));
+const evidence = evidenceForBrand(brand.slug);
+const hasTests = siteRecs.length + tpRecs.length + snaps.length > 0;
+const ownerMarks = ownerMarksFor(brand.slug);
+const sources = [...new Set([...brand.sourceIds, ...(ownerMarks.length ? [OWNER_MARK_SOURCE] : [])])].map((id) => ({ id, rec: getSource(id) })).filter((s) => s.rec);
+const posts = postsForBrand(await loadPosts(), brand.slug);
+const severityRank = { high: 0, warn: 1, info: 2 } as const;
+const notices = [...brand.notices].filter((n) => n.type !== 'data-gap').sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
+
+// 名称以英文或数字结尾时，与后面的汉字之间留一个空格（“微风网络 Breezenet 资料整理”）
+const titleName = /[A-Za-z0-9]$/.test(brand.brandName) ? `${brand.brandName} ` : brand.brandName;
+const pitch = brandPitch(brand);
+const hasNodeNames = brand.regions.some((r) => r.nodeNames && r.nodeNames.length > 0);
+const featured = brand.slug === 'lingdongyun';
+const planDetails = planDetailsFor(brand.slug);
+const aliasList = brand.aliases.filter((a) => /[\u4e00-\u9fa5]/.test(a) && a !== brand.shortName && a !== brand.brandName && !a.endsWith('机场'));
+const title = `${titleName}机场怎么样？2026价格、节点与注册入口｜机场节点`;
+const description = pitch.description;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: `${BRAND_COUNT}家机场目录`, href: '/airports/' },
+  { name: brand.brandName, href: path },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} noindex={!open} modified={DATA_UPDATED} jsonLd={open ? [faqLd(pitch.faq)] : []}>
+  <header class="page-head">
+    <div class="container brand-head">
+      <div>
+        {featured && <p class="featured-flag"><FlameIcon />本站主推</p>}
+        <h1>{brand.brandName}机场怎么样：价格、节点与注册入口</h1>
+        <p class="page-head__lead">{pitch.verdict}</p>
+        {aliasList.length > 0 && <p class="chip-row mt-4"><span class="chip chip--gray">又名：{aliasList.join('、')}</span></p>}
+        
+      </div>
+      <aside class:list={['panel', 'panel--star', 'brand-cta', { 'flame-frame flame-frame--tight': featured }]} aria-label="品牌概览与推广链接">
+        {featured && <Flames size="sm" />}
+        <dl class="mini-facts mini-facts--one">
+          {pitch.low && <div><dt>最低月付</dt><dd><strong class="brand-cta__price num">{fmtCNY(pitch.low.price)}</strong> / 月 · {pitch.low.gb}GB</dd></div>}
+          {pitch.nodes && <div><dt>节点数量</dt><dd class="num">{pitch.nodes} 个</dd></div>}
+          {pitch.regions.length > 0 && <div><dt>节点地区</dt><dd>{pitch.regions.slice(0, 6).join('、')}{pitch.regions.length > 6 && ' 等'}</dd></div>}
+          {pitch.routes.length > 0 && <div><dt>线路</dt><dd>{pitch.routes.join(' / ')}</dd></div>}
+          {pitch.device && <div><dt>设备</dt><dd>{pitch.device}</dd></div>}
+        </dl>
+        <div class="mt-4">
+          <AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" label={`注册${brand.shortName}`} />
+        </div>
+        <p class="mt-3"><Coupon slug={brand.slug} /></p>
+        <p class="disclosure mt-3">{AFFILIATE_NOTE}</p>
+      </aside>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <nav class="toc-inline" aria-label="本页目录">
+      <ul>
+        <li><a href="#plans">套餐价格</a></li>
+        {planDetails && <li><a href="#plan-details">套餐详解</a></li>}
+        <li><a href="#regions">节点地区</a></li>
+        <li><a href="#facts">线路与服务</a></li>
+        {(notices.length > 0 || brand.identity.notes.length > 0) && <li><a href="#notices">购买提示</a></li>}
+        {hasTests && <li><a href="#tests">实测</a></li>}
+        <li><a href="#faq">常见问题</a></li>
+      </ul>
+    </nav>
+    <div class="stack-lg">
+      <div class="stack-lg">
+        <section id="fit" aria-labelledby="fit-title" class="panel panel--star">
+          <h2 id="fit-title" class="mb-3">{brand.shortName}适合谁</h2>
+          <ul class="fit-list">{pitch.fitFor.map((t) => <li>{t}</li>)}</ul>
+          <h3 class="mt-4 mb-2">不太适合谁 / 注意</h3>
+          <ul class="bullets text-sm">{pitch.notFor.map((t) => <li>{t}</li>)}</ul>
+          {pitch.analysis.length > 0 && (
+            <>
+              <h3 class="mt-4 mb-2">独立分析（由套餐数据计算）</h3>
+              <ul class="bullets text-sm">{pitch.analysis.map((t) => <li>{t}</li>)}</ul>
+              <p class="text-xs text-soft mt-2">以上数字按本站收录的 34 家套餐标价计算，排名越靠前表示价格越低、流量或地区越多；不代表速度或稳定性。</p>
+            </>
+          )}
+        </section>
+
+        <section id="plans" aria-labelledby="plans-title">
+          <h2 id="plans-title" class="mb-3">{brand.shortName}套餐价格</h2>
+          <OfferTable brandSlug={brand.slug} simple showMethod={false} />
+          <p class="mt-3 text-sm"><a href="/plans/">到套餐对比页按预算和流量筛选 →</a>{planDetails && <> · <a href="#plan-details">{planDetails.plans.length} 个套餐的官网说明与对比 ↓</a></>}</p>
+        </section>
+
+        {planDetails && <PlanDetails brandSlug={brand.slug} />}
+
+        <section id="regions" aria-labelledby="regions-title">
+          <h2 id="regions-title" class="mb-3">{brand.shortName}节点地区</h2>
+          {
+            brand.regions.length > 0 ? (
+              <div class="table-scroll">
+                <table class="data-table">
+                  <caption>点击地区名可以看这个地区还有哪些机场。</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">地区</th>
+                      <th scope="col" class="col-num">节点数</th>
+                      {hasNodeNames && <th scope="col">节点</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {brand.regions.map((r) => (
+                      <tr>
+                        <th scope="row" class="col-nowrap">{regionSlugForCode(r.countryCode) ? <a href={`/regions/${regionSlugForCode(r.countryCode)}/`}>{r.label}</a> : r.label}</th>
+                        <td class="col-num num">{r.nodeCount ?? '多个'}</td>
+                        {hasNodeNames && <td class="text-sm">{r.nodeNames && r.nodeNames.length > 0 ? r.nodeNames.slice(0, 8).join('、') + (r.nodeNames.length > 8 ? ` 等共 ${r.nodeNames.length} 个` : '') : <span class="text-soft">以客户端列表为准</span>}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p class="empty">资料里没有可用的节点地区记录。</p>
+            )
+          }
+        </section>
+
+        <section id="facts" aria-labelledby="facts-title">
+          <h2 id="facts-title" class="mb-3">{brand.shortName}线路、协议与常用服务</h2>
+          <dl class="facts">
+            <dt>节点总数</dt><dd><ClaimValue plain claim={brand.nodeCount} unit=" 个" /></dd>
+            <dt>协议</dt><dd><ClaimValue plain claim={brand.protocols} /></dd>
+            <dt>线路类型</dt><dd>{pitch.routes.length > 0 ? <span class="chip-row">{pitch.routes.map((x) => <span class="chip">{x}</span>)}</span> : <span class="text-mute">以官网说明为准</span>}</dd>
+            <dt>客户端</dt><dd><ClaimValue plain claim={brand.clients} chips={false} /></dd>
+            <dt>流媒体</dt><dd><ClaimValue plain claim={brand.streaming} chips={false} /></dd>
+            <dt>AI 服务</dt><dd><ClaimValue plain claim={brand.ai} chips={false} /></dd>
+            {
+              ownerMarks.length > 0 && (
+                <>
+                  <dt>常用服务</dt>
+                  <dd>
+                    <ul class="chip-row" aria-label="服务商资料标注为稳定的服务">
+                      {ownerMarks.map((m) => (
+                        <li class="chip chip--ok">{m.service} · {m.status}</li>
+                      ))}
+                    </ul>
+                    <p class="text-xs text-soft mt-2">来自各服务商提供的资料（站长核对表，2026-10-28 读取）；本站未逐项实测，以实际试用为准。</p>
+                  </dd>
+                </>
+              )
+            }
+            <dt>设备数量</dt><dd><ClaimValue plain claim={brand.deviceLimit} /></dd>
+            <dt>流量倍率</dt><dd><ClaimValue plain claim={brand.multiplier} /></dd>
+          </dl>
+        </section>
+
+        {
+          (notices.length > 0 || brand.identity.notes.length > 0) && (
+            <section id="notices" aria-labelledby="notices-title">
+              <h2 id="notices-title" class="mb-3">购买前须知</h2>
+              {notices.map((n) => (
+                <div class="notice" data-severity={n.severity}>
+                  <span class="notice__title">{NOTICE_TYPE_LABEL[n.type]}</span>
+                  {n.text.replace(/^\d{4}-\d{2}-\d{2} 的第三方资料[：:]\s*/, '').replace(/^第三方资料[：:]\s*/, '')}
+                </div>
+              ))}
+              {brand.identity.notes.length > 0 && (
+                <div class="notice" data-severity="info">
+                  <span class="notice__title">关于名称</span>
+                  <ul class="bullets">{brand.identity.notes.map((t) => <li>{t}</li>)}</ul>
+                </div>
+              )}
+            </section>
+          )
+        }
+
+        {hasTests && (
+        <section id="tests" aria-labelledby="tests-title">
+          <h2 id="tests-title" class="mb-3">{brand.shortName}实测</h2>
+          {
+            (
+              <div class="stack-lg">
+                {(siteRecs.length > 0 || snaps.length > 0) && (
+                  <div>
+                    <h3 class="mb-3">本站记录</h3>
+                    <SiteRecordCards records={siteRecs} snapshots={snaps} />
+                    {brand.slug === 'lingdongyun' && (
+                      <p class="mt-4 chip-row"><a class="btn btn--ghost btn--wrap" href={LDY_REPORT_PATH}>{LDY_REPORT_TITLE}</a><a class="btn btn--ghost btn--wrap" href={LDY_PEAK_PAGE_PATH}>{LDY_PEAK_PAGE_TITLE}</a></p>
+                    )}
+                  </div>
+                )}
+                {evidence.length > 0 && (
+                  <div>
+                    <h3 class="mb-3">证据文件</h3>
+                    <EvidenceGallery files={evidence} />
+                  </div>
+                )}
+                {tpRecs.length > 0 && (
+                  <div>
+                    <h3 class="mb-3">其他测速参考</h3>
+                    <p class="text-sm text-soft mb-3">
+                      来自第三方评测页收录的测速截图摘录，不是本站测试，也不能当作当前表现。速度保留原图标注的单位（MB/KB/B），没有换算为 Mbps。
+                    </p>
+                    <ThirdPartyTable records={tpRecs} linkBrand={false} />
+                  </div>
+                )}
+                {claimOnly.length > 0 && (
+                  <div>
+                    <h3 class="mb-3">页面文字描述（没有测量值）</h3>
+                    <p class="text-sm text-soft mb-3">下面是来源页面对节点的文字介绍，没有任何延迟或速度数字，不算测试记录。</p>
+                    <ul class="bullets text-sm">
+                      {claimOnly.map((r) => <li><strong>{r.nodeDisplayName}</strong>：{r.notes}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )
+          }
+        </section>
+        )}
+
+        <section id="faq" aria-labelledby="faq-title">
+          <h2 id="faq-title" class="mb-3">{brand.shortName}常见问题</h2>
+          <div>
+            {pitch.faq.map((f, i) => (
+              <details class="fold" open={i === 0}>
+                <summary>{f.q}</summary>
+                <div class="fold__body"><p>{f.a}{f.href && <> <a href={f.href}>{f.linkText ?? '查看教程'} →</a></>}</p></div>
+              </details>
+            ))}
+          </div>
+          {featured ? (
+            <div class="flame-frame flame-frame--tight flame-cta mt-5">
+              <Flames size="sm" />
+              <p class="flame-cta__text">本站主推：{pitch.nodes ? `${pitch.nodes} 个节点、` : ''}{pitch.routes.join(' / ')} 线路{pitch.device ? '、不限设备' : ''}{pitch.low ? `，月付 ${fmtCNY(pitch.low.price)} 起` : ''}。</p>
+              <AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" label={`注册${brand.shortName}`} />
+              <Coupon slug={brand.slug} />
+            </div>
+          ) : (
+            <p class="mt-4 flex-row"><AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" label={`注册${brand.shortName}`} /><Coupon slug={brand.slug} compact /></p>
+          )}
+        </section>
+
+        {
+          brand.conflicts.length > 0 && (
+            <section id="conflicts" aria-labelledby="conflicts-title">
+              <h2 id="conflicts-title" class="mb-3">价格版本说明</h2>
+              <div class="stack">
+                {brand.conflicts.map((c) => (
+                  <div class="panel">
+                    <h3 class="panel__title">{c.field}</h3>
+                    <p class="text-soft">{c.summary}</p>
+                    <ul class="bullets mt-3 text-sm">
+                      {c.variants.map((v) => (
+                        <li>
+                          {v.label}
+                        </li>
+                      ))}
+                    </ul>
+                    <p class="mt-3 text-sm"><strong>本页采用：</strong>{c.handling}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        }
+
+        {
+          brand.editorialNotes.length > 0 && (
+            <section id="notes" aria-labelledby="notes-title">
+              <h2 id="notes-title" class="mb-3">编辑说明</h2>
+              <ul class="bullets">{brand.editorialNotes.map((t) => <li>{t}</li>)}</ul>
+            </section>
+          )
+        }
+
+        <section id="sources" aria-labelledby="sources-title">
+          <details class="sources-fold">
+            <summary><h2 id="sources-title">资料出处（{sources.length}）</h2></summary>
+          <ul class="source-list">
+            {sources.map(({ id, rec }) => (
+              <li>
+                <GradeBadge grade={rec!.defaultGrade} showName={false} />
+                <span>
+                  <a href={`/sources/#${id}`}>{id}</a>　{rec!.title}
+                  <span class="cell-sub">{SOURCE_KIND_LABEL[rec!.kind]}　页面标注日期：{fmtDate(rec!.statedDate)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+        </section>
+
+        {
+          posts.length > 0 && (
+            <section aria-labelledby="related-title">
+              <h2 id="related-title" class="mb-3">相关阅读</h2>
+              <ul class="link-list">{posts.map((p) => <li><a href={p.href}>{p.h1}</a></li>)}</ul>
+            </section>
+          )
+        }
+      </div>
+
+    </div>
+  </div>
+</BaseLayout>

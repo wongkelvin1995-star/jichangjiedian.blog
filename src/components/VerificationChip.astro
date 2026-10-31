@@ -1,0 +1,18 @@
+---
+import { VERIFICATION_HINT, VERIFICATION_LABEL } from '../data/labels';
+import type { VerificationStatus } from '../data/types';
+interface Props {
+  status: VerificationStatus;
+}
+const { status } = Astro.props;
+const variant: Record<VerificationStatus, string> = {
+  'site-tested': 'chip--electric',
+  'sourced-partial': '',
+  conflict: 'chip--sunset',
+  'identity-pending': 'chip--gray',
+  'demo-site': 'chip--gray',
+  insufficient: 'chip--gray',
+};
+---
+
+<span class:list={['chip', variant[status]]} title={VERIFICATION_HINT[status]}>{VERIFICATION_LABEL[status]}</span>

@@ -1,0 +1,108 @@
+---
+/**
+ * 首页 / 目录页的机场卡片：最低价、节点数量与地区、线路、常用服务、注册入口。
+ * 价格以站长 Excel 最低价为准；节点只显示资料里有的数量，没有数量时只列地区，不补造。
+ */
+import AffiliateLink from './AffiliateLink.astro';
+import Coupon from './Coupon.astro';
+import Flames from './Flames.astro';
+import { BRANDS } from '../data/brands';
+import { SHEET_LOWEST } from '../data/owner-sheet-prices';
+import { ownerMarksFor } from '../data/owner-marks';
+import { routeChipsOf } from '../lib/queries';
+import { fmtCNY, fmtGB } from '../lib/format';
+import type { Brand } from '../data/types';
+
+interface Props { limit?: number; headingLevel?: 'h3' | 'h2' }
+const { limit, headingLevel = 'h3' } = Astro.props;
+const H = headingLevel;
+// 本站主推的机场：卡片外加火焰边框，上沿有会跳动的火焰（样式在 flame.css）
+const HOT = 'lingdongyun';
+
+const nodeText = (b: Brand): string | null => {
+  const v = b.nodeCount.value;
+  if (v === null) return null;
+  const lower = /下限|不少于|50\+/.test(b.nodeCount.note ?? '');
+  return lower ? `${v}+ 个节点` : `${v} 个节点`;
+};
+const regionNames = (b: Brand): string[] =>
+  b.regions.filter((r) => r.grade !== 'D' && r.countryCode !== 'OTHER').map((r) => r.label);
+const hasOther = (b: Brand) => b.regions.some((r) => r.countryCode === 'OTHER' && r.grade !== 'D');
+
+const cheapestPlan = (b: Brand) => {
+  let best: { price: number; gb: number | null } | null = null;
+  for (const p of b.plans) for (const o of p.offers) {
+    if (o.billingPeriod !== 'monthly' || o.priceCNY === null) continue;
+    if (!best || o.priceCNY < best.price) best = { price: o.priceCNY, gb: o.monthlyTrafficGB };
+  }
+  return best;
+};
+
+const list = (limit ? BRANDS.slice(0, limit) : BRANDS).map((b) => {
+  const s = SHEET_LOWEST[b.slug];
+  const price = s ? { price: s.price, gb: s.monthlyGB as number | null } : cheapestPlan(b);
+  const regions = regionNames(b);
+  return {
+    b,
+    price,
+    nodes: nodeText(b),
+    regions: regions.slice(0, 5),
+    moreRegions: regions.length - 5 + (hasOther(b) ? 1 : 0),
+    routes: routeChipsOf(b).filter((r) => r.confirmed).map((r) => r.label),
+    stable: ownerMarksFor(b.slug).slice(0, 3).map((m) => m.service),
+    stableTotal: ownerMarksFor(b.slug).length,
+  };
+});
+---
+
+<ol class:list={['bcards', { 'bcards--hot': list.some(({ b }) => b.slug === HOT) }]}>
+  {
+    list.map(({ b, price, nodes, regions, moreRegions, routes, stable, stableTotal }) => (
+      <li class:list={['bcard', { 'bcard--hot': b.slug === HOT }]}>
+        {b.slug === HOT && <Flames size="sm" />}
+        <div class="bcard__top">
+          <span class="bcard__rank num">{String(b.displayRank).padStart(2, '0')}</span>
+          <H class="bcard__name"><a href={`/airports/${b.slug}/`}>{b.brandName}</a></H>
+          {b.siteTest.hasRecords && <span class="bcard__flag">有实测</span>}
+        </div>
+        {price && (
+          <p class="bcard__price">
+            <span class="bcard__from">低至</span>
+            <strong class="num">{fmtCNY(price.price)}</strong>
+            <span class="bcard__per">/月{price.gb !== null && <> · {fmtGB(price.gb)}</>}</span>
+          </p>
+        )}
+        <dl class="bcard__facts">
+          <div>
+            <dt>节点</dt>
+            <dd>
+              {nodes && <strong>{nodes}</strong>}
+              {regions.length > 0 ? (
+                <span class="bcard__regions">{regions.join(' · ')}{moreRegions > 0 && ` 等 ${regions.length + moreRegions} 个地区`}</span>
+              ) : (
+                !nodes && <span class="bcard__regions">地区以官网节点列表为准</span>
+              )}
+            </dd>
+          </div>
+          {routes.length > 0 && (
+            <div>
+              <dt>线路</dt>
+              <dd>{routes.join(' / ')}</dd>
+            </div>
+          )}
+          {stableTotal > 0 && (
+            <div>
+              <dt>常用</dt>
+              <dd>{stable.join('、')}{stableTotal > stable.length && ` 等 ${stableTotal} 项`}资料标注稳定</dd>
+            </div>
+          )}
+        </dl>
+        <div class="bcard__actions">
+          <AffiliateLink url={b.affiliateUrl} brandName={b.shortName} variant="primary" small label={`注册${b.shortName}`} />
+          <a class="btn btn--ghost btn--small" href={`/airports/${b.slug}/`}>套餐与节点<span class="visually-hidden">：{b.brandName}</span></a>
+        </div>
+        <p class="bcard__coupon"><Coupon slug={b.slug} compact /></p>
+      </li>
+    ))
+  }
+</ol>

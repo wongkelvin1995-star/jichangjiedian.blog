@@ -1,0 +1,206 @@
+/* 正文排版：中文长文，行宽约 40 个汉字 */
+.prose {
+  max-width: var(--measure);
+  color: var(--text);
+  font-size: 1.0625rem;
+  line-height: 1.9;
+}
+.prose--wide {
+  max-width: 52rem;
+}
+.prose > * + * {
+  margin-top: 1.15em;
+}
+.prose h2 {
+  margin-top: 2.4em;
+  padding-top: 0.2em;
+  font-size: 1.5rem;
+}
+.prose h3 {
+  margin-top: 1.9em;
+  font-size: 1.2rem;
+}
+.prose h2 + *,
+.prose h3 + * {
+  margin-top: 0.7em;
+}
+.prose p {
+  color: var(--text);
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+  display: grid;
+  gap: 0.45em;
+}
+.prose li::marker {
+  color: var(--star-line);
+}
+.prose blockquote {
+  padding: var(--s3) var(--s4);
+  border-left: 3px solid var(--star-line);
+  background: rgba(var(--tint-rgb), 0.12);
+  color: var(--text-soft);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.prose blockquote > * + * {
+  margin-top: 0.6em;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  display: block;
+  overflow-x: auto;
+}
+.prose th,
+.prose td {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+@media (max-width: 480px) {
+  .prose th,
+  .prose td {
+    padding: 0.5rem 0.45rem;
+  }
+}
+.prose th {
+  background: var(--star-deep);
+  color: var(--text-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.prose img {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.prose figure {
+  display: grid;
+  gap: var(--s2);
+}
+.prose figcaption {
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+}
+.prose hr {
+  margin-block: 2.2em;
+}
+.prose .callout {
+  padding: var(--s4);
+  border: 1px solid var(--star-line);
+  border-radius: var(--r-md);
+  background: var(--star-deep);
+  font-size: var(--fs-base);
+}
+.prose .callout > * + * {
+  margin-top: 0.5em;
+}
+.prose .callout strong:first-child {
+  color: var(--sunset);
+}
+.prose a {
+  overflow-wrap: anywhere;
+}
+.prose .limits {
+  border-left: 3px solid var(--sunset);
+  padding: var(--s3) var(--s4);
+  background: rgba(var(--sunset-rgb), 0.12);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+.prose .limits > * + * {
+  margin-top: 0.5em;
+}
+.prose .limits > h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  font-size: 1.2rem;
+}
+
+.toc {
+  display: grid;
+  gap: var(--s2);
+  font-size: var(--fs-sm);
+}
+.toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--s2);
+}
+.toc a {
+  color: var(--text-soft);
+  text-decoration: none;
+}
+.toc a:hover {
+  color: var(--electric);
+}
+.toc ol ol {
+  padding-left: var(--s3);
+  margin-top: var(--s2);
+}
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  color: var(--text-mute);
+  font-size: var(--fs-sm);
+}
+.prose ul.plain {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* 文章页：正文 + 右侧目录 */
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s6);
+  align-items: start;
+}
+@media (min-width: 1040px) {
+  .article-layout {
+    grid-template-columns: minmax(0, 1fr) 17rem;
+  }
+  .article-aside {
+    position: sticky;
+    top: var(--s4);
+  }
+}
+.article-aside {
+  display: grid;
+  gap: var(--s4);
+}
+.post-list__title {
+  font-size: var(--fs-md);
+}
+.post-list__title a {
+  color: var(--text);
+  text-decoration: none;
+}
+.post-list__title a:hover {
+  color: var(--electric);
+}
+
+/* 代码块（只用于 CSV 列名模板这类短文本）。自动换行而不是横向滚动，键盘和手机上都不会出现“看不全”的滚动区域。 */
+.prose pre {
+  margin: var(--s4) 0;
+  padding: var(--s4);
+  background: var(--ink-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}

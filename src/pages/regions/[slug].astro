@@ -1,0 +1,303 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RegionMiniMap from '../../components/RegionMiniMap.astro';
+import RegionBrandTable from '../../components/RegionBrandTable.astro';
+import SiteRecordCards from '../../components/SiteRecordCards.astro';
+import ThirdPartyTable from '../../components/ThirdPartyTable.astro';
+import { REGION_PAGES, getRegionPage } from '../../data/regions';
+import { getRegionContent } from '../../data/region-content';
+import { BRANDS } from '../../data/brands';
+import { summarizeRegionPage } from '../../lib/queries';
+import { loadPosts, postsForRegion } from '../../lib/content';
+import { collectionLd, faqPageLd } from '../../lib/seo';
+import { fmtDate } from '../../lib/format';
+import { DATA_UPDATED } from '../../lib/site';
+
+export function getStaticPaths() {
+  return REGION_PAGES.map((p) => ({ params: { slug: p.slug }, props: { slug: p.slug } }));
+}
+const { slug } = Astro.props as { slug: string };
+const { page, parts } = summarizeRegionPage(slug);
+const path = `/regions/${slug}/`;
+
+// 汇总（欧洲页合并三个国家，但按品牌去重）
+const uniq = <T extends { brand: { slug: string } }>(rows: T[]) => [...new Map(rows.map((r) => [r.brand.slug, r])).values()];
+const documented = uniq(parts.flatMap((p) => p.documented));
+const unverified = uniq(parts.flatMap((p) => p.unverified)).filter((r) => !documented.some((d) => d.brand.slug === r.brand.slug));
+const siteRecords = parts.flatMap((p) => p.siteRecords);
+const thirdParty = parts.flatMap((p) => p.thirdPartyRecords);
+const snapshots = parts.flatMap((p) => p.snapshots);
+const multi = parts.length > 1;
+const none = multi ? [] : parts[0]!.none;
+
+// 正文里用到的数字全部来自数据层
+const withCount = documented.filter((r) => r.nodeCount !== null).length;
+const withNames = documented.filter((r) => r.nodeNames.length > 0).length;
+const content = getRegionContent(slug, {
+  total: BRANDS.length,
+  documented: documented.length,
+  withCount,
+  withNames,
+  siteRecords,
+  snapshots: snapshots.length,
+  thirdParty: thirdParty.length,
+  parts: parts.map((p) => ({ name: p.point.name, documented: p.documented.length })),
+});
+const { title, h1, description } = content;
+const relatedRegions = content.related.map((l) => ({ ...l, page: getRegionPage(l.slug)! })).filter((l) => l.page);
+
+const posts = postsForRegion(await loadPosts(), slug);
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '节点地区', href: '/regions/' },
+  { name: page.fullName, href: path },
+];
+const tableLead = multi
+  ? `按国家分表，同一家机场可能出现在多张表里。${documented.length} 家机场里 ${withCount} 家写明了节点数量，其余显示“多个”。按站长编辑顺序排列，点机场名看全部套餐和注册入口。`
+  : `${documented.length} 家里，${withCount} 家在资料里写明了${page.name}节点数量，其余显示“多个”；${withNames} 家有节点名称原文。按站长编辑顺序排列，点机场名看全部套餐和注册入口。`;
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[
+    collectionLd(h1, description, path, documented.map((r) => ({ name: r.brand.brandName, href: `/airports/${r.brand.slug}/` }))),
+    faqPageLd(content.faq),
+  ]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>{h1}</h1>
+      <p class="page-head__lead" set:html={content.lead} />
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span><a href="#brands">机场清单</a></span>
+        <span><a href="#focus">分析重点</a></span>
+        <span><a href="#evidence">数据与局限</a></span>
+        <span><a href="#records">测试记录</a></span>
+        <span><a href="#faq">常见问题</a></span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container grid grid--2 region-hero">
+      <RegionMiniMap slug={slug} label={page.fullName} />
+      <div class="stack">
+        <div class="panel panel--star">
+          <h2 class="panel__title">这个地区的资料概况</h2>
+          {
+            multi ? (
+              <div class="table-scroll">
+                <table class="data-table data-table--compact data-table--fit">
+                  <thead>
+                    <tr>
+                      <th scope="col">地区</th>
+                      <th scope="col" class="col-num">有该地区节点</th>
+                      <th scope="col" class="col-num">补充中</th>
+                      <th scope="col" class="col-num">未列出</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parts.map((p) => (
+                      <tr>
+                        <th scope="row">{p.point.name}</th>
+                        <td class="col-num num">{p.documented.length}</td>
+                        <td class="col-num num">{p.unverified.length}</td>
+                        <td class="col-num num">{p.none.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div class="stat-row">
+                <div class="stat"><span class="stat__num num">{parts[0]!.documented.length}<small>家</small></span><span class="stat__label">有该地区节点</span></div>
+                <div class="stat"><span class="stat__num num">{parts[0]!.unverified.length}<small>家</small></span><span class="stat__label">资料补充中</span></div>
+                <div class="stat"><span class="stat__num num">{parts[0]!.none.length}<small>家</small></span><span class="stat__label">未列出</span></div>
+              </div>
+            )
+          }
+          {
+            parts.some((p) => p.routeCounts.length > 0) && (
+              <div class="mt-4">
+                <p class="text-xs text-mute">有记录的机场里，线路类型的出现次数（品牌级字段，不一定对应这个地区的每个节点）</p>
+                <p class="chip-row mt-2">
+                  {[...new Map(parts.flatMap((p) => p.routeCounts).map((r) => [r.id, r])).values()].map((r) => (
+                    <span class="chip">{r.label} <b class="num">{r.confirmed}</b>{r.pending > 0 && <span class="text-mute">＋{r.pending}</span>}</span>
+                  ))}
+                </p>
+              </div>
+            )
+          }
+          <p class="mt-4 text-sm text-soft">
+            本站实测 <b class="num">{siteRecords.length}</b> 条{siteRecords.length === 0 && '（尚无该地区实测）'}；节点在线快照 <b class="num">{snapshots.length}</b> 次；其他测速参考 <b class="num">{thirdParty.length}</b> 行。
+          </p>
+        </div>
+        <p class="notice" data-severity="info"><span class="notice__title">这一页回答什么</span>{content.intent}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight" id="brands" aria-labelledby="brands-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="brands-title">提供{page.name}节点的机场（{documented.length}）</h2>
+          <p class="section__lead">{tableLead}</p>
+        </div>
+      </div>
+      {
+        multi ? (
+          <div class="stack-lg">
+            {parts.map((p) => (
+              <div>
+                <h3 id={`part-${p.point.countryCode.toLowerCase()}`} class="mb-3">{p.point.name}（{p.documented.length} 家机场）</h3>
+                {p.documented.length > 0 ? (
+                  <RegionBrandTable rows={p.documented} idPrefix={`b-${p.point.countryCode.toLowerCase()}`} />
+                ) : (
+                  <p class="empty">资料里没有{p.point.name}节点的可用记录。</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : documented.length > 0 ? (
+          <RegionBrandTable rows={documented} />
+        ) : (
+          <p class="empty">资料里没有该地区节点的可用记录。</p>
+        )
+      }
+      <p class="text-xs text-mute mt-3">表里的“节点数”是资料里写的数字，不是本站点数的结果；字段说明见<a href="/regions/#how-to-read">节点地区总览</a>。</p>
+    </div>
+  </section>
+
+  {
+    unverified.length > 0 && (
+      <section class="section section--tight" id="unverified" aria-labelledby="unv-title">
+        <div class="container">
+          <div class="section__head">
+            <div>
+              <h2 id="unv-title">资料补充中的机场（{unverified.length}）</h2>
+              <p class="section__lead">这些机场是否提供该地区节点，资料还在补充，暂不计入上面的数量。</p>
+            </div>
+          </div>
+          <RegionBrandTable rows={unverified} />
+        </div>
+      </section>
+    )
+  }
+
+  <section class="section section--tight" id="focus" aria-labelledby="focus-title">
+    <div class="container prose prose--wide">
+      <h2 id="focus-title">{content.focus.heading}</h2>
+      {content.focus.paragraphs.map((t) => <p set:html={t} />)}
+    </div>
+  </section>
+
+  <section class="section section--tight" id="scenarios" aria-labelledby="scenarios-title">
+    <div class="container">
+      <h2 id="scenarios-title" class="mb-3">{content.scenarios.heading}</h2>
+      <div class="grid grid--2">
+        {content.scenarios.items.map((it) => (
+          <div class="panel">
+            <h3 class="panel__title">{it.label}</h3>
+            <p class="text-sm" set:html={it.text} />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--band" id="evidence" aria-labelledby="evidence-title">
+    <div class="container prose prose--wide">
+      <h2 id="evidence-title">{content.evidence.heading}</h2>
+      {content.evidence.paragraphs.map((t) => <p set:html={t} />)}
+      <h3>还缺什么</h3>
+      <ul>{content.evidence.missing.map((t) => <li set:html={t} />)}</ul>
+      <h3>想自己验证，可以这样测</h3>
+      <ol>{content.evidence.method.map((t) => <li set:html={t} />)}</ol>
+    </div>
+  </section>
+
+  <section class="section section--tight" id="records" aria-labelledby="records-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="records-title">{page.name}节点测试记录</h2>
+        </div>
+        <a class="btn btn--ghost" href="/test-records/">全部测试档案</a>
+      </div>
+
+      <h3 class="mb-3">本站记录</h3>
+      {
+        siteRecords.length + snapshots.length > 0 ? (
+          <SiteRecordCards records={siteRecords} {snapshots} regionLabel={page.name} />
+        ) : (
+          <p class="empty">本站尚无{page.name}节点实测；自测方法见上一节。</p>
+        )
+      }
+
+      <h3 class="mt-6 mb-3">其他测速参考</h3>
+      {
+        thirdParty.length > 0 ? (
+          <>
+            <p class="text-sm text-soft mb-3">第三方评测页的截图摘录，不是本站测试；速度按原图单位（MB/KB/B），不能与本站的 Mbps 直接比较。</p>
+            <ThirdPartyTable records={thirdParty} />
+          </>
+        ) : (
+          <p class="empty">本站暂无{page.name}节点的其他测速参考摘录。</p>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="section section--tight" id="faq" aria-labelledby="faq-title">
+    <div class="container">
+      <h2 id="faq-title" class="mb-3">{page.fullName}常见问题</h2>
+      <div>
+        {content.faq.map((f, i) => (
+          <details class="fold" open={i === 0}>
+            <summary>{f.q}</summary>
+            <div class="fold__body"><p set:html={f.a} /></div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {
+    none.length > 0 && (
+      <section class="section section--tight" id="none" aria-labelledby="none-title">
+        <div class="container">
+          <details class="fold">
+            <summary id="none-title">未列出该地区的机场（{none.length}）</summary>
+            <div class="fold__body">
+              <p>“未列出”只表示本站没有相关资料，不等于该品牌没有{page.name}节点。</p>
+              <ul class="chip-row mt-3">
+                {none.map((b) => (
+                  <li class="list-none"><a class="chip" href={`/airports/${b.slug}/`}>{String(b.displayRank).padStart(2, '0')} {b.shortName}</a></li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="section section--tight" aria-labelledby="related-title">
+    <div class="container">
+      <h2 id="related-title" class="mb-3">相关地区与延伸阅读</h2>
+      <ul class="link-list">
+        {relatedRegions.map((l) => (
+          <li><a href={`/regions/${l.slug}/`}>{l.anchor}</a><span class="text-soft text-sm">　{l.why}</span></li>
+        ))}
+        {posts.map((p) => <li><a href={p.href}>{p.h1}</a></li>)}
+        <li><a href="/testing-methodology/">测试方法：本站怎么测、什么记录才算数</a></li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

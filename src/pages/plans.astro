@@ -1,0 +1,221 @@
+---
+import { userNote } from '../lib/user-note';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GradeBadge from '../components/GradeBadge.astro';
+import { OFFER_ROWS, OFFER_STATS, PLAN_METHOD_TEXT } from '../data/plan-calc';
+/** 首屏只排版前 40 行（与 src/scripts/plans.ts 的 PAGE 一致）：557 行一次排版会让手机首屏慢好几秒；其余行仍在 HTML 里，脚本就绪后按筛选显示 */
+const INITIAL_ROWS = 40;
+import { OFFER_STATUS_LABEL } from '../data/labels';
+import { MAP_POINTS } from '../data/regions';
+import { ROUTE_TYPES } from '../data/routes';
+import { CLIENT_FAMILIES, clientFamiliesOf } from '../data/client-families';
+import { BILLING_LABEL } from '../data/types';
+import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
+import { collectionLd } from '../lib/seo';
+import { loadPosts } from '../lib/content';
+import { BRAND_COUNT, DATA_UPDATED } from '../lib/site';
+import type { BillingPeriod } from '../data/types';
+
+const path = '/plans/';
+const title = '套餐对比：按预算、流量与付款周期筛选机场套餐｜机场节点';
+const description = `按预算、月流量、付款周期、地区和线路筛选${OFFER_STATS.total}条机场套餐报价，计算月均价与每GB参考成本；冲突和待核验的报价单独标注，不参与精确排序。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '套餐对比', href: path },
+];
+const periods = [...new Set(OFFER_ROWS.map((r) => r.period))] as BillingPeriod[];
+const usedFamilies = CLIENT_FAMILIES.filter((f) => OFFER_ROWS.some((r) => clientFamiliesOf(r.clients).includes(f.id)));
+const usedRoutes = ROUTE_TYPES.filter((r) => OFFER_ROWS.some((o) => o.routeTypes.includes(r.id)));
+const posts = (await loadPosts()).filter((p) => p.id === 'traffic-multiplier-explained' || p.id === 'how-to-choose-airport-nodes-2026');
+const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
+  r.monthlyGB !== null ? `每月 ${r.monthlyGB}GB` : r.totalGBInPeriod !== null ? `总量 ${r.totalGBInPeriod}GB` : '未知';
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('机场套餐对比', description, path, [])]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>机场套餐对比：价格与流量，不含质量排名</h1>
+      <p class="page-head__lead">
+        把 {BRAND_COUNT} 家机场页面标价里的套餐摊开来比：月均价、周期内总流量、每 GB 参考成本。来源之间不一致的报价会标出来，不会悄悄取一个数。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>{OFFER_STATS.total} 条报价</span>
+        <span>可精确比较 {OFFER_STATS.exact}</span>
+        <span>品牌对应关系待核验 {OFFER_STATS.flagged}</span>
+        <span>不参与排序 {OFFER_STATS.excluded}</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight" data-plans>
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">这张表只比较价格与流量</span>
+        它不是速度、稳定性或服务质量的排名；便宜不代表好用。所有价格是来源页面的标价（未叠加优惠码），实付以服务商结算页为准。
+      </p>
+
+      <form class="plan-filters mt-5" role="search" aria-label="筛选套餐" data-plan-filters>
+        <label class="field">
+          <span>月均价上限（元）</span>
+          <input class="input" type="number" disabled name="budget" min="0" step="1" inputmode="decimal" placeholder="不限" />
+        </label>
+        <label class="field">
+          <span>每月流量下限（GB）</span>
+          <input class="input" type="number" disabled name="gb" min="0" step="10" inputmode="numeric" placeholder="不限" />
+        </label>
+        <label class="field">
+          <span>付款周期</span>
+          <select class="select" disabled name="period">
+            <option value="">全部周期</option>
+            {periods.map((p) => <option value={p}>{BILLING_LABEL[p]}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>节点地区</span>
+          <select class="select" disabled name="region">
+            <option value="">全部地区</option>
+            {MAP_POINTS.map((p) => <option value={p.countryCode}>{p.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>线路类型（资料所写）</span>
+          <select class="select" disabled name="route">
+            <option value="">全部线路</option>
+            {usedRoutes.map((r) => <option value={r.id}>{r.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>资料里提到的客户端</span>
+          <select class="select" disabled name="client">
+            <option value="">全部客户端</option>
+            {usedFamilies.map((f) => <option value={f.id}>{f.label}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>可靠度范围</span>
+          <select class="select" disabled name="level">
+            <option value="all">全部报价</option>
+            <option value="flagged">可精确比较 + 待核验品牌</option>
+            <option value="exact">只看可精确比较</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>排序</span>
+          <select class="select" disabled name="sort">
+            <option value="default">默认：品牌固定顺序</option>
+            <option value="monthly">月均价从低到高</option>
+            <option value="pergb">每 GB 成本从低到高</option>
+            <option value="gb">每月流量从高到低</option>
+          </select>
+        </label>
+        <div class="plan-filters__actions">
+          <button class="btn btn--ghost" type="reset" data-plan-reset disabled>恢复默认</button>
+        </div>
+        <noscript><p class="text-sm text-soft plan-filters__nojs">筛选与排序需要启用 JavaScript。下面的表格已经列出全部报价，按品牌固定顺序排列。</p></noscript>
+        <p class="text-sm text-soft plan-filters__count" role="status" aria-live="polite" data-plan-count></p>
+      </form>
+
+      <div class="table-scroll mt-4">
+        <table class="data-table data-table--stack" data-plan-table>
+          <caption>默认按品牌固定顺序，不是排名。“—”表示资料不足或存在冲突而不计算。</caption>
+          <thead>
+            <tr>
+              <th scope="col">机场</th>
+              <th scope="col">套餐</th>
+              <th scope="col">周期</th>
+              <th scope="col" class="col-num">标价</th>
+              <th scope="col">流量</th>
+              <th scope="col" class="col-num">月均价</th>
+              <th scope="col" class="col-num">每 GB 参考</th>
+              <th scope="col">可比较性</th>
+              <th scope="col">来源</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              OFFER_ROWS.map((r, i) => (
+                <tr
+                  data-i={i}
+                  hidden={i >= INITIAL_ROWS}
+                  data-comp={r.comparability}
+                  data-period={r.period}
+                  data-monthly={r.monthlyEquivalentCNY ?? ''}
+                  data-pergb={r.perGBCNY ?? ''}
+                  data-gb={r.monthlyGBApprox ?? ''}
+                  data-regions={r.regionCodes.join(' ')}
+                  data-routes={r.routeTypes.join(' ')}
+                  data-clients={clientFamiliesOf(r.clients).join(' ')}
+                >
+                  <th scope="row" class="col-nowrap" data-label="机场"><a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a></th>
+                  <td data-label="套餐">
+                    {r.planName}
+                    {userNote(r.note) && <span class="cell-sub">{userNote(r.note).length > 60 ? userNote(r.note).slice(0, 58) + '…' : userNote(r.note)}</span>}
+                  </td>
+                  <td class="col-nowrap" data-label="周期">{periodLabel(r.period)}</td>
+                  <td class="col-num num" data-label="标价">{r.priceCNY !== null ? fmtCNY(r.priceCNY) : '—'}</td>
+                  <td class="col-nowrap" data-label="流量">{trafficText(r)}</td>
+                  <td class="col-num num" data-label="月均价">{r.monthlyEquivalentCNY !== null ? fmtCNY(r.monthlyEquivalentCNY) : '—'}</td>
+                  <td class="col-num num" data-label="每 GB 参考" title={r.perGBFormula ?? undefined}>
+                    {r.perGBCNY !== null && r.comparability !== 'excluded' ? `¥${r.perGBCNY}` : '—'}
+                  </td>
+                  <td data-label="可比较性">
+                    {r.comparability === 'exact' && <span class="chip chip--electric">可精确比较</span>}
+                    {r.comparability === 'flagged' && <span class="chip chip--gray">品牌对应关系待核验</span>}
+                    {r.comparability === 'excluded' && (
+                      <>
+                        <span class:list={['chip', r.status === 'conflict' ? 'chip--sunset' : 'chip--gray']}>不参与排序</span>
+                        <span class="cell-sub">{r.reasons.join('；')}</span>
+                      </>
+                    )}
+                    {r.comparability !== 'exact' && r.status !== 'sourced' && r.comparability !== 'excluded' && (
+                      <span class="cell-sub">{OFFER_STATUS_LABEL[r.status]}</span>
+                    )}
+                  </td>
+                  <td class="text-sm col-nowrap" data-label="来源">
+                    <GradeBadge grade={r.grade} showName={false} />
+                    <span class="cell-sub">{fmtDate(r.dataDate)}</span>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="empty mt-4" data-plan-empty hidden>没有符合条件的报价。可以放宽预算、流量或地区条件。</p>
+      <noscript><p class="notice mt-4" data-severity="info">当前只显示前 {INITIAL_ROWS} 条报价；开启浏览器脚本后可以筛选、排序并显示全部 {OFFER_ROWS.length} 条。</p></noscript>
+      <p class="mt-4" data-plan-more-wrap hidden>
+        <button class="btn btn--ghost" type="button" data-plan-more>显示更多报价</button>
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--band" id="method">
+    <div class="container prose prose--wide">
+      <h2>价格、流量和每 GB 成本是怎么算的</h2>
+      <ul>{PLAN_METHOD_TEXT.map((t) => <li>{t}</li>)}</ul>
+      <h2>哪些报价不参与精确比较</h2>
+      <p>来源之间互相矛盾的报价、只出现在汇编资料里而没有页面存档的报价、需联系服务商确认的咨询报价、流量未知的报价、来自静态演示站的报价，都不参与精确排序，并在“可比较性”一栏写明原因。站长给定的名称与资料页面名称尚未确认是同一服务的品牌，只在你选择“包含品牌对应关系待核验”时参与。</p>
+      <p>灵动云 ¥99 的年付套餐，服务商面板截图写明“每月 70GB、购买日起每 30 天刷新”，本站按每月 70GB 计算，月均价为 ¥99 ÷ 12。</p>
+      <h2>流量倍率与“每 GB”的局限</h2>
+      <p>表里的流量是标价上写的额度。部分机场的不同节点按不同倍率扣流量（例如某些节点按 2 倍计），同样的额度实际能用的量会更少；资料里没有写明倍率的，本站不推测。更多说明见{posts.find((p) => p.id === 'traffic-multiplier-explained') ? <a href="/articles/traffic-multiplier-explained/">《机场套餐的流量倍率应该如何计算？》</a> : '相关文章'}。</p>
+      {posts.length > 0 && (
+        <>
+          <h2>相关阅读</h2>
+          <ul>{posts.map((p) => <li><a href={p.href}>{p.h1}</a></li>)}</ul>
+        </>
+      )}
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import '../scripts/plans';
+</script>

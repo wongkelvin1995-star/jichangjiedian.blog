@@ -1,0 +1,983 @@
+/* ============================================================ Deep Space Nexus：深空背景、玻璃卡片、导航与动效
+ * 加载顺序在所有基础样式之后，这里负责把原有组件统一到深空主题上。
+ * 原则：背景不用 fixed（手机滚动顺畅）；动效只用 transform / opacity；玻璃模糊只在宽屏开启；
+ *       文字一律落在深色底或玻璃卡片上，不靠透明度牺牲可读性。
+ */
+
+/* ------------------------------------------------------------ 页面底层：深空蓝 + 平铺星点 */
+html {
+  background: var(--bg);
+}
+body {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: var(--bg) url('/images/space/stars-tile.webp') repeat 0 0 / 640px 640px;
+}
+@media (max-width: 720px) {
+  body {
+    background-size: 480px 480px;
+  }
+}
+
+/* ------------------------------------------------------------ 背景层容器 */
+.cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.cosmos__nebula {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: min(1500px, 150vh);
+  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+}
+.cosmos__nebula img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  opacity: 0.95;
+  animation: cosmos-in 1.2s ease-out both;
+}
+@keyframes cosmos-in {
+  from {
+    opacity: 0;
+  }
+}
+/* 内页：星云更矮更淡；文章页更安静 */
+.cosmos[data-mode='page'] .cosmos__nebula {
+  height: min(900px, 95vh);
+}
+.cosmos[data-mode='page'] .cosmos__nebula img {
+  opacity: 0.72;
+}
+.cosmos[data-mode='quiet'] .cosmos__nebula {
+  height: min(640px, 70vh);
+}
+.cosmos[data-mode='quiet'] .cosmos__nebula img {
+  opacity: 0.42;
+}
+
+/* 页面中段的星云光团：让长页面往下也有空间层次（缓慢漂移）。
+   位置用固定的 rem，不用页面高度的百分比：页面在加载中变高时按百分比定位的大元素会被算成布局偏移（CLS）。 */
+.cosmos__glow {
+  position: absolute;
+  width: 70vw;
+  max-width: 1100px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.55;
+  animation: nebula-drift 48s ease-in-out infinite alternate;
+}
+.cosmos__glow--a {
+  top: 64rem;
+  left: -22vw;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--nebula-rgb), 0.3), rgba(var(--nebula-rgb), 0.08) 40%, transparent 68%);
+}
+.cosmos__glow--b {
+  top: 136rem;
+  right: -26vw;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--electric-rgb), 0.26), rgba(var(--electric-rgb), 0.07) 42%, transparent 68%);
+  animation-delay: -18s;
+  animation-direction: alternate-reverse;
+}
+.cosmos__glow--c {
+  top: 215rem;
+  left: 18vw;
+  width: 56vw;
+  background: radial-gradient(circle at 50% 50%, rgba(var(--cyan-rgb), 0.16), rgba(var(--nebula-rgb), 0.08) 45%, transparent 70%);
+  animation-delay: -30s;
+}
+.cosmos[data-mode='quiet'] .cosmos__glow {
+  opacity: 0.3;
+}
+@keyframes nebula-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vw, -4vw, 0) scale(1.08);
+  }
+}
+
+/* 行星、光环与空间站 */
+.cosmos__orbit {
+  position: absolute;
+  top: 58rem;
+  right: -7vw;
+  width: clamp(260px, 32vw, 560px);
+  aspect-ratio: 1;
+}
+.cosmos[data-mode='page'] .cosmos__orbit {
+  top: 34rem;
+  right: -9vw;
+  width: clamp(240px, 28vw, 480px);
+  opacity: 0.85;
+}
+.cosmos__planet,
+.cosmos__planet img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cosmos__planet {
+  position: absolute;
+  inset: 0;
+  animation: orbital-glow 9s ease-in-out infinite alternate;
+}
+.cosmos__planet::before {
+  /* 光环微光：行星外一圈随呼吸明暗的蓝紫光 */
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--cyan-rgb), 0.22), rgba(var(--nebula-rgb), 0.16) 45%, transparent 70%);
+  animation: orbital-glow 6s ease-in-out infinite alternate-reverse;
+}
+@keyframes orbital-glow {
+  from {
+    opacity: 0.78;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.cosmos__station {
+  position: absolute;
+  left: -34%;
+  top: 8%;
+  width: 36%;
+  height: auto;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 10px rgba(var(--cyan-rgb), 0.35));
+  animation: station-float 10s ease-in-out infinite alternate;
+}
+@keyframes station-float {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-6deg);
+  }
+  to {
+    transform: translate3d(0, -14px, 0) rotate(-3deg);
+  }
+}
+
+/* 星际光轨：细长的斜向光线，缓慢横移 */
+.cosmos__trail {
+  position: absolute;
+  height: 2px;
+  width: 44vw;
+  max-width: 620px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--cyan-rgb), 0.55) 45%, rgba(var(--electric-rgb), 0.7) 55%, transparent);
+  opacity: 0.55;
+  transform-origin: 0 50%;
+  animation: trail-glide 26s linear infinite;
+}
+.cosmos__trail--1 {
+  top: 11rem;
+  left: 38vw;
+  transform: rotate(-24deg);
+  --trail-rot: -24deg;
+}
+.cosmos__trail--2 {
+  top: 30rem;
+  left: 2vw;
+  transform: rotate(-18deg);
+  --trail-rot: -18deg;
+  animation-delay: -11s;
+  animation-duration: 34s;
+}
+.cosmos__trail--3 {
+  top: 120rem;
+  left: 10vw;
+  transform: rotate(-20deg);
+  --trail-rot: -20deg;
+  animation-delay: -5s;
+  animation-duration: 40s;
+}
+@keyframes trail-glide {
+  0% {
+    transform: translate3d(-10vw, 0, 0) rotate(var(--trail-rot, -20deg));
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.55;
+  }
+  88% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(32vw, -14vw, 0) rotate(var(--trail-rot, -20deg));
+    opacity: 0;
+  }
+}
+
+/* 闪烁星光粒子（opacity 动画，位置用自定义属性） */
+.cosmos__stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: min(1500px, 150vh);
+}
+.cosmos__stars i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px 2px rgba(var(--cyan-rgb), 0.55);
+  opacity: 0.7;
+  animation: twinkle var(--t, 4s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.cosmos__stars i:nth-child(1) { --x: 6%; --y: 14%; --t: 3.6s; --d: -1s; }
+.cosmos__stars i:nth-child(2) { --x: 17%; --y: 42%; --t: 5s; --d: -2.4s; }
+.cosmos__stars i:nth-child(3) { --x: 29%; --y: 9%; --t: 4.2s; --d: -0.6s; width: 2px; height: 2px; }
+.cosmos__stars i:nth-child(4) { --x: 41%; --y: 27%; --t: 6s; --d: -3s; }
+.cosmos__stars i:nth-child(5) { --x: 53%; --y: 6%; --t: 3.8s; --d: -1.8s; width: 4px; height: 4px; }
+.cosmos__stars i:nth-child(6) { --x: 62%; --y: 36%; --t: 4.6s; --d: -0.2s; }
+.cosmos__stars i:nth-child(7) { --x: 74%; --y: 12%; --t: 5.4s; --d: -2s; width: 2px; height: 2px; }
+.cosmos__stars i:nth-child(8) { --x: 88%; --y: 30%; --t: 4s; --d: -1.4s; }
+.cosmos__stars i:nth-child(9) { --x: 94%; --y: 8%; --t: 3.4s; --d: -0.8s; }
+.cosmos__stars i:nth-child(10) { --x: 10%; --y: 66%; --t: 5.8s; --d: -2.8s; width: 2px; height: 2px; }
+.cosmos__stars i:nth-child(11) { --x: 36%; --y: 58%; --t: 4.4s; --d: -1.2s; }
+.cosmos__stars i:nth-child(12) { --x: 58%; --y: 72%; --t: 6.2s; --d: -3.4s; }
+.cosmos__stars i:nth-child(13) { --x: 80%; --y: 55%; --t: 3.9s; --d: -0.4s; width: 4px; height: 4px; }
+.cosmos__stars i:nth-child(14) { --x: 24%; --y: 82%; --t: 5.1s; --d: -2.2s; }
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* 手机：减少层数与动效，背景按屏幕裁切，不产生横向滚动。
+   实测（无 GPU 的无头 Chromium、CPU 降速 4 倍）：平铺星点、遮罩渐隐、光团、卡片阴影和行星图叠在交互区域后面，
+   会把点击响应拖慢 60–100ms，所以手机上只保留星云、行星（放在首屏标题右上，不压在地图上）和少量星光。 */
+@media (max-width: 720px) {
+  body {
+    background-image: none;
+  }
+  .cosmos__nebula {
+    height: min(760px, 100vh);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .cosmos[data-mode='page'] .cosmos__nebula {
+    height: min(640px, 85vh);
+  }
+  .cosmos[data-mode='quiet'] .cosmos__nebula {
+    height: min(520px, 70vh);
+  }
+  .cosmos__nebula img,
+  .cosmos__planet,
+  .cosmos__planet::before {
+    animation: none;
+  }
+  .cosmos__glow,
+  .cosmos__trail,
+  .cosmos__station,
+  .cosmos__stars i:nth-child(n + 8) {
+    display: none;
+  }
+  .cosmos__orbit,
+  .cosmos[data-mode='page'] .cosmos__orbit {
+    top: 3.5rem;
+    right: -18vw;
+    width: 54vw;
+    opacity: 0.9;
+  }
+  .cosmos__stars {
+    height: min(760px, 100vh);
+  }
+}
+
+/* ------------------------------------------------------------ 玻璃卡片系统 */
+.panel,
+.bcard,
+.fplan,
+.guide-card,
+.region-tiles > li,
+.rail,
+.map-card,
+.region-side,
+.table-scroll,
+.facts,
+.fold,
+.trend,
+.shot figure,
+.search-results .search-group,
+.site-search__panel,
+.regionmap-fig,
+.rail__picks a,
+.notice,
+.empty,
+.evidence-missing,
+.prose .callout,
+.prose pre,
+.roster {
+  background: var(--glass);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--glass), var(--glass)) padding-box,
+    var(--glass-border) border-box;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 14px 36px -24px var(--shadow-pop),
+    0 0 0 1px rgba(var(--electric-rgb), 0.06);
+}
+.panel--star,
+.region-side {
+  background:
+    linear-gradient(rgba(23, 38, 90, 0.7), rgba(23, 38, 90, 0.7)) padding-box,
+    var(--glass-border) border-box;
+}
+.panel--quiet {
+  background: transparent;
+  border: 1px dashed var(--line);
+  box-shadow: none;
+}
+.notice {
+  border-left-width: 3px;
+}
+.notice[data-severity='info'] {
+  border-left-color: var(--electric);
+}
+.notice[data-severity='warn'] {
+  border-left-color: var(--sunset);
+}
+.notice[data-severity='high'] {
+  border-left-color: var(--err);
+}
+.fold--plain {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.panel,
+.guide-card,
+.map-card,
+.region-side,
+.table-scroll,
+.facts,
+.trend,
+.shot figure,
+.rail,
+.regionmap-fig,
+.search-results .search-group {
+  border-radius: var(--r-lg);
+}
+.bcard,
+.fplan,
+.region-tiles > li,
+.rail__picks a,
+.fold,
+.notice,
+.empty,
+.evidence-missing,
+.prose .callout,
+.prose pre,
+.site-search__panel {
+  border-radius: var(--r-md);
+}
+.roster {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border-left: 1px solid transparent;
+  border-top: 1px solid transparent;
+}
+.bcard {
+  border-top-width: 1px;
+  border-top-color: transparent;
+}
+.bcard:first-child {
+  border-top-color: transparent;
+}
+.rail__featured {
+  background: linear-gradient(135deg, rgba(var(--electric-rgb), 0.22), rgba(var(--nebula-rgb), 0.22));
+  border: 1px solid rgba(var(--electric-rgb), 0.4);
+  border-radius: var(--r-md);
+}
+.fplan--pick {
+  background:
+    linear-gradient(var(--glass-strong), var(--glass-strong)) padding-box,
+    linear-gradient(135deg, var(--electric), var(--nebula)) border-box;
+  border-width: 2px;
+}
+/* 宽屏开启玻璃模糊；手机不开（性能），改用更实的底色 */
+@media (min-width: 721px) {
+  .panel,
+  .bcard,
+  .guide-card,
+  .map-card,
+  .region-side,
+  .rail,
+  .flame-frame,
+  .table-scroll,
+  .facts,
+  .site-search__panel,
+  .site-header,
+  .shot figure {
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(135%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(135%);
+  }
+}
+@media (max-width: 720px) {
+  /* 手机上卡片用不透明底色：浏览器可以跳过卡片后面的背景绘制，点击响应更快；视觉上仍是深空蓝面板 */
+  :root {
+    --glass: #0c1838;
+    --glass-strong: #0a142f;
+    --star-deep: #15254f;
+    --ink-raised: #101d42;
+  }
+  /* 手机上卡片用实色细边框、不带阴影和扫光（省绘制开销） */
+  .panel,
+  .bcard,
+  .fplan,
+  .guide-card,
+  .region-tiles > li,
+  .rail,
+  .map-card,
+  .region-side,
+  .table-scroll,
+  .facts,
+  .fold,
+  .trend,
+  .shot figure,
+  .search-results .search-group,
+  .site-search__panel,
+  .regionmap-fig,
+  .rail__picks a,
+  .notice,
+  .empty,
+  .evidence-missing,
+  .prose .callout,
+  .prose pre,
+  .roster {
+    background: var(--glass);
+    border-color: rgba(var(--tint-rgb), 0.38);
+    box-shadow: none;
+  }
+  .panel--star,
+  .region-side {
+    background: #13204d;
+  }
+  .fplan--pick {
+    background: var(--glass-strong);
+    border-color: var(--electric);
+  }
+  .bcard::after,
+  .guide-card::after,
+  .region-tiles > li::after,
+  .fplan::after {
+    display: none;
+  }
+  .brand__mark {
+    filter: none;
+  }
+  .hero__text::before {
+    display: none;
+  }
+}
+
+/* 全息悬停：可点的卡片轻微上浮、边缘发光、表面扫过一道微光 */
+.bcard,
+.guide-card,
+.region-tiles > li,
+.fplan,
+.rail__picks a,
+.shot figure,
+.panel--link {
+  position: relative;
+  transition: transform 260ms var(--ease), box-shadow 260ms var(--ease);
+}
+.bcard::after,
+.guide-card::after,
+.region-tiles > li::after,
+.fplan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(118deg, transparent 32%, rgba(255, 255, 255, 0.07) 48%, rgba(var(--cyan-rgb), 0.1) 52%, transparent 68%);
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+}
+@media (hover: hover) {
+  .bcard:hover,
+  .guide-card:hover,
+  .region-tiles > li:hover,
+  .fplan:hover,
+  .rail__picks a:hover,
+  .shot figure:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 22px 44px -24px var(--shadow-pop),
+      0 0 0 1px rgba(var(--electric-rgb), 0.35),
+      0 0 28px -6px var(--glow-blue);
+  }
+  .bcard:hover::after,
+  .guide-card:hover::after,
+  .region-tiles > li:hover::after,
+  .fplan:hover::after {
+    opacity: 1;
+  }
+}
+/* 火焰卡片（主推）仍由 flame.css 的橙红边框负责，这里只保证层叠正确 */
+.bcard--hot::after {
+  background: none;
+}
+
+/* ------------------------------------------------------------ 页头：深空玻璃导航 */
+.site-header {
+  position: relative;
+  z-index: 20;
+  background: rgba(7, 11, 27, 0.72);
+  border-bottom: 1px solid rgba(var(--electric-rgb), 0.22);
+  box-shadow: 0 10px 30px -22px var(--shadow-pop);
+}
+.site-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--cyan-rgb), 0.7) 30%, rgba(var(--nebula-rgb), 0.7) 70%, transparent);
+  opacity: 0.8;
+}
+.brand__mark {
+  filter: drop-shadow(0 0 8px rgba(var(--cyan-rgb), 0.45));
+}
+.brand__name {
+  color: var(--silver);
+}
+.site-nav__link {
+  position: relative;
+  border-bottom: 0;
+  border-radius: var(--r-md);
+  padding: 0.55rem 0.8rem;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), text-shadow var(--dur) var(--ease);
+}
+.site-nav__link:hover {
+  color: var(--cyan);
+  background: rgba(var(--electric-rgb), 0.1);
+  text-shadow: 0 0 14px rgba(var(--cyan-rgb), 0.55);
+}
+.site-nav__link[aria-current='page'] {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(var(--electric-rgb), 0.34), rgba(var(--nebula-rgb), 0.38));
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--electric-rgb), 0.45),
+    0 0 18px -4px rgba(var(--nebula-rgb), 0.6);
+}
+@media (min-width: 1240px) {
+  .site-header__inner {
+    padding-block: 0.6rem;
+  }
+  .site-nav__link {
+    padding: 0.55rem 0.8rem;
+  }
+}
+@media (max-width: 1239px) {
+  .site-nav__list {
+    padding-block: 0.25rem 0.6rem;
+  }
+}
+/* 搜索框：科技风输入框，聚焦时青色光晕 */
+.site-search__input {
+  background-image:
+    url('/ui/search.svg'),
+    linear-gradient(rgba(8, 16, 40, 0.8), rgba(8, 16, 40, 0.8)),
+    linear-gradient(135deg, rgba(var(--electric-rgb), 0.55), rgba(var(--nebula-rgb), 0.45));
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: 0.7rem center, 0 0, 0 0;
+  background-size: auto, auto, auto;
+  background-origin: padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text);
+  transition: box-shadow var(--dur) var(--ease), width var(--dur) var(--ease);
+}
+.site-search__input:focus {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px rgba(var(--cyan-rgb), 0.35),
+    0 0 22px -4px rgba(var(--cyan-rgb), 0.6);
+}
+.site-social__link {
+  background: rgba(8, 16, 40, 0.7);
+  border-color: rgba(var(--electric-rgb), 0.4);
+  color: var(--cyan);
+  border-radius: 999px;
+  transition: box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.site-social__link:hover {
+  background: rgba(var(--electric-rgb), 0.18);
+  border-color: var(--cyan);
+  box-shadow: 0 0 18px -4px rgba(var(--cyan-rgb), 0.7);
+}
+
+/* ------------------------------------------------------------ 页脚 */
+.site-footer {
+  position: relative;
+  background: linear-gradient(180deg, rgba(7, 11, 27, 0.2), rgba(7, 11, 27, 0.85) 30%, #050815);
+  border-top: 1px solid rgba(var(--electric-rgb), 0.22);
+}
+.site-footer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--nebula-rgb), 0.7) 35%, rgba(var(--cyan-rgb), 0.7) 65%, transparent);
+}
+.site-footer h2 {
+  color: var(--silver);
+}
+
+/* ------------------------------------------------------------ 首屏与页头区：背景交给 cosmos，标题区保持深色 */
+.hero,
+.page-head,
+.featured,
+.section--band,
+.section--guide {
+  background: transparent;
+}
+.hero {
+  position: relative;
+  padding-block: var(--s7) var(--s6);
+}
+.hero__text::before {
+  /* 标题后面压一层更暗的深空蓝，字永远清晰；椭圆渐变在盒子内部就完全淡出，不会露出直边 */
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -10rem;
+  right: 18%;
+  top: -4rem;
+  bottom: -3rem;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(7, 11, 27, 0.82), rgba(7, 11, 27, 0.45) 50%, rgba(7, 11, 27, 0) 100%);
+  pointer-events: none;
+}
+.hero__text,
+.page-head .container,
+.page-head {
+  position: relative;
+}
+.hero h1,
+.page-head h1 {
+  color: var(--silver);
+  text-shadow: 0 2px 24px rgba(5, 8, 24, 0.9);
+}
+.hero__slogan {
+  color: #dfe8ff;
+}
+.page-head {
+  border-bottom: 1px solid rgba(var(--electric-rgb), 0.16);
+}
+.featured {
+  border-block: 0;
+}
+.section--band,
+.section--guide {
+  position: relative;
+  border-block: 1px solid rgba(var(--electric-rgb), 0.14);
+  background: linear-gradient(180deg, rgba(11, 23, 53, 0.28), rgba(11, 23, 53, 0.46));
+}
+
+/* ------------------------------------------------------------ 按钮：蓝紫渐变 + 悬停光效 */
+.btn--primary {
+  background: var(--grad-brand);
+  color: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 10px 24px -12px rgba(var(--nebula-rgb), 0.9);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), filter var(--dur) var(--ease);
+}
+.btn--primary:hover {
+  background: var(--grad-brand);
+  color: #fff;
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 14px 30px -12px rgba(var(--nebula-rgb), 1),
+    0 0 24px -6px rgba(var(--electric-rgb), 0.8);
+}
+.btn--primary .btn__tag {
+  background: rgba(2, 6, 20, 0.35);
+  color: #fff;
+}
+.btn--ghost {
+  border-color: rgba(var(--electric-rgb), 0.5);
+  color: #d6e6ff;
+  background: rgba(8, 16, 40, 0.35);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn--ghost:hover {
+  border-color: var(--cyan);
+  color: #fff;
+  background: rgba(var(--electric-rgb), 0.16);
+  box-shadow: 0 0 20px -6px rgba(var(--cyan-rgb), 0.8);
+}
+.btn:focus-visible,
+.site-search__input:focus-visible {
+  outline-color: var(--cyan);
+}
+.btn--ghost .btn__tag {
+  background: rgba(var(--electric-rgb), 0.2);
+  color: #d6e6ff;
+}
+
+/* ------------------------------------------------------------ 标签、表单、表格等组件配色 */
+.featured-flag,
+.rail__badge {
+  background: linear-gradient(135deg, #ffb357, #ff7a3d);
+  color: var(--on-sunset);
+  box-shadow: 0 0 16px -4px rgba(var(--sunset-rgb), 0.7);
+}
+.fplan__tag {
+  background: var(--grad-brand);
+  color: #fff;
+}
+.chip--star,
+.grade[data-grade='C'] .grade__letter {
+  background: linear-gradient(135deg, rgba(var(--electric-rgb), 0.5), rgba(var(--nebula-rgb), 0.55));
+  border-color: transparent;
+  color: #f0f4ff;
+}
+.grade[data-grade='A'] .grade__letter {
+  background: var(--grad-brand);
+  color: #fff;
+}
+.select,
+.input {
+  background-color: rgba(8, 16, 40, 0.75);
+  border-color: rgba(var(--electric-rgb), 0.35);
+  color: var(--text);
+}
+.select {
+  background-image: url('/ui/chevron.svg');
+}
+.map-filters .select {
+  background-color: rgba(8, 16, 40, 0.75);
+}
+.select:focus,
+.input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(var(--cyan-rgb), 0.3);
+}
+.select option {
+  background: #0b1735;
+  color: var(--text);
+}
+.data-table thead th,
+.prose th {
+  background: rgba(var(--electric-rgb), 0.14);
+  color: #dbe6ff;
+}
+.data-table tbody tr:hover td,
+.data-table tbody tr:hover th[scope='row'] {
+  background: rgba(var(--electric-rgb), 0.1);
+}
+.facts dt {
+  background: rgba(var(--electric-rgb), 0.1);
+}
+.map-filters {
+  background: rgba(8, 16, 40, 0.5);
+}
+.map-stage {
+  background: var(--ocean);
+}
+.map-card__bar,
+.seg,
+.map-card__foot {
+  border-color: var(--line-soft);
+}
+.seg__item {
+  border-color: rgba(var(--electric-rgb), 0.3);
+  color: #cfdcf7;
+}
+.seg__item:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(var(--electric-rgb), 0.1);
+}
+.guide-card__icon {
+  background: linear-gradient(135deg, rgba(var(--electric-rgb), 0.28), rgba(var(--nebula-rgb), 0.3));
+  color: var(--cyan);
+  box-shadow: 0 0 14px -4px rgba(var(--cyan-rgb), 0.5);
+}
+.guide-card__note {
+  background: rgba(var(--electric-rgb), 0.1);
+  border-left-color: var(--cyan);
+}
+.stat__num,
+.featured__points strong,
+.cover-line .is-doc b {
+  color: #8ec1ff;
+}
+.region-tiles a strong {
+  color: #8ec1ff;
+}
+.shot__img {
+  background: rgba(4, 8, 22, 0.6);
+}
+.figure img,
+.prose img {
+  background: rgba(4, 8, 22, 0.6);
+  border-color: var(--line);
+}
+.trend__dot {
+  stroke: var(--deep);
+}
+.tb-track {
+  fill: rgba(8, 16, 40, 0.75);
+}
+.map-grat {
+  stroke: var(--cyan);
+  stroke-opacity: 0.12;
+}
+.map-land {
+  stroke: var(--cyan);
+  stroke-opacity: 0.55;
+}
+.dot__core {
+  stroke: var(--ocean);
+}
+.dot[data-level='unverified'] .dot__core {
+  fill: var(--ocean);
+}
+.legend__swatch--entrance,
+.entrance__mark {
+  background: var(--silver);
+  fill: var(--silver);
+}
+.dot__label {
+  fill: #f4f7ff;
+}
+code,
+kbd {
+  background: rgba(var(--electric-rgb), 0.16);
+  color: #dbe6ff;
+}
+.prose blockquote {
+  background: rgba(var(--electric-rgb), 0.08);
+  border-left-color: var(--electric);
+}
+.prose .limits {
+  background: rgba(var(--sunset-rgb), 0.1);
+}
+.guide-card,
+.region-tiles p {
+  color: var(--text-soft);
+}
+.rail__list a:hover,
+.rail__list a[aria-current='page'] {
+  background: rgba(var(--electric-rgb), 0.14);
+  color: var(--cyan);
+}
+.search-hit:hover,
+.search-hit[aria-selected='true'] {
+  background: rgba(var(--electric-rgb), 0.16);
+}
+.toc a,
+.crumbs a,
+.site-footer a {
+  color: var(--text-soft);
+}
+.toc a:hover,
+.crumbs a:hover,
+.site-footer a:hover {
+  color: var(--cyan);
+}
+.crumbs li + li::before {
+  color: var(--text-mute);
+}
+.bcard__name a:hover,
+.post-list h3 a:hover,
+.region-card h3 a:hover,
+.roster a:hover,
+.rb__main a:hover,
+.post-list__title a:hover {
+  color: var(--cyan);
+}
+.steps > li::before {
+  border-color: rgba(var(--electric-rgb), 0.6);
+  color: #8ec1ff;
+  background: rgba(var(--electric-rgb), 0.1);
+}
+.skip-link {
+  background: var(--grad-brand);
+  color: #fff;
+}
+
+/* 蓝底面板（地区资料、星蓝面板、侧栏主推）上的链接与蓝色标签用更亮的蓝，保证对比度 ≥ 4.5:1 */
+.region-side a,
+.panel--star a,
+.region-side .chip--electric,
+.panel--star .chip--electric,
+.cover-line .is-doc b {
+  color: #7db8ff;
+}
+.region-side a:hover,
+.panel--star a:hover {
+  color: var(--cyan);
+}
+
+/* ------------------------------------------------------------ 平滑出现：沿用 .reveal，深空主题下位移稍大一点 */
+.reveal.is-pending {
+  transform: translateY(14px);
+}
+
+/* ------------------------------------------------------------ 火焰边框优先于玻璃卡片样式（这两个类会叠在同一个元素上） */
+.panel.flame-frame,
+.panel--star.flame-frame,
+.rail__featured.flame-frame {
+  border: 3px solid transparent;
+  background:
+    linear-gradient(180deg, rgba(78, 36, 16, 0.55) 0%, rgba(11, 23, 53, 0.78) 40%, rgba(11, 23, 53, 0.84) 100%) padding-box,
+    var(--fire-border) border-box;
+  box-shadow: none;
+}
+@media (max-width: 720px) {
+  .panel.flame-frame,
+  .panel--star.flame-frame,
+  .rail__featured.flame-frame {
+    background:
+      linear-gradient(180deg, #3a1f12 0%, #0c1838 40%) padding-box,
+      var(--fire-border) border-box;
+  }
+}
+
+/* ------------------------------------------------------------ 布局隔离：区块内部的排版互不牵连
+ * 地图切换地区时右侧面板会变高，页面随之重排；给各区块和卡片加布局隔离后，浏览器只需移动它们，
+ * 不必重新排版每张卡片的内部。（试过给首屏以外的区块加 content-visibility: auto，axe 会把占位高度下的链接判成被遮挡，故不用。） */
+.section,
+.featured,
+.bcard,
+.guide-card,
+.panel,
+.map-stage,
+.region-side {
+  contain: layout;
+}

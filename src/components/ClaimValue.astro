@@ -1,0 +1,58 @@
+---
+/** 渲染一个带来源等级的字段声明：取值、等级、来源页面日期、备注、来源编号。 */
+import GradeBadge from './GradeBadge.astro';
+import { fmtDate } from '../lib/format';
+import { getSource } from '../data/source-registry';
+import type { Claim } from '../data/types';
+
+interface Props {
+  claim: Claim<string | string[] | number>;
+  unit?: string;
+  /** 数组取值是否显示成标签；false 时用顿号连接 */
+  chips?: boolean;
+  empty?: string;
+  /** 只显示取值，不显示等级、日期、来源与备注 */
+  plain?: boolean;
+}
+const { claim, unit = '', chips = true, plain = false, empty = plain ? '以官网说明为准' : '资料未提供' } = Astro.props;
+const v = claim.value;
+const sources = claim.sourceIds.map((id) => ({ id, rec: getSource(id) }));
+---
+
+<div class="claim">
+  <div class="claim__value">
+    {
+      v === null || (Array.isArray(v) && v.length === 0) ? (
+        <span class="text-mute">{empty}</span>
+      ) : Array.isArray(v) ? (
+        chips ? (
+          <span class="chip-row">{v.map((x) => <span class="chip">{x}</span>)}</span>
+        ) : (
+          <span>{v.join('、')}</span>
+        )
+      ) : (
+        <span>
+          {typeof v === 'number' ? <b class="num">{v}</b> : v}
+          {typeof v === 'number' && unit}
+        </span>
+      )
+    }
+    {!plain && <GradeBadge grade={claim.grade} showName={false} />}
+    {!plain && claim.conflict && <span class="chip chip--sunset">资料冲突</span>}
+  </div>
+  {!plain && claim.recordedAt && <p class="claim__meta">来源页面日期：{fmtDate(claim.recordedAt)}</p>}
+  {!plain && claim.note && <p class="claim__note">{claim.note}</p>}
+  {
+    !plain && sources.length > 0 && (
+      <p class="claim__meta">
+        来源：
+        {sources.map((s, i) => (
+          <>
+            {i > 0 && '、'}
+            <a href={`/sources/#${s.id}`} title={s.rec?.title ?? s.id}>{s.id}</a>
+          </>
+        ))}
+      </p>
+    )
+  }
+</div>

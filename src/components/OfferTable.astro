@@ -1,0 +1,101 @@
+---
+/** 一个品牌的全部报价：价格、流量、月均价、每 GB 参考成本、状态与来源。 */
+import GradeBadge from './GradeBadge.astro';
+import { OFFER_ROWS, PLAN_METHOD_TEXT } from '../data/plan-calc';
+import { OFFER_STATUS_LABEL } from '../data/labels';
+import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
+import { userNote } from '../lib/user-note';
+
+interface Props {
+  brandSlug: string;
+  showMethod?: boolean;
+  /** 导购模式：主表只放当前价格，其他价格版本折叠；不显示状态与来源列 */
+  simple?: boolean;
+}
+const { brandSlug, showMethod = true, simple = false } = Astro.props;
+const allRows = OFFER_ROWS.filter((r) => r.brandSlug === brandSlug);
+const isCurrent = (r: (typeof allRows)[number]) => r.status === 'sourced' || r.status === 'consult';
+const rows = simple && allRows.some(isCurrent) ? allRows.filter(isCurrent) : allRows;
+const others = simple ? allRows.filter((r) => !rows.includes(r)) : [];
+const traffic = (r: (typeof allRows)[number]) =>
+  r.monthlyGB !== null ? `每月 ${r.monthlyGB}GB` : r.totalGBInPeriod !== null ? `总量 ${r.totalGBInPeriod}GB` : '未知';
+---
+
+{
+  rows.length === 0 ? (
+    <p class="empty">本站没有该品牌的套餐价格资料。</p>
+  ) : (
+    <>
+      <div class="table-scroll">
+        <table class="data-table">
+          <caption>{simple ? '价格为官网标价（未叠加优惠码），下单前以官网当天价格为准。' : '价格为来源页面标价（未叠加优惠码）。“—”表示因资料不足或冲突而不计算，原因写在对应行。'}</caption>
+          <thead>
+            <tr>
+              <th scope="col">套餐</th>
+              <th scope="col">付款周期</th>
+              <th scope="col" class="col-num">标价</th>
+              <th scope="col">流量</th>
+              <th scope="col" class="col-num">月均价</th>
+              <th scope="col" class="col-num">每 GB 参考</th>
+              {!simple && <th scope="col">状态与来源</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr id={r.offerId}>
+                <th scope="row">
+                  {r.planName}
+                  {!simple && r.reasons.length > 0 && r.comparability !== 'exact' && (
+                    <span class="cell-sub">{r.reasons.join('；')}</span>
+                  )}
+                  {simple ? (userNote(r.note) && <span class="cell-sub">{userNote(r.note)}</span>) : r.note && (
+                    <details class="row-note">
+                      <summary>说明</summary>
+                      <p class="text-xs">{r.note}</p>
+                    </details>
+                  )}
+                </th>
+                <td class="col-nowrap">{periodLabel(r.period)}</td>
+                <td class="col-num num">{r.priceCNY !== null ? fmtCNY(r.priceCNY) : '—'}</td>
+                <td class="col-nowrap">
+                  {traffic(r)}
+                  {r.resetRule && <span class="cell-sub">{simple ? r.resetRule.replace(/^(页面|服务商面板|汇编资料库)：/, '') : r.resetRule}</span>}
+                </td>
+                <td class="col-num num">{r.monthlyEquivalentCNY !== null ? fmtCNY(r.monthlyEquivalentCNY) : '—'}</td>
+                <td class="col-num num" title={r.perGBFormula ?? undefined}>
+                  {r.perGBCNY !== null && r.comparability !== 'excluded' ? `¥${r.perGBCNY}` : '—'}
+                  {!simple && r.comparability === 'flagged' && <span class="cell-sub">对应关系待核验</span>}
+                </td>
+                {!simple && <td>
+                  <span class:list={['chip', { 'chip--sunset': r.status === 'conflict', 'chip--gray': r.status !== 'sourced' && r.status !== 'conflict' }]}>
+                    {OFFER_STATUS_LABEL[r.status]}
+                  </span>
+                  <span class="cell-sub"><GradeBadge grade={r.grade} showName={false} /> {fmtDate(r.dataDate)}</span>
+                </td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {others.length > 0 && (
+        <details class="fold mt-4">
+          <summary>其他渠道看到的价格版本（{others.length}）</summary>
+          <div class="fold__body">
+            <ul class="bullets">
+              {others.map((r) => <li>{r.planName}：{periodLabel(r.period)} {r.priceCNY !== null ? fmtCNY(r.priceCNY) : '—'}，{traffic(r)}{userNote(r.note) ? `。${userNote(r.note)}` : ''}</li>)}
+            </ul>
+            <p class="text-xs mt-2">这些价格来自较早的页面或其他渠道，可能已经调整，以上面的表格和官网为准。</p>
+          </div>
+        </details>
+      )}
+      {showMethod && (
+        <details class="fold mt-4">
+          <summary>价格与每 GB 成本是怎么算的</summary>
+          <div class="fold__body">
+            <ul class="bullets">{PLAN_METHOD_TEXT.map((t) => <li>{t}</li>)}</ul>
+          </div>
+        </details>
+      )}
+    </>
+  )
+}

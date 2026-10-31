@@ -1,0 +1,226 @@
+---
+/**
+ * 套餐详解：把来源页面对每个套餐写的内容（src/data/plan-details.ts）和本站按标价算出的数字放在一起。
+ * 价格、流量、付款周期全部从套餐数据（OFFER_ROWS）读取，这里不手写任何价格；日均流量、每 GB 折算价、
+ * 档位之间的倍数都是现算的。官网写明的权益是服务商宣传，页面上明确写“官网写明”，不当作本站实测。
+ * 带推广链接的 CTA 沿用站内规则：灵动云的每个注册入口都有火焰。
+ */
+import AffiliateLink from './AffiliateLink.astro';
+import Coupon from './Coupon.astro';
+import Flames from './Flames.astro';
+import { mustGetBrand } from '../data/brands';
+import { OFFER_ROWS } from '../data/plan-calc';
+import type { OfferRow } from '../data/plan-calc';
+import { planDetailsFor } from '../data/plan-details';
+import { getSource } from '../data/source-registry';
+import { LDY_PEAK_PAGE_PATH, LDY_PEAK_PAGE_TITLE } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
+
+interface Props {
+  brandSlug: string;
+}
+const { brandSlug } = Astro.props;
+const brand = mustGetBrand(brandSlug);
+const set = planDetailsFor(brandSlug);
+if (!set) throw new Error(`PlanDetails: ${brandSlug} 没有套餐详情数据`);
+const source = getSource(set.sourceId);
+
+const S = brand.shortName;
+const MONTHS: Record<string, number> = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
+/** 每 GB 折算价：至少两位小数，有第三位有效数字时保留三位（¥0.20、¥0.167、¥1.33） */
+const perGBText = (n: number) => `¥${n.toFixed(3).endsWith('0') ? n.toFixed(2) : n.toFixed(3)}`;
+const round1 = (n: number) => Math.round(n * 10) / 10;
+const gbText = (n: number) => `${Number.isInteger(n) ? n : round1(n)}GB`;
+/** “灵动·拂风” → “拂风”；“灵动·闲云（小流量包）” → “闲云” */
+const shortPlan = (name: string) => name.replace(/^灵动云?·/, '').replace(/（.*?）/g, '');
+
+interface Card {
+  planId: string;
+  key: string;
+  name: string;
+  category: string;
+  badge: string;
+  tagline: string;
+  gist: string;
+  pageNotes: string[];
+  rows: OfferRow[];
+  base: OfferRow;
+}
+const cards: Card[] = [];
+for (const plan of brand.plans) {
+  const d = set.plans.find((x) => x.planId === plan.planId);
+  if (!d) continue;
+  const rows = OFFER_ROWS.filter((r) => r.planId === plan.planId).sort((a, z) => (MONTHS[a.period] ?? 99) - (MONTHS[z.period] ?? 99));
+  if (rows.length === 0) continue;
+  cards.push({ planId: plan.planId, key: plan.planId.replace(`${brand.slug}-`, ''), name: plan.name, category: plan.category, badge: d.badge, tagline: d.tagline, gist: d.gist, pageNotes: d.pageNotes, rows, base: rows[0]! });
+}
+// 套餐详情里列出的 planId 必须都能在套餐数据里找到，否则就是写错了
+for (const d of set.plans) if (!cards.some((c) => c.planId === d.planId)) throw new Error(`PlanDetails: 找不到套餐 ${d.planId}`);
+
+const inCat = (c: string) => cards.filter((x) => x.category === c);
+const monthly = inCat('monthly-tier');
+const annual = inCat('annual-small');
+const packs = inCat('one-time-pack');
+const custom = inCat('custom');
+const perGB = (r: OfferRow) => r.perGBCNY ?? 0;
+
+// 每个分组的导语：全部由数据算出
+const monthlyLow = monthly[0];
+const monthlyHigh = monthly[monthly.length - 1];
+const monthlyIntro = (() => {
+  if (!monthlyLow || !monthlyHigh) return '';
+  const ratio = (c: Card, p: string) => {
+    const r = c.rows.find((x) => x.period === p);
+    return r && r.priceCNY !== null && c.base.priceCNY ? r.priceCNY / (c.base.priceCNY * (MONTHS[p] ?? 1)) : null;
+  };
+  const uniform = (p: string) => {
+    const xs = monthly.map((c) => ratio(c, p));
+    return xs.every((x) => x !== null && Math.abs(x - xs[0]!) < 0.001) ? xs[0]! : null;
+  };
+  const zhe = (x: number) => `${Math.round(x * 1000) / 100}`.replace(/\.0$/, '');
+  const q = uniform('quarterly');
+  const h = uniform('semiannual');
+  const y = uniform('annual');
+  const cycles = monthly.every((c) => c.rows.length === 4) ? `四档都有月付、季付、半年付、年付 4 种付款周期（官网写“4 个周期可选”）${q && h && y ? `，按标价算相当于季付 ${zhe(q)} 折、半年付 ${zhe(h)} 折、年付 ${zhe(y)} 折` : ''}。` : '';
+  return `月付档共 ${monthly.length} 个：月流量从 ${gbText(monthlyLow.base.monthlyGB ?? 0)} 到 ${gbText(monthlyHigh.base.monthlyGB ?? 0)}，月付价从 ${fmtCNY(monthlyLow.base.priceCNY)} 到 ${fmtCNY(monthlyHigh.base.priceCNY)}，每 GB 折算价从 ${perGBText(perGB(monthlyLow.base))} 降到 ${perGBText(perGB(monthlyHigh.base))}：档位越高单价越低，前提是每月用得完。${cycles}官网给这四档写的线路、协议、设备数是同一套说法，页面上能看出的档位差别只有月流量和价格。`;
+})();
+
+const annualIntro = (() => {
+  const a = annual[0];
+  if (!a || a.base.monthlyGB === null || a.base.priceCNY === null) return '';
+  const yr = a.base.priceCNY;
+  const gb = a.base.monthlyGB;
+  const entry = monthly[0];
+  const entryYear = entry?.rows.find((r) => r.period === 'annual');
+  const cmp = entry && entryYear && entryYear.priceCNY !== null && entry.base.monthlyGB !== null
+    ? `对比${shortPlan(entry.name)}年付 ${fmtCNY(entryYear.priceCNY)}（每月 ${gbText(entry.base.monthlyGB)}）：每月少 ${gbText(entry.base.monthlyGB - gb)}，全年便宜 ${fmtCNY(entryYear.priceCNY - yr)}。`
+    : '';
+  return `${shortPlan(a.name)}每年 ${fmtCNY(yr)}，每月 ${gbText(gb)}，折合 ${fmtCNY(a.base.monthlyEquivalentCNY)}/月、日均约 ${gbText(round1(gb / 30))}。官网写“每 30 天自动刷新流量”，全年按 12 次刷新共 ${gbText(gb * 12)}，约 ${perGBText(perGB(a.base))}/GB，前提是每个月都用满。${cmp}`;
+})();
+
+const packsIntro = (() => {
+  if (packs.length === 0) return '';
+  const list = packs.map((c) => `${fmtCNY(c.base.priceCNY)} / ${gbText(c.base.totalGBInPeriod ?? 0)}`).join('、');
+  const per = packs.map((c) => perGBText(perGB(c.base))).join('、');
+  const mLow = monthly.length ? Math.min(...monthly.map((c) => perGB(c.base))) : 0;
+  const mHigh = monthly.length ? Math.max(...monthly.map((c) => perGB(c.base))) : 0;
+  const pMin = Math.min(...packs.map((c) => perGB(c.base)));
+  const pMax = Math.max(...packs.map((c) => perGB(c.base)));
+  const times = mLow > 0 && mHigh > 0 ? `每 GB 单价约是月付档的 ${Math.round(pMin / mHigh)} 到 ${Math.round(pMax / mLow)} 倍：买的是“不按月过期”的灵活性，不是低单价。` : '';
+  const entry = monthly[0];
+  const entryYear = entry?.rows.find((r) => r.period === 'annual');
+  const smallest = packs[0];
+  const cmp = entry && entryYear && smallest && entryYear.priceCNY !== null && entry.base.monthlyGB !== null
+    ? `对比：${shortPlan(entry.name)}年付 ${fmtCNY(entryYear.priceCNY)}，每月 ${gbText(entry.base.monthlyGB)}、全年 ${gbText(entryYear.totalGBInPeriod ?? 0)}；${shortPlan(smallest.name)} ${fmtCNY(smallest.base.priceCNY)} 一次只有 ${gbText(smallest.base.totalGBInPeriod ?? 0)}。`
+    : '';
+  return `一次性流量包共 ${packs.length} 档：${list}，每 GB 约 ${per}。不按月清零，官网写“流量永久有效，用完为止”。${times}${cmp}`;
+})();
+
+const customIntro = (() => {
+  const c = custom[0];
+  if (!c || c.base.priceCNY === null || c.base.monthlyGB === null) return '';
+  const entry = monthly[0];
+  const times = entry && entry.base.priceCNY ? `，是${shortPlan(entry.name)}月付的 ${Math.round(c.base.priceCNY / entry.base.priceCNY)} 倍` : '';
+  const big = monthlyHigh && monthlyHigh.base.monthlyGB !== null && monthlyHigh.base.priceCNY !== null
+    ? `；对比${shortPlan(monthlyHigh.name)} ${fmtCNY(monthlyHigh.base.priceCNY)}/月 ${gbText(monthlyHigh.base.monthlyGB)}，多出来的钱买的是“独享”，不是流量`
+    : '';
+  return `${shortPlan(c.name)} ${fmtCNY(c.base.priceCNY)}/月、${gbText(c.base.monthlyGB)}，每 GB ${perGBText(perGB(c.base))}${times}${big}。官网写独立带宽、专属公网 IP、不与其他用户共享，地区按需配置，确认需求后约 2–3 个工作日交付。本站没有测试过这个套餐，带宽数值和 IP 类型页面都没写。`;
+})();
+
+const groups = [
+  { id: 'monthly', title: `月付档：${monthly.map((c) => shortPlan(c.name)).join('、')}`, intro: monthlyIntro, items: monthly },
+  { id: 'annual', title: `年付小包：${annual.map((c) => shortPlan(c.name)).join('、')}`, intro: annualIntro, items: annual },
+  { id: 'packs', title: `一次性流量包：${packs.map((c) => shortPlan(c.name)).join('、')}`, intro: packsIntro, items: packs },
+  { id: 'custom', title: `私人定制：${custom.map((c) => shortPlan(c.name)).join('、')}`, intro: customIntro, items: custom },
+].filter((g) => g.items.length > 0 && g.intro);
+
+const cardFacts = (c: Card) => {
+  const r = c.base;
+  const m = r.monthlyGB;
+  const yearRow = c.rows.find((x) => x.period === 'annual');
+  const annualPer = yearRow && yearRow !== r && yearRow.perGBCNY !== null ? perGBText(yearRow.perGBCNY) : null;
+  return {
+    flow: m !== null ? `每月 ${gbText(m)}` : `总量 ${gbText(r.totalGBInPeriod ?? 0)}，不按月清零`,
+    daily: m !== null ? `约 ${gbText(round1(m / 30))}` : null,
+    per: r.perGBCNY !== null ? perGBText(r.perGBCNY) : '—',
+    annualPer,
+  };
+};
+const peakClaims = set.performanceClaims
+  .map((p) => ({ name: shortPlan(cards.find((c) => c.planId === p.planId)?.name ?? ''), quote: p.quote }))
+  .filter((p) => p.name);
+const n = cards.length;
+---
+
+<section id="plan-details" aria-labelledby="plan-details-title" class="plan-details">
+  <h2 id="plan-details-title" class="mb-3">{S} {n} 个套餐详解：流量、周期与官网写明的权益</h2>
+  <p class="text-soft">
+    下面依据站长 {fmtDate(set.recordedAt)} 提供的{S}官网套餐页截图整理（{source ? `资料等级 ${source.defaultGrade}，服务商公开资料` : '服务商公开资料'}）。
+    “官网写明”的内容是服务商的宣传文字，本站改写后列出，没有逐项实测；日均流量、每 GB 折算价和档位之间的倍数由本站按标价计算，不代表速度或稳定性。价格以官网结算页为准，价格表见上方“套餐价格”。
+  </p>
+
+  <div class="panel mt-4" id="plan-shared">
+    <h3 class="panel__title">{n} 个套餐都写了什么</h3>
+    <dl class="pd-shared">
+      {set.shared.map((s) => (<><dt>{s.label}</dt><dd>{s.text}</dd></>))}
+    </dl>
+    <p class="text-sm mt-3">
+      “不限速”指套餐本身没有限速，不等于实际速度：本站 2026-10-28 晚高峰的单次测速见<a href={LDY_PEAK_PAGE_PATH}>《{LDY_PEAK_PAGE_TITLE}》</a>，只代表那一晚。
+    </p>
+    {
+      peakClaims.length > 0 && (
+        <p class="text-sm mt-3">
+          官网只在 {peakClaims.length} 个套餐里写了带“更快 / 更稳”含义的话：{peakClaims.map((p, i) => (<>{i > 0 && '；'}{p.name}“{p.quote}”</>))}。页面没有给任何数字，也没有说明这些套餐的线路是否真的不同于其他套餐；本站没有按套餐分别测试，不能据此认为高档位更快。
+        </p>
+      )
+    }
+  </div>
+
+  {
+    groups.map((g) => (
+      <div class="pd-group mt-6" id={`plans-${g.id}`}>
+        <h3 class="mb-2">{g.title}</h3>
+        <p class="pd-group__intro">{g.intro}</p>
+        <div class="pd-grid mt-4">
+          {g.items.map((c) => {
+            const f = cardFacts(c);
+            return (
+              <article class="panel pd-card" id={`plan-${c.key}`}>
+                <header class="pd-card__head">
+                  <h4>{c.name}</h4>
+                  <span class:list={['chip', c.badge === '主推套餐' ? 'chip--electric' : 'chip--gray']}>官网标注：{c.badge}</span>
+                </header>
+                <p class="pd-card__price"><strong class="num">{fmtCNY(c.base.priceCNY)}</strong><span>{c.base.period === 'monthly' ? ' /月起' : c.base.period === 'annual' ? ' /年' : ' 一次性'}</span></p>
+                <dl class="pd-card__facts">
+                  <div><dt>流量</dt><dd>{f.flow}</dd></div>
+                  {f.daily && <div><dt>日均（按 30 天）</dt><dd>{f.daily}</dd></div>}
+                  <div><dt>每 GB 折算</dt><dd class="num">{f.per}{f.annualPer && <span class="text-mute">（年付 {f.annualPer}）</span>}</dd></div>
+                  <div><dt>速率 / 设备</dt><dd>不限速 / 不限</dd></div>
+                </dl>
+                <p class="pd-card__cycles">
+                  <span class="text-mute">付款周期：</span>
+                  {c.rows.map((r, i) => (<>{i > 0 && ' · '}{periodLabel(r.period)} {fmtCNY(r.priceCNY)}</>))}
+                </p>
+                <p class="pd-card__gist"><strong>官网定位“{c.tagline}”：</strong>{c.gist}。</p>
+                {c.pageNotes.length > 0 && <ul class="bullets text-sm">{c.pageNotes.map((t) => <li>{t}</li>)}</ul>}
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    ))
+  }
+
+  <div class="panel mt-6" id="plan-open">
+    <h3 class="panel__title">官网套餐页没有回答的问题</h3>
+    <p class="text-sm text-soft mb-2">下单前建议在官网结算页、服务条款或向客服确认：</p>
+    <ul class="bullets text-sm">{set.openQuestions.map((t) => <li>{t}</li>)}</ul>
+  </div>
+
+  <div class="flame-frame flame-frame--tight flame-cta mt-6">
+    <Flames size="sm" />
+    <p class="flame-cta__text">想从最低档试起：月付先买{monthly[0] ? shortPlan(monthly[0].name) : '入门档'}，用一个月再决定要不要换档或改年付。</p>
+    <AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" label={`注册${brand.shortName}`} />
+    <Coupon slug={brand.slug} />
+  </div>
+</section>

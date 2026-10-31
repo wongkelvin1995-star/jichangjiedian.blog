@@ -1,0 +1,17 @@
+---
+/** 优惠码标签：只展示站长提供的代码，不写折扣幅度（资料里没有）。没有代码的品牌不渲染。 */
+import { COUPON_NOTE, couponFor } from '../data/coupons';
+interface Props { slug: string; compact?: boolean }
+const { slug, compact = false } = Astro.props;
+const code = couponFor(slug);
+---
+
+{
+  code && (
+    <span class:list={['coupon', { 'coupon--compact': compact }]} title={COUPON_NOTE}>
+      <span class="coupon__label">优惠码</span>
+      <code class="coupon__code">{code}</code>
+      {!compact && <span class="coupon__note">注册或付款时填写，折扣以官网为准</span>}
+    </span>
+  )
+}

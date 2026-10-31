@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostList from '../../components/PostList.astro';
+import { loadPosts } from '../../lib/content';
+import { collectionLd } from '../../lib/seo';
+import { fmtDate } from '../../lib/format';
+import { DATA_UPDATED } from '../../lib/site';
+
+const path = '/guides/';
+const title = '客户端教程：怎样测试、记录并读懂节点数据｜机场节点';
+const description = '客户端与测试方法教程：用 Clash Verge 测试同一节点的延迟、连续 7 天记录速度变化、用 YouTube Stats for nerds 观察视频播放，步骤和局限都写清楚。';
+const posts = (await loadPosts()).filter((p) => p.kind === 'guides');
+const modified = posts.map((p) => p.modified).sort().pop() ?? DATA_UPDATED;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '客户端教程', href: path },
+];
+/** 阅读顺序：这三篇确实是先后衔接的步骤，所以用有序列表 */
+const ORDER = [
+  { title: '先统一测试口径。', text: '用 Clash Verge 测同一个节点的延迟：同一台设备、同一个测试地址、同一个客户端设置。延迟只说明数据包往返要多久，不说明下载有多快，也不说明晚高峰稳不稳。' },
+  { title: '再建立自己的记录表。', text: '按“连续 7 天”的方法，在早间、午间、晚间、晚高峰、深夜里固定几个时间点各测一次，同时写下日期时间、所在网络、客户端和节点名称。缺少时间和环境的数字，几天后连你自己也无法复核。' },
+  { title: '最后用视频播放做辅助观察。', text: '想看节点在视频场景下的表现，可以打开 YouTube 的 Stats for nerds，观察分辨率、缓冲健康度和丢帧。它只是一条旁证，不能替代测速，也不能说明其他应用的表现。' },
+] as const;
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} {modified} jsonLd={[collectionLd('机场节点客户端教程', description, path, posts.map((p) => ({ name: p.h1, href: p.href })))]}>
+  <header class="page-head">
+    <div class="container">
+      <h1>客户端教程：自己测、自己记、自己读</h1>
+      <p class="page-head__lead">本站的测试规则是公开的。照着这些教程，你也能记录出带时间、带环境的数据，和本站的记录放在一起对照。</p>
+      <p class="page-head__meta"><span>共 {posts.length} 篇</span><span>最近更新 {fmtDate(modified)}</span></p>
+    </div>
+  </header>
+  <div class="container section section--tight">
+    {posts.length > 0 ? <PostList {posts} /> : <p class="empty">教程正在整理中。</p>}
+
+    <section class="mt-7" aria-labelledby="order-title">
+      <h2 id="order-title" class="mb-3">三篇教程怎么配合使用</h2>
+      <ol class="steps">
+        {
+          ORDER.map((s) => (
+            <li>
+              <strong>{s.title}</strong>
+              <span>{s.text}</span>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="mt-4 text-soft">
+        测完之后，把记录和本站的<a href="/test-records/">测试档案</a>放在一起对照：只有带日期、带环境、有原始截图的记录，才会按<a href="/testing-methodology/">测试方法</a>里的五个时间窗口进入统计。没有证据的数字，本站一律不当作结论。
+      </p>
+    </section>
+
+    <p class="mt-6 text-sm text-soft">
+      想先了解原理，可以看<a href="/articles/">研究文章</a>；本站如何判断一条记录是否算数，见<a href="/testing-methodology/">测试方法</a>。
+    </p>
+  </div>
+</BaseLayout>

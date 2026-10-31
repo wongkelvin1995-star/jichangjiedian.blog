@@ -1,0 +1,108 @@
+---
+/**
+ * 研究文章与教程的统一页面：H1、元信息、目录、正文、相关阅读与相关资料。
+ * 正文来自 Markdown，页面只负责外壳，不改写正文里的任何数字。
+ */
+import type { MarkdownHeading } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getBrand } from '../data/brands';
+import { getRegionPage } from '../data/regions';
+import { loadPosts } from '../lib/content';
+import { fmtDate } from '../lib/format';
+import { articleLd } from '../lib/seo';
+import type { PostKind } from '../lib/content';
+
+interface Props {
+  kind: PostKind;
+  entry: CollectionEntry<'articles'> | CollectionEntry<'guides'>;
+  headings: MarkdownHeading[];
+}
+const { kind, entry, headings } = Astro.props;
+const d = entry.data;
+const path = `/${kind}/${entry.id}/`;
+const h1 = d.h1 ?? d.title;
+const title = `${d.title}｜机场节点`;
+const listPath = kind === 'articles' ? '/articles/' : '/guides/';
+const listName = kind === 'articles' ? '研究文章' : '客户端教程';
+
+const body = entry.body ?? '';
+const chars = body.replace(/<[^>]+>/g, '').replace(/[\s#>*`|_\-[\]()]/g, '').length;
+const minutes = Math.max(1, Math.round(chars / 450));
+
+const posts = await loadPosts();
+const related = d.related.map((href) => posts.find((p) => p.href === href)).filter((p): p is NonNullable<typeof p> => !!p);
+const brands = d.brands.map((s) => getBrand(s)).filter((b): b is NonNullable<typeof b> => !!b);
+const regions = d.regions.map((s) => getRegionPage(s)).filter((r): r is NonNullable<typeof r> => !!r);
+const toc = headings.filter((h) => h.depth === 2);
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: listName, href: listPath },
+  { name: h1, href: path },
+];
+const ld = [articleLd({ title: h1, description: d.description, path, published: d.published, modified: d.modified, section: d.category, keywords: d.keywords })];
+---
+
+<BaseLayout {title} description={d.description} {path} breadcrumbs={crumbs} jsonLd={ld} ogType="article" published={d.published} modified={d.modified}>
+  <header class="page-head">
+    <div class="container">
+      <h1>{h1}</h1>
+      <p class="page-head__lead">{d.description}</p>
+      <p class="page-head__meta">
+        <span>{d.category}</span>
+        <span>发布 <time datetime={d.published}>{fmtDate(d.published)}</time></span>
+        <span>更新 <time datetime={d.modified}>{fmtDate(d.modified)}</time></span>
+        <span>全文约 {chars} 字，约 {minutes} 分钟读完</span>
+      </p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <div class="article-layout">
+      <article class="prose prose--wide">
+        <slot />
+      </article>
+      <aside class="article-aside" aria-label="文章导航与相关资料">
+        {
+          toc.length > 1 && (
+            <nav class="toc panel panel--quiet" aria-label="本文目录">
+              <h2 class="panel__title">本文目录</h2>
+              <ol>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+            </nav>
+          )
+        }
+        {
+          (regions.length > 0 || brands.length > 0) && (
+            <div class="panel panel--quiet">
+              <h2 class="panel__title">相关资料</h2>
+              <ul class="link-list text-sm">
+                {regions.map((r) => <li><a href={`/regions/${r.slug}/`}>{r.fullName}专题</a></li>)}
+                {brands.map((b) => <li><a href={`/airports/${b.slug}/`}>{b.shortName}的资料整理</a></li>)}
+              </ul>
+            </div>
+          )
+        }
+      </aside>
+    </div>
+
+    {
+      related.length > 0 && (
+        <section class="mt-7" aria-labelledby="related-title">
+          <h2 id="related-title" class="mb-3">相关阅读</h2>
+          <ul class="post-list">
+            {related.map((p) => (
+              <li>
+                <h3><a href={p.href}>{p.h1}</a></h3>
+                <p>{p.description}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+    <p class="mt-6 text-sm text-mute">
+      本文是资料整理与方法说明，不构成购买建议；文中提到的测试记录均可在<a href="/test-records/">测试档案</a>查到来源与证据状态。
+    </p>
+  </div>
+</BaseLayout>

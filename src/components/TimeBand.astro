@@ -1,0 +1,60 @@
+---
+import '../styles/map.css';
+import { TIME_WINDOWS } from '../data/time-windows';
+import type { BandMarker } from '../lib/window-stats';
+
+interface Props {
+  markers?: BandMarker[];
+  label?: string;
+}
+const { markers = [], label = '一天 24 小时中五个预设采样窗口的位置' } = Astro.props;
+
+const X0 = 24;
+const X1 = 936;
+const PER = (X1 - X0) / 24;
+const x = (h: number) => Math.round((X0 + h * PER) * 10) / 10;
+const toH = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h ?? 0) + (m ?? 0) / 60;
+};
+const ticks = Array.from({ length: 25 }, (_, h) => h);
+const summary = `${label}。${TIME_WINDOWS.map((w) => `${w.label} ${w.start} 到 ${w.end}`).join('；')}（北京时间）。`;
+---
+
+<svg class="timeband" viewBox="0 0 960 150" role="img" aria-label={summary}>
+  <rect class="tb-track" x={X0} y="40" width={X1 - X0} height="44" rx="6"></rect>
+  {
+    TIME_WINDOWS.map((w) => (
+      <g>
+        <rect
+          class:list={['tb-window', { 'tb-window--peak': w.id === 'peak' }]}
+          x={x(toH(w.start))}
+          y="40"
+          width={x(toH(w.end)) - x(toH(w.start))}
+          height="44"
+          rx="4"
+        ></rect>
+        <text class="tb-window-label" x={(x(toH(w.start)) + x(toH(w.end))) / 2} y="32">{w.label}</text>
+      </g>
+    ))
+  }
+  {
+    ticks.map((h) => (
+      <line class:list={['tb-hour', { 'tb-hour--major': h % 3 === 0 }]} x1={x(h)} x2={x(h)} y1="84" y2={h % 3 === 0 ? 96 : 91}></line>
+    ))
+  }
+  {ticks.filter((h) => h % 3 === 0).map((h) => <text class="tb-hour-label" x={x(h)} y="114">{String(h).padStart(2, '0')}:00</text>)}
+  {
+    markers.map((m) => (
+      <circle
+        class:list={[m.kind === 'ok' ? 'tb-mark--ok' : m.kind === 'info' ? 'tb-mark--info' : 'tb-mark--ring']}
+        cx={x(m.hour)}
+        cy="62"
+        r={m.kind === 'ring' ? 4.5 : 6.5}
+      >
+        <title>{`${m.label}（${m.when}）`}</title>
+      </circle>
+    ))
+  }
+  <text class="tb-mark-label" x={X0} y="142">北京时间（UTC+8），窗口为左闭右开；窗口之外的时间不计入任何时段统计。</text>
+</svg>

@@ -1,0 +1,70 @@
+---
+import { BRANDS } from '../data/brands';
+import { REGION_PAGES } from '../data/regions';
+import { loadPosts } from '../lib/content';
+import { COMPLIANCE_NOTE, DATA_UPDATED, FOOTER_LINKS, SITE_NAME } from '../lib/site';
+
+const posts = await loadPosts();
+const all = posts.filter((p) => p.kind === 'articles');
+const articles = [...all.filter((p) => p.href.includes('choose-airport-by-use-case')), ...all.filter((p) => !p.href.includes('choose-airport-by-use-case'))].slice(0, 8);
+const guides = posts.filter((p) => p.kind === 'guides').slice(0, 3);
+const topBrands = BRANDS.slice(0, 12);
+const shortTitle = (t: string) => t.split(/[：:｜|？?]/)[0]!;
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="site-footer__grid">
+      <div>
+        <h2>{SITE_NAME}</h2>
+        <p>
+          2026 年如何选择适合自己的机场节点？这里不仅有机场推荐、线路分析与节点使用指南，还会重点介绍不同时段的网络表现，包括晚高峰延迟、节点速度变化、丢包与稳定性等关键指标。从香港、日本、新加坡到美国节点，我们通过测试方法解析、数据对比与实用教程，帮助读者理解不同线路的特点，找到更符合自己需求的网络连接方案。
+        </p>
+        <h2 class="mt-5">合作推广与使用提示</h2>
+        <p>
+          本站含推广链接：通过链接注册或购买，本站可能获得佣金。佣金不改变资料的整理方式；价格、流量与规则以服务商结算页为准。详见<a href="/affiliate-disclosure/">合作推广声明</a>。
+        </p>
+        <p class="mt-3">{COMPLIANCE_NOTE}</p>
+        <p class="disclosure mt-3">资料整理日期：<time datetime={DATA_UPDATED}>{DATA_UPDATED}</time></p>
+      </div>
+      <div>
+        <h2>热门机场推荐</h2>
+        <ul>
+          {topBrands.map((b) => <li><a href={`/airports/${b.slug}/`}>{b.shortName}{b.slug === 'lingdongyun' ? '（主推）' : ''}机场</a></li>)}
+          <li><a href="/airports/">全部 {BRANDS.length} 家机场</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>节点地区</h2>
+        <ul>
+          {REGION_PAGES.map((r) => <li><a href={`/regions/${r.slug}/`}>{r.fullName}推荐</a></li>)}
+          <li><a href="/#global-map">全球节点地图</a></li>
+        </ul>
+        <h2 class="mt-5">选机场工具</h2>
+        <ul>
+          <li><a href="/plans/">机场套餐价格对比</a></li>
+          <li><a href="/routes/">IPLC / IEPL / BGP 线路</a></li>
+          <li><a href="/time-tests/">分时段节点指南</a></li>
+          <li><a href="/airports/lingdongyun/peak-2026-10-28/">灵动云晚高峰实测</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>选购攻略</h2>
+        <ul>
+          {articles.map((p) => <li><a href={p.href}>{shortTitle(p.h1)}</a></li>)}
+          {guides.map((p) => <li><a href={p.href}>{shortTitle(p.h1)}</a></li>)}
+        </ul>
+      </div>
+      <div>
+        <h2>站内说明</h2>
+        <ul>
+          {FOOTER_LINKS.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        </ul>
+      </div>
+    </div>
+    <div class="site-footer__legal">
+      <span>© 2026 {SITE_NAME} jichangjiedian.blog</span>
+      <span>页面内容为公开资料整理与测试记录，不构成购买建议。</span>
+    </div>
+  </div>
+</footer>

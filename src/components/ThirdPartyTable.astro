@@ -1,0 +1,102 @@
+---
+/**
+ * 其他测速参考的测速/延迟摘录表。
+ * 速度保留原图标注的单位（MB/KB/B），不换算为 Mbps；缺失值显示“—”，不补 0。
+ */
+import GradeBadge from './GradeBadge.astro';
+import { metricText, groupRecords } from '../lib/records-view';
+import type { TestRecord } from '../data/types';
+
+interface Props {
+  records: readonly TestRecord[];
+  /** 是否在标题里链接到品牌档案 */
+  linkBrand?: boolean;
+  /** 分组标题的层级：放在 H2 之下用 3，放在 H3 之下用 4（默认） */
+  level?: 3 | 4;
+}
+const { records, linkBrand = true, level = 4 } = Astro.props;
+const Heading = `h${level}` as 'h3' | 'h4';
+const groups = groupRecords(records);
+const dash = (v: string | null) => (v === null ? '—' : v);
+---
+
+{
+  groups.map((g) => (
+    <section class="tp-group" id={g.id}>
+      <Heading class="tp-group__title">
+        {linkBrand ? <a href={`/airports/${g.brand.slug}/`}>{g.brand.shortName}</a> : g.brand.shortName}
+        <GradeBadge grade={g.grade} />
+        {/* 同一品牌可能有多组摘录：给读屏软件补上区分信息（日期、类型），页面上不显示 */}
+        <span class="visually-hidden">
+          （其他测速参考，{g.kind === 'third-party-unlock' ? '解锁检测' : '测速'}，{g.dateText ?? '日期未标注'}）
+        </span>
+      </Heading>
+      <p class="tp-group__meta">
+        原页面标注的测试时间：{g.dateText ?? '页面未标注'}
+        {g.client && <span>｜客户端：{g.client}{g.clientVersion ? `（${g.clientVersion}）` : ''}</span>}
+        {g.isp && <span>｜网络：{g.isp}</span>}
+        {g.threads !== null && <span>｜线程数：{g.threads}</span>}
+      </p>
+      <div class="table-scroll">
+        <table class="data-table data-table--compact">
+          <thead>
+            <tr>
+              <th scope="col">节点</th>
+              <th scope="col" class="col-num">TLS RTT</th>
+              <th scope="col" class="col-num">HTTPS 延迟</th>
+              {g.kind === 'third-party-unlock' ? (
+                <>
+                  <th scope="col">Netflix</th>
+                  <th scope="col">Disney+</th>
+                  <th scope="col">TikTok</th>
+                  <th scope="col">OpenAI</th>
+                </>
+              ) : (
+                <>
+                  <th scope="col" class="col-num">平均速度</th>
+                  <th scope="col" class="col-num">最高速度</th>
+                  <th scope="col">UDP/NAT</th>
+                </>
+              )}
+              <th scope="col">原页面备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            {g.rows.map((r) => (
+              <tr id={r.testId}>
+                <th scope="row" class="col-nowrap">{r.nodeDisplayName}</th>
+                <td class="col-num num">{dash(metricText(r, 'tlsRttMs'))}</td>
+                <td class="col-num num">{dash(metricText(r, 'httpsLatencyMs'))}</td>
+                {g.kind === 'third-party-unlock' ? (
+                  <>
+                    <td>{dash(metricText(r, 'netflix'))}</td>
+                    <td>{dash(metricText(r, 'disneyPlus'))}</td>
+                    <td>{dash(metricText(r, 'tiktok'))}</td>
+                    <td>{dash(metricText(r, 'openai'))}</td>
+                  </>
+                ) : (
+                  <>
+                    <td class="col-num num">{dash(metricText(r, 'avgSpeed'))}</td>
+                    <td class="col-num num">{dash(metricText(r, 'maxSpeed'))}</td>
+                    <td>{dash(metricText(r, 'udpNat'))}</td>
+                  </>
+                )}
+                <td class="text-sm text-soft">{r.notes.startsWith('节选自') || r.notes === '第三方评测页摘录的节点测速行。' ? '' : r.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {g.caveats.length > 0 && (
+        <details class="fold fold--plain">
+          <summary>这组记录的局限</summary>
+          <div class="fold__body">
+            <ul class="bullets text-sm">
+              {g.caveats.map((c) => <li>{c}</li>)}
+            </ul>
+          </div>
+        </details>
+      )}
+    </section>
+  ))
+}

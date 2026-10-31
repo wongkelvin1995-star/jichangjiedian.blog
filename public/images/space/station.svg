@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" width="320" height="160" fill="none" stroke="#8fd6ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- 空间站：原创线稿。中央桁架 + 两侧太阳能板 + 生活舱与天线 -->
+  <g opacity="0.95">
+    <!-- 桁架 -->
+    <path d="M24 80h272" stroke-opacity="0.9"/>
+    <path d="M40 72l16 16M56 72l-16 16M88 72l16 16M104 72l-16 16M216 72l16 16M232 72l-16 16M264 72l16 16M280 72l-16 16" stroke-opacity="0.45" stroke-width="1"/>
+    <!-- 左右太阳能板 -->
+    <rect x="18" y="38" width="36" height="84" rx="3" fill="#152a66" fill-opacity="0.75"/>
+    <path d="M30 38v84M42 38v84M18 59h36M18 80h36M18 101h36" stroke="#36d7ff" stroke-opacity="0.55" stroke-width="1"/>
+    <rect x="62" y="38" width="36" height="84" rx="3" fill="#152a66" fill-opacity="0.75"/>
+    <path d="M74 38v84M86 38v84M62 59h36M62 80h36M62 101h36" stroke="#36d7ff" stroke-opacity="0.55" stroke-width="1"/>
+    <rect x="222" y="38" width="36" height="84" rx="3" fill="#152a66" fill-opacity="0.75"/>
+    <path d="M234 38v84M246 38v84M222 59h36M222 80h36M222 101h36" stroke="#36d7ff" stroke-opacity="0.55" stroke-width="1"/>
+    <rect x="266" y="38" width="36" height="84" rx="3" fill="#152a66" fill-opacity="0.75"/>
+    <path d="M278 38v84M290 38v84M266 59h36M266 80h36M266 101h36" stroke="#36d7ff" stroke-opacity="0.55" stroke-width="1"/>
+    <!-- 中央舱段 -->
+    <rect x="120" y="62" width="80" height="36" rx="18" fill="#0f1f4d" fill-opacity="0.9"/>
+    <path d="M134 62v36M186 62v36" stroke-opacity="0.6"/>
+    <circle cx="160" cy="80" r="9" fill="#0b1735"/>
+    <circle cx="160" cy="80" r="4" fill="#36d7ff" stroke="none"/>
+    <!-- 上方对接舱与天线 -->
+    <rect x="148" y="34" width="24" height="28" rx="6" fill="#0f1f4d" fill-opacity="0.9"/>
+    <path d="M160 34V18M150 18h20"/>
+    <circle cx="160" cy="14" r="3" fill="#ffb357" stroke="none"/>
+    <!-- 下方碟形天线 -->
+    <path d="M160 98v16"/>
+    <path d="M140 126q20-14 40 0" fill="#0f1f4d" fill-opacity="0.9"/>
+    <path d="M160 126v-10" stroke-opacity="0.7"/>
+    <!-- 舷灯 -->
+    <circle cx="126" cy="80" r="2" fill="#3ddc97" stroke="none"/>
+    <circle cx="194" cy="80" r="2" fill="#ff7b7b" stroke="none"/>
+  </g>
+</svg>

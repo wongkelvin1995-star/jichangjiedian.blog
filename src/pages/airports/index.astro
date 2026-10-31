@@ -1,0 +1,182 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AffiliateLink from '../../components/AffiliateLink.astro';
+import Coupon from '../../components/Coupon.astro';
+import { BRANDS } from '../../data/brands';
+import { AFFILIATE_NOTE } from '../../data/labels';
+import { SHEET_LOWEST } from '../../data/owner-sheet-prices';
+import { MAP_POINTS, coverageFor } from '../../data/regions';
+import { collectionLd } from '../../lib/seo';
+import { datasetStats, routeChipsOf } from '../../lib/queries';
+import { fmtCNY, fmtDate, fmtGB } from '../../lib/format';
+import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
+
+const path = '/airports/';
+const stats = datasetStats();
+const title = `${stats.brands}家机场推荐目录：最低价格、节点数量与注册入口｜机场节点`;
+const description = `一张表看完${stats.brands}家机场：每家最便宜的月付套餐多少钱、多少流量，有多少节点、覆盖香港日本新加坡美国等哪些地区，走 IPLC 还是 IEPL 线路，并附注册入口与详细套餐页。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: `${stats.brands}家机场目录`, href: path },
+];
+
+const rows = BRANDS.map((b) => {
+  const documented: string[] = [];
+  const unverified: string[] = [];
+  for (const p of MAP_POINTS) {
+    const c = coverageFor(b, p.countryCode).level;
+    if (c === 'documented') documented.push(p.countryCode);
+    else if (c === 'unverified') unverified.push(p.countryCode);
+  }
+  return {
+    b,
+    documented,
+    unverified,
+    routes: routeChipsOf(b),
+    low: SHEET_LOWEST[b.slug] ?? null,
+    nodesLower: /下限|不少于|50\+/.test(b.nodeCount.note ?? ''),
+    search: [b.brandName, b.shortName, b.nameEn ?? '', ...b.aliases].join(' ').toLowerCase().replace(/\s+/g, ''),
+  };
+});
+const nameOf = (code: string) => MAP_POINTS.find((p) => p.countryCode === code)?.name ?? code;
+const bucket = (p: number | undefined) => (p === undefined ? '' : p <= 20 ? 'le20' : p <= 25 ? '20to25' : 'gt25');
+const BUCKETS = [['le20', '¥20 及以下'], ['20to25', '¥20–25'], ['gt25', '¥25 以上']] as const;
+const bucketN = (k: string) => rows.filter((r) => bucket(r.low?.price) === k).length;
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd(`${stats.brands}家机场目录`, description, path, BRANDS.map((b) => ({ name: b.brandName, href: `/airports/${b.slug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>{stats.brands}家机场推荐目录：价格、节点与注册入口</h1>
+      <p class="page-head__lead">
+        每家机场最便宜的月付价格、节点数量、覆盖地区和线路放在同一张表里，可以按名称、价格或地区筛选。点机场名看全部套餐和每个地区的节点，点“注册”直接去官网。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>{stats.plans} 个套餐 · {stats.offers} 条报价</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight" data-directory>
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">含推广链接</span>
+        {AFFILIATE_NOTE}推广按钮在新窗口打开，不影响本站资料的整理方式。
+      </p>
+
+      <form class="filter-bar mt-5" role="search" aria-label="筛选机场" data-directory-filters hidden>
+        <label class="field">
+          <span>机场名称</span>
+          <input class="input" type="search" name="q" placeholder="例如：灵动、flyv、firefly" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>最低月付</span>
+          <select class="select" name="price">
+            <option value="">全部价格</option>
+            {BUCKETS.map(([k, l]) => <option value={k}>{l}（{bucketN(k)} 家）</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>节点地区</span>
+          <select class="select" name="region">
+            <option value="">全部地区</option>
+            {MAP_POINTS.map((p) => <option value={p.countryCode}>{p.name}</option>)}
+          </select>
+        </label>
+        <button class="btn btn--ghost" type="reset" data-directory-reset>恢复默认顺序</button>
+        <p class="text-sm text-soft" role="status" aria-live="polite" data-directory-count></p>
+      </form>
+
+      <div class="table-scroll mt-4">
+        <table class="data-table data-table--stack" data-directory-table>
+          <caption>按站长编辑顺序排列。价格为最便宜的月付套餐，下单前以官网当天价格为准。</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="col-rank">编号</th>
+              <th scope="col">机场</th>
+              <th scope="col" class="col-num">最低月付</th>
+              <th scope="col" class="col-num">节点数</th>
+              <th scope="col">节点地区</th>
+              <th scope="col">线路类型</th>
+              <th scope="col">注册</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              rows.map(({ b, documented, unverified, routes, low, nodesLower, search }) => (
+                <tr
+                  id={`r-${b.slug}`}
+                  data-search={search}
+                  data-price={bucket(low?.price)}
+                  data-regions={documented.join(' ')}
+                >
+                  <td class="col-rank num" data-label="编号">{String(b.displayRank).padStart(2, '0')}</td>
+                  <th scope="row" data-label="机场">
+                    <a href={`/airports/${b.slug}/`}>{b.brandName}</a>
+                  </th>
+                  <td class="col-num" data-label="最低月付">
+                    {low ? (<><strong class="num">{fmtCNY(low.price)}</strong><span class="cell-sub">{fmtGB(low.monthlyGB)} / 月</span></>) : <span class="text-mute">见套餐页</span>}
+                  </td>
+                  <td class="col-num" data-label="节点数">
+                    {b.nodeCount.value !== null ? (
+                      <>
+                        <span class="num">{b.nodeCount.value}{nodesLower && '+'}</span>
+                      </>
+                    ) : (
+                      <span class="text-mute">见节点列表</span>
+                    )}
+                  </td>
+                  <td data-label="有记录的地区">
+                    {documented.length + unverified.length > 0 ? (
+                      <span class="chip-row">
+                        {documented.map((c) => <span class="chip">{nameOf(c)}</span>)}
+                        {unverified.map((c) => <span class="chip chip--gray">{nameOf(c)}</span>)}
+                      </span>
+                    ) : (
+                      <span class="text-mute">资料未给出</span>
+                    )}
+                  </td>
+                  <td data-label="线路类型">
+                    {routes.length > 0 ? (
+                      <span class="chip-row">
+                        {routes.map((r) => <span class:list={['chip', { 'chip--gray': !r.confirmed }]}>{r.label}</span>)}
+                      </span>
+                    ) : (
+                      <span class="text-mute">资料未给出</span>
+                    )}
+                  </td>
+                  <td data-label="注册">
+                    <AffiliateLink url={b.affiliateUrl} brandName={b.shortName} variant="primary" small label={`注册${b.shortName}`} />
+                    <div class="mt-2"><Coupon slug={b.slug} compact /></div>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="empty mt-4" data-directory-empty hidden>没有符合条件的机场。可以放宽名称、价格或地区的筛选。</p>
+    </div>
+  </section>
+
+  <section class="section section--band">
+    <div class="container prose prose--wide">
+      <h2>怎么从{BRAND_COUNT}家机场里挑</h2>
+      <p><strong>先看预算和流量。</strong>表里的价格是每家最便宜的月付套餐；平时只刷网页、用 ChatGPT，100GB 左右的入门档一般够用；常看 4K 视频或多设备共用，建议直接看 200GB 以上的套餐，详细价格在<a href="/plans/">套餐对比</a>。</p>
+      <p><strong>再看节点地区。</strong>香港节点延迟最低，适合日常和游戏；日本、新加坡适合流媒体；美国节点用来解锁 ChatGPT、Claude 等 AI 服务。按地区筛选上表，或者打开<a href="/regions/">节点地区</a>看每个地区有哪些机场。</p>
+      <p><strong>最后看线路。</strong>IPLC / IEPL 专线晚高峰更稳，价格通常也更高；BGP 中转性价比高。区别见<a href="/routes/">线路知识</a>，不同用途怎么选见<a href="/articles/choose-airport-by-use-case/">按场景选机场</a>。</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import '../../scripts/directory';
+</script>

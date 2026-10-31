@@ -1,0 +1,56 @@
+---
+import { ALL_REGION_SUMMARIES } from '../lib/queries';
+const rows = ALL_REGION_SUMMARIES();
+---
+
+<div class="table-scroll">
+  <table class="data-table">
+    <caption>数字在构建时由站内资料统计得出，与目录页使用同一份数据。“未列出”只表示本站没有资料，不等于该品牌没有这个地区的节点。</caption>
+    <thead>
+      <tr>
+        <th scope="col">地区</th>
+        <th scope="col" class="col-num">有该地区节点</th>
+        <th scope="col" class="col-num">补充中</th>
+        <th scope="col" class="col-num">未列出</th>
+        <th scope="col">有来源的线路类型</th>
+        <th scope="col">测试记录</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((s) => (
+          <tr>
+            <th scope="row" class="col-nowrap">
+              <a href={`/regions/${s.point.regionSlug}/`}>{s.point.name}</a>
+              <span class="cell-sub">{s.point.nameEn}</span>
+            </th>
+            <td class="col-num num">{s.documented.length}</td>
+            <td class="col-num num">{s.unverified.length}</td>
+            <td class="col-num num">{s.none.length}</td>
+            <td>
+              {
+                s.routeCounts.filter((r) => r.confirmed > 0).length > 0 ? (
+                  <span class="chip-row">
+                    {s.routeCounts
+                      .filter((r) => r.confirmed > 0)
+                      .map((r) => (
+                        <span class="chip">
+                          {r.label} <b class="num">{r.confirmed}</b>
+                        </span>
+                      ))}
+                  </span>
+                ) : (
+                  <span class="text-mute">无</span>
+                )
+              }
+            </td>
+            <td class="text-sm">
+              {s.siteRecords.length > 0 ? <span>本站实测 {s.siteRecords.length} 条</span> : <span class="text-mute">—</span>}
+              {s.thirdPartyRecords.length > 0 && <span class="cell-sub">其他测速参考 {s.thirdPartyRecords.length} 行</span>}
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</div>

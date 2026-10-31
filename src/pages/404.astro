@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { NAV_ITEMS } from '../lib/site';
+
+const title = '页面不存在｜机场节点';
+const description = '你访问的页面不存在或已移动。可以回到首页，或从机场目录、节点地区、研究文章继续浏览。';
+---
+
+<BaseLayout {title} {description} path="/404.html" noindex>
+  <div class="container section">
+    <h1>找不到这个页面</h1>
+    <p class="section__lead">地址可能输错了，或者页面已经移动。可以从下面的入口继续：</p>
+    <ul class="link-list mt-5">
+      <li><a href="/">回到首页</a></li>
+      {NAV_ITEMS.filter((n) => !n.href.startsWith('/#')).map((n) => <li><a href={n.href}>{n.label}</a>　<span class="text-mute text-sm">{n.hint}</span></li>)}
+      <li><a href="/search/">站内搜索</a></li>
+    </ul>
+  </div>
+</BaseLayout>

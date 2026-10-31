@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { GRADE_INFO } from '../data/labels';
+import { TIME_WINDOWS } from '../data/time-windows';
+import GradeBadge from '../components/GradeBadge.astro';
+import { loadPosts } from '../lib/content';
+import { DATA_UPDATED } from '../lib/site';
+import { fmtDate } from '../lib/format';
+
+const path = '/testing-methodology/';
+const title = '测试方法：本站如何测速、记录证据，什么记录才算数｜机场节点';
+const description =
+  '说明机场节点站记录一次测试需要哪些信息、五个分时段窗口怎么划分、哪些记录能进入统计，以及证据等级 A 到 D 的含义与本站不做的事。';
+const posts = await loadPosts();
+const has = (id: string) => posts.some((p) => p.id === id);
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '测试方法', href: path },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>测试方法：本站怎么测，什么记录才算数</h1>
+      <p class="page-head__lead">
+        测速数字本身不难得到，难的是说清楚它是在什么时候、什么网络、用什么方式得到的。本页把这些规则写在前面，后面所有测试记录都按它来判断能不能用。
+      </p>
+      <p class="page-head__meta"><span>更新于 {fmtDate(DATA_UPDATED)}</span></p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <div class="prose prose--wide">
+      <h2>我们想回答的问题</h2>
+      <p>本站关心的不是“这个机场最高能跑多少”，而是“同一个节点在一天里不同时间段表现有什么差别”。所以测试的单位是“某个节点、某个时间窗口、某种网络环境下的一次或多次测量”，而不是一个品牌的总评分。本站不给机场打总分，也不会把不同条件下的数字放进同一个排名。</p>
+
+      <h2>一条测试记录需要哪些信息</h2>
+      <p>一条记录至少要说明下面几件事，缺哪一项，那一项就留空，不用估计值或平均数去补：</p>
+      <ul>
+        <li><strong>测的是谁：</strong>品牌、节点名称与地区。如果截图里看不出是哪个节点，就写“截图未显示具体编号”。</li>
+        <li><strong>什么时候测的：</strong>精确到分钟的北京时间（UTC+8）。截图里没有日期的，记录为“没有可见日期”，不进入任何时间窗口。</li>
+        <li><strong>在什么环境测的：</strong>运营商或接入方式、所在城市级别的位置、客户端名称与版本、设备类型。</li>
+        <li><strong>怎么测的：</strong>使用的测速网站或工具、协议、线程数、测试时长。</li>
+        <li><strong>测到了什么：</strong>下载速度、上传速度、空载延迟、下载时的延迟、上传时的延迟、抖动、丢包率；视频播放则记录画质、Connection Speed 与 Buffer Health。</li>
+        <li><strong>凭什么相信：</strong>原始截图或日志的存放位置。没有原图的记录会标记为“未核验”。</li>
+      </ul>
+      <p>丢包率如果网页工具没能测出来，就记录为“未测得”，绝不写成 0%。0% 是一个测量结果，“没测出来”不是。</p>
+
+      <h2>五个分时段窗口</h2>
+      <p>为了让不同日期的测试可以放在一起看，本站把一天预设为五个采样窗口，全部使用北京时间，区间左闭右开：</p>
+      <ul>
+        {TIME_WINDOWS.map((w) => <li><strong>{w.label}（{w.start}–{w.end}）：</strong>{w.note}。</li>)}
+      </ul>
+      <p>这些窗口是采样安排，不是对网络状况的判断，不代表晚高峰就一定拥堵、深夜就一定顺畅。落在窗口之外的测试（例如晚高峰结束后几分钟）会如实标注，但不计入任何时段的统计。</p>
+
+      <h2>什么记录能进入分时段统计</h2>
+      <p>同时满足下面四个条件才行：是本站自己的测试（证据等级 A 或 B）；有完整的日期和时间；落在上述五个窗口之一；有可用于统计的数值（速度或延迟）。其他测速参考、没有日期的截图、只有页面文字描述的内容，都不进入统计，只在测试档案里单独展示。目前本站还没有满足全部条件的记录，所以分时段页面显示的是“暂无可核验测试记录”，而不是一条看起来很完整的曲线。</p>
+
+      <h2>几个指标怎么读</h2>
+      <ul>
+        <li><strong>空载延迟</strong>是没有明显流量时的往返时间；<strong>负载延迟</strong>是在下载或上传占满带宽时测到的往返时间。两者差得越多，说明排队越明显。{has('idle-vs-loaded-latency') && <a href="/articles/idle-vs-loaded-latency/">详细解释</a>}</li>
+        <li><strong>抖动</strong>是延迟的波动幅度。平均延迟不高但抖动很大，视频会议和游戏会明显卡顿。{has('jitter-impact-on-use-cases') && <a href="/articles/jitter-impact-on-use-cases/">抖动会影响哪些场景</a>}</li>
+        <li><strong>上传与下载的比例</strong>往往比单看下载峰值更能说明线路的短板。</li>
+        <li><strong>节点在线</strong>来自服务商面板的状态显示，只说明那一刻面板认为节点在线，不等于速度快或长期稳定。{has('online-rate-vs-stability') && <a href="/articles/online-rate-vs-stability/">在线率与稳定性有什么不同</a>}</li>
+      </ul>
+
+      <h2>证据等级</h2>
+      <p>站内每个有判断价值的字段（价格、协议、节点地区、测速）都单独带一个等级，同一家机场的不同字段可以是不同等级：</p>
+      <ul class="plain">
+        {(['A', 'B', 'C', 'D'] as const).map((g) => <li><GradeBadge grade={g} />：{GRADE_INFO[g].desc}</li>)}
+      </ul>
+      <p>推广链接从来不是证据，也不会被当作来源引用。来源页面没有标注日期的，页面上只显示本站整理资料的日期，而不是替来源补一个日期。</p>
+
+      <h2>本站不做的事</h2>
+      <ul>
+        <li>不编造数据，不用随机数或估算值填充图表和表格。</li>
+        <li>不把“有公开资料记录”写成“已验证可用”，也不因为名字相似就合并两个品牌。</li>
+        <li>不推断资料里没有写明的字段，例如没有写节点数就不写节点数。</li>
+        <li>不展示实时流量或实时在线状态；站内没有任何“实时”数据。</li>
+        <li>不承诺搜索引擎的收录时间或排名位置。</li>
+      </ul>
+
+      <h2>这些记录的局限</h2>
+      <p>单次测试只代表那一刻，换一个时间、一条宽带、一个客户端，结果都可能不同。家庭宽带的上行带宽往往远低于下行，测出的上传速度偏低未必是机场的问题。服务商面板显示在线，也可能受面板自身刷新延迟影响。读任何一条记录时，请先看它的时间和环境，再看数字。</p>
+      <p>想自己复现或补充记录，可以参考{has('seven-day-node-speed-log') ? <a href="/guides/seven-day-node-speed-log/">记录一个节点连续 7 天速度变化的方法</a> : '本站的教程'}，以及{has('how-to-speedtest-at-peak-hours') ? <a href="/articles/how-to-speedtest-at-peak-hours/">晚高峰测速的注意事项</a> : '晚高峰测速的注意事项'}。当前已有的记录见<a href="/test-records/">测试档案</a>，数据也可以在那里下载为 CSV（不含任何订阅链接或个人信息）。</p>
+    </div>
+  </div>
+</BaseLayout>

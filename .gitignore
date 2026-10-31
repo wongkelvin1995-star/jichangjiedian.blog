@@ -1,1 +1,12 @@
+node_modules/
+dist/
+.astro/
+.scratch/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+external-links-report.json
+.indexnow-state.json
 evidence-originals/

@@ -1,0 +1,38 @@
+---
+/** 地区页小地图：构建期生成的静态 SVG，圆点位置是地区示意，不是服务器坐标。 */
+import '../styles/map.css';
+import { buildRegionMap } from '../lib/geo';
+import { pointLevel, summarizeRegion } from '../lib/queries';
+import { MAP_DISCLAIMER } from '../data/regions';
+
+interface Props {
+  slug: string;
+  label: string;
+}
+const { slug, label } = Astro.props;
+const geo = buildRegionMap(slug);
+const dots = geo.dots.map((d) => ({ ...d, level: pointLevel(d.countryCode), n: summarizeRegion(d.countryCode).documented.length }));
+const id = `rm-${slug}`;
+---
+
+<figure class="regionmap-fig">
+  <svg class="regionmap" viewBox={`0 0 ${geo.width} ${geo.height}`} role="img" aria-labelledby={`${id}-t ${id}-d`}>
+    <title id={`${id}-t`}>{label}小地图</title>
+    <desc id={`${id}-d`}>{MAP_DISCLAIMER}圆点是地区示意位置，数字是提供该地区节点的机场数量。</desc>
+    <rect class="map-ocean" width={geo.width} height={geo.height}></rect>
+    <path class="map-land" d={geo.landPath}></path>
+    {
+      dots.map((d) => (
+        <g class="dot" data-level={d.level} transform={`translate(${d.x} ${d.y})`}>
+          <circle class="dot__halo"></circle>
+          <circle class="dot__core"></circle>
+          <text class="dot__label" x={d.labelDx} y={d.labelDy} text-anchor={d.anchor}>
+            {d.name}
+            <tspan class="dot__count" dx="4">{d.n}</tspan>
+          </text>
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>{MAP_DISCLAIMER}</figcaption>
+</figure>

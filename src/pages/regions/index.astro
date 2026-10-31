@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RegionTable from '../../components/RegionTable.astro';
+import { REGION_PAGES, MAP_DISCLAIMER } from '../../data/regions';
+import { REGION_NOTES, REGION_READING_NOTICE } from '../../data/region-notes';
+import { summarizeRegionPage } from '../../lib/queries';
+import { collectionLd } from '../../lib/seo';
+import { DATA_UPDATED } from '../../lib/site';
+import { fmtDate } from '../../lib/format';
+
+const path = '/regions/';
+const title = '节点地区：香港、日本、新加坡等地区的机场资料覆盖｜机场节点';
+const description = '按地区查看哪些机场的公开资料里记录了该地区节点、线路类型有哪些，以及本站已有的测试记录。覆盖香港、日本、新加坡、中国台湾、美国、韩国与欧洲。';
+const cards = REGION_PAGES.map((p) => {
+  const { parts } = summarizeRegionPage(p.slug);
+  const documented = new Set(parts.flatMap((x) => x.documented.map((r) => r.brand.slug))).size;
+  const siteRecords = parts.reduce((n, x) => n + x.siteRecords.length, 0);
+  const thirdParty = parts.reduce((n, x) => n + x.thirdPartyRecords.length, 0);
+  return { p, documented, siteRecords, thirdParty };
+});
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '节点地区', href: path },
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('节点地区', description, path, REGION_PAGES.map((p) => ({ name: p.fullName, href: `/regions/${p.slug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>节点地区：哪些机场的资料里有这个地区</h1>
+      <p class="page-head__lead">
+        每个地区一页，列出资料里确有记录的机场、线路类型和测试记录，并把本站测试与其他测速参考分开。地图上的点位只是地区示意，不是服务器坐标。
+      </p>
+      <p class="page-head__meta"><span>资料整理日期：{fmtDate(DATA_UPDATED)}</span><span><a href="/#global-map">回到首页地图</a></span></p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <h2 class="mb-3">7 个地区专题页</h2>
+      <div class="grid grid--3">
+        {
+          cards.map(({ p, documented, siteRecords, thirdParty }) => (
+            <article class="panel region-card">
+              <h3><a href={`/regions/${p.slug}/`}>{p.fullName}</a></h3>
+              <p class="text-sm text-soft">{REGION_NOTES[p.slug]}</p>
+              <p class="text-sm mt-3">
+                <b class="num text-electric">{documented}</b> 家机场提供 · 本站实测 <b class="num">{siteRecords}</b> 条 · 其他测速参考 <b class="num">{thirdParty}</b> 行
+              </p>
+              <p class="mt-3"><a class="btn btn--ghost btn--small" href={`/regions/${p.slug}/`}>查看{p.name}资料</a></p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--band" aria-labelledby="overview-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="overview-title">按地区汇总</h2>
+          <p class="section__lead">下表与首页地图、各地区专题页使用同一份数据。欧洲页包含德国、英国、法国三个地图点位，这里分开统计。</p>
+        </div>
+      </div>
+      <RegionTable />
+      <p class="notice mt-4" data-severity="info" id="how-to-read"><span class="notice__title">怎么读地区页的表</span>{REGION_READING_NOTICE}</p>
+      <p class="disclosure mt-4">{MAP_DISCLAIMER}</p>
+    </div>
+  </section>
+
+  <section class="section section--tight">
+    <div class="container prose prose--wide">
+      <h2>怎么按地区挑机场</h2>
+      <p><strong>先按用途选地区。</strong>日常和游戏优先香港、台湾，延迟最低；看 Netflix、YouTube 选日本、新加坡；用 ChatGPT、Claude 选美国。每个地区页都列出了提供该地区节点的机场和节点数量。</p>
+      <p><strong>“未列出”不等于没有节点。</strong>有些机场官网没写全部地区，需要某个地区可以先问客服，很多机场都支持按需加节点。</p>
+      <p><strong>再看晚高峰表现。</strong>节点数量多不等于晚上稳，晚上 8–11 点优先选 IPLC / IEPL 专线。本站主推的灵动云在香港、新加坡、美国节点做过<a href="/airports/lingdongyun/peak-2026-10-28/">晚高峰实测</a>，选节点的时间建议见<a href="/time-tests/">分时段节点指南</a>。</p>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,84 @@
+---
+/** 地区页的机场清单表：该地区节点数、节点说明、线路、最低价与注册入口。 */
+import { SHEET_LOWEST } from '../data/owner-sheet-prices';
+import type { RegionBrandRow } from '../lib/queries';
+
+interface Props {
+  rows: RegionBrandRow[];
+  caption?: string;
+  /** 行 id 的前缀：同一页面有多张表（欧洲页按国家分表）时，用国家代码区分，避免重复 id */
+  idPrefix?: string;
+}
+const { rows, caption, idPrefix = 'b' } = Astro.props;
+const MAX_NAMES = 6;
+const lower = (r: RegionBrandRow) => /下限|不少于/.test(r.brand.nodeCount.note ?? '');
+---
+
+<div class="table-scroll">
+  <table class="data-table">
+    {caption && <caption>{caption}</caption>}
+    <thead>
+      <tr>
+        <th scope="col" class="col-rank">编号</th>
+        <th scope="col">机场</th>
+        <th scope="col" class="col-num">该地区节点数</th>
+        <th scope="col">节点说明</th>
+        <th scope="col">线路</th>
+        <th scope="col" class="col-num">最低月付</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r) => {
+          const names = r.nodeNames.slice(0, MAX_NAMES);
+          const hidden = r.nodeNames.length - names.length;
+          const low = SHEET_LOWEST[r.brand.slug];
+          return (
+            <tr id={`${idPrefix}-${r.brand.slug}`}>
+              <td class="col-rank num">{String(r.brand.displayRank).padStart(2, '0')}</td>
+              <td>
+                <a href={`/airports/${r.brand.slug}/`}><strong>{r.brand.brandName}</strong></a>
+              </td>
+              <td class="col-num">
+                {r.nodeCount !== null ? (
+                  <>
+                    <span class="num">{r.nodeCount}</span>
+                  </>
+                ) : (
+                  <span class="text-mute">多个</span>
+                )}
+              </td>
+              <td class="text-sm">
+                {names.length > 0 ? (
+                  <span>
+                    {names.join('、')}
+                    {hidden > 0 && <span class="text-mute">　等共 {r.nodeNames.length} 个</span>}
+                  </span>
+                ) : (
+                  <span class="text-soft">{r.brand.nodeCount.value !== null ? `全站 ${r.brand.nodeCount.value}${lower(r) ? '+' : ''} 个节点，具体以客户端列表为准` : '具体以客户端列表为准'}</span>
+                )}
+              </td>
+              <td>
+                {r.routeChips.length > 0 ? (
+                  <span class="chip-row">
+                    {r.routeChips.map((c) => (
+                      <span class:list={['chip', { 'chip--gray': !c.confirmed }]}>
+                        {c.label}
+                        
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span class="text-mute">—</span>
+                )}
+              </td>
+              <td class="col-num">
+                {low ? <strong class="num">¥{low.price}</strong> : '—'}
+              </td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>

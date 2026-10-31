@@ -1,0 +1,23 @@
+---
+import { fmtDate } from '../lib/format';
+import type { PostItem } from '../lib/content';
+interface Props {
+  posts: PostItem[];
+}
+const { posts } = Astro.props;
+---
+
+<ul class="post-list">
+  {
+    posts.map((p) => (
+      <li>
+        <h2 class="post-list__title"><a href={p.href}>{p.h1}</a></h2>
+        <p>{p.description}</p>
+        <div class="meta">
+          <span>{p.category}</span>
+          <span>更新于 <time datetime={p.modified}>{fmtDate(p.modified)}</time></span>
+        </div>
+      </li>
+    ))
+  }
+</ul>

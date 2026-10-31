@@ -1,0 +1,409 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AffiliateLink from '../../../components/AffiliateLink.astro';
+import EvidenceGallery from '../../../components/EvidenceGallery.astro';
+import { mustGetBrand } from '../../../data/brands';
+import { AFFILIATE_NOTE } from '../../../data/labels';
+import {
+  LDY_AVAILABILITY,
+  LDY_DERIVED,
+  LDY_EVIDENCE,
+  LDY_PEAK,
+  LDY_PEAK_REACHABILITY,
+  LDY_REACHABILITY,
+  LDY_REPORT_MODIFIED,
+  LDY_REPORT_PATH,
+  LDY_REPORT_PUBLISHED,
+  LDY_REPORT_TITLE,
+  LDY_SPEEDTEST,
+  LDY_YOUTUBE,
+} from '../../../data/reports/lingdongyun-sg-2026-10';
+import { loadPosts } from '../../../lib/content';
+import { articleLd } from '../../../lib/seo';
+import { fmtDate, fmtDateTime } from '../../../lib/format';
+import { BRAND_COUNT } from '../../../lib/site';
+
+const brand = mustGetBrand('lingdongyun');
+const sp = LDY_SPEEDTEST;
+const yt = LDY_YOUTUBE;
+const av = LDY_AVAILABILITY;
+const d = LDY_DERIVED;
+const reach = LDY_REACHABILITY;
+const pk = LDY_PEAK;
+const preach = LDY_PEAK_REACHABILITY;
+const pkOk = preach.filter((r) => r.status === 'ok').length;
+const pkSlow = preach.filter((r) => r.status === 'slow' || r.status === 'veryslow').length;
+const pkTimeout = preach.filter((r) => r.status === 'timeout').length;
+const earlierMs = new Map(reach.map((r) => [r.site, r]));
+const pct = (a: number, b: number) => Math.round(((a - b) / b) * 1000) / 10;
+const nOk = reach.filter((r) => r.status === 'ok').length;
+const nSlow = reach.filter((r) => r.status === 'slow').length;
+const nTimeout = reach.filter((r) => r.status === 'timeout').length;
+
+const path = LDY_REPORT_PATH;
+const title = `${LDY_REPORT_TITLE}｜机场节点`;
+const description = `灵动云新加坡节点 2026-10-28 晚高峰实测：下载 ${pk.downloadMbps} Mbps、上传 ${pk.uploadMbps} Mbps、空载延迟 ${pk.idleLatencyMs} ms，附 15 个网站连通性；并对比此前一次测速、YouTube 720p 观察与 ${av.totalNodes} 个节点在线记录。`;
+
+const posts = await loadPosts();
+const has = (id: string) => posts.some((p) => p.id === id);
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: `${BRAND_COUNT}家机场目录`, href: '/airports/' },
+  { name: brand.shortName, href: `/airports/${brand.slug}/` },
+  { name: '新加坡节点测速报告', href: path },
+];
+const ld = [
+  articleLd({
+    title: LDY_REPORT_TITLE,
+    description,
+    path,
+    published: LDY_REPORT_PUBLISHED,
+    modified: LDY_REPORT_MODIFIED,
+    image: LDY_EVIDENCE[0]!.publicPath,
+    section: '测速报告',
+    keywords: ['灵动云', '新加坡节点', '晚高峰测速', '节点测速', 'YouTube 720p', '空载延迟', '负载延迟'],
+  }),
+];
+const reachChip = { ok: 'chip chip--ok', slow: 'chip chip--sunset', veryslow: 'chip chip--err', timeout: 'chip chip--err' } as const;
+const timelineGrade: Record<string, string> = { nodes: '晚间窗口内', speed: '无法归入任何时段', youtube: '窗口之外' };
+void timelineGrade;
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} jsonLd={ld} ogType="article" published={LDY_REPORT_PUBLISHED} modified={LDY_REPORT_MODIFIED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>{LDY_REPORT_TITLE}</h1>
+      <p class="page-head__lead">
+        2026-10-28 晚上 9 点多，站长在晚高峰对灵动云新加坡节点做了一次测速和网站连通性检查，附原始截图。本文把这次晚高峰结果放在最前面，再和此前的一次测速、一次 YouTube 播放观察和一次节点在线记录对照，说明它们能证明什么、不能证明什么。
+      </p>
+      <p class="chip-row mt-4">
+        <span class="chip chip--ok">晚高峰实测（附原图）</span>
+      </p>
+      <p class="page-head__meta">
+        <span>发布 <time datetime={LDY_REPORT_PUBLISHED}>{fmtDate(LDY_REPORT_PUBLISHED)}</time></span>
+        <span>更新 <time datetime={LDY_REPORT_MODIFIED}>{fmtDate(LDY_REPORT_MODIFIED)}</time></span>
+        <span>品牌资料：<a href={`/airports/${brand.slug}/`}>{brand.brandName}</a></span>
+      </p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <nav class="toc-inline" aria-label="本页目录">
+      <ul>
+        <li><a href="#summary">先看结论</a></li>
+        <li><a href="#peak">晚高峰复测</a></li>
+        <li><a href="#timeline">三份证据的时间</a></li>
+        <li><a href="#speed">测速数据</a></li>
+        <li><a href="#youtube">YouTube 播放</a></li>
+        <li><a href="#reach">网站连通性</a></li>
+        <li><a href="#nodes">节点在线</a></li>
+        <li><a href="#method">方法与环境</a></li>
+        <li><a href="#limits">局限</a></li>
+        <li><a href="#evidence">证据文件</a></li>
+      </ul>
+    </nav>
+
+    <div class="stack-lg">
+      <section id="summary" aria-labelledby="summary-title">
+        <h2 id="summary-title" class="mb-3">先看结论</h2>
+        <h3 class="mb-2">晚高峰实测（{fmtDateTime(pk.testDateTime)}，已核验）</h3>
+        <div class="panel panel--star mb-4">
+          <div class="stat-row">
+            <div class="stat"><span class="stat__num num">{pk.downloadMbps}<small>Mbps</small></span><span class="stat__label">下载</span></div>
+            <div class="stat"><span class="stat__num num">{pk.uploadMbps}<small>Mbps</small></span><span class="stat__label">上传</span></div>
+            <div class="stat"><span class="stat__num num">{pk.idleLatencyMs}<small>ms</small></span><span class="stat__label">空载延迟</span></div>
+            <div class="stat"><span class="stat__num num">{pk.jitterMs}<small>ms</small></span><span class="stat__label">抖动</span></div>
+            <div class="stat"><span class="stat__num num">{pk.loadedUploadLatencyMs}<small>ms</small></span><span class="stat__label">上传时延迟</span></div>
+            <div class="stat"><span class="stat__num num">{pkOk}/{preach.length}</span><span class="stat__label">网站可连接</span></div>
+          </div>
+        </div>
+        <h3 class="mb-2">此前的记录</h3>
+        <div class="panel">
+          <div class="stat-row">
+            <div class="stat"><span class="stat__num num">{sp.downloadMbps}<small>Mbps</small></span><span class="stat__label">下载（单次，无可见日期）</span></div>
+            <div class="stat"><span class="stat__num num">{sp.uploadMbps}<small>Mbps</small></span><span class="stat__label">上传，约为下载的 1/{d.downloadToUploadRatio}</span></div>
+            <div class="stat"><span class="stat__num num">{sp.idleLatencyMs}<small>ms</small></span><span class="stat__label">空载延迟</span></div>
+            <div class="stat"><span class="stat__num num">{sp.loadedDownloadLatencyMs}<small>ms</small></span><span class="stat__label">下载时延迟</span></div>
+            <div class="stat"><span class="stat__num num">720<small>p</small></span><span class="stat__label">YouTube 播放，缓冲 {yt.youtubeBufferSeconds} 秒</span></div>
+            <div class="stat"><span class="stat__num num">{av.onlineNodes}/{av.totalNodes}</span><span class="stat__label">截图中节点在线</span></div>
+          </div>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            这份记录里，灵动云新加坡节点的单次网页测速为下载 {sp.downloadMbps} Mbps、上传 {sp.uploadMbps} Mbps，空载延迟 {sp.idleLatencyMs} ms；下载占满带宽时延迟升到 {sp.loadedDownloadLatencyMs} ms，上传时升到 {sp.loadedUploadLatencyMs} ms。另一次 YouTube 播放观察里，720p 视频的缓冲健康度为 {yt.youtubeBufferSeconds} 秒、掉帧 0/1718；节点面板在又一个时间显示 {av.totalNodes} 个节点全部在线。
+          </p>
+          <p>
+            2026-10-28 的晚高峰复测有原始截图和时间，是本站第一条进入分时段统计的记录：下载 {pk.downloadMbps} Mbps 比此前那次低，但空载延迟（{pk.idleLatencyMs} ms）和抖动（{pk.jitterMs} ms）都明显更好，上传也高得多；代价是上传占满时延迟升到 {pk.loadedUploadLatencyMs} ms。较早的三项观察原始截图已不保留，仍标为“未核验”。所有结果都是单次观察，只能说明那几个时刻的状态，不能说明长期是否稳定。
+          </p>
+        </div>
+      </section>
+
+      <section id="timeline" aria-labelledby="timeline-title">
+        <h2 id="timeline-title" class="mb-3">四份证据来自不同的时间</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack">
+            <caption>时间一律为北京时间（UTC+8）；窗口为本站预设的采样窗口。</caption>
+            <thead>
+              <tr>
+                <th scope="col">证据</th>
+                <th scope="col">记录时间</th>
+                <th scope="col">所属窗口</th>
+                <th scope="col">原始截图</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                d.timeline.map((t) => (
+                  <tr>
+                    <th scope="row" data-label="证据">{t.label}</th>
+                    <td class="text-sm" data-label="记录时间">{t.when}</td>
+                    <td class="text-sm" data-label="所属窗口">{t.window}</td>
+                    <td class="text-sm" data-label="原始截图">{t.key === 'peak' ? <span class="chip chip--ok">见下方截图</span> : <span class="text-mute">—</span>}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            因为时间互不相同，这几份证据不能当作同一次连续测试，也不能互相印证。例如 YouTube 的 Connection Speed（{yt.extraMetrics?.connectionSpeedKbps?.value} Kbps）与测速的 {sp.downloadMbps} Mbps 数值接近，但两次观察的时间不同（测速截图没有可见日期）、方法也不同，本站不据此推断什么。
+          </p>
+        </div>
+      </section>
+
+      <section id="speed" aria-labelledby="speed-title">
+        <h2 id="speed-title" class="mb-3">测速数据：下载、上传与延迟</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack">
+            <caption>新加坡节点网页测速（单次，截图没有可见日期）。“未测得”表示网页工具没有给出数值，不是 0。</caption>
+            <thead>
+              <tr>
+                <th scope="col">指标</th>
+                <th scope="col" class="col-num">数值</th>
+                <th scope="col">怎么读</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" data-label="指标">下载速度</th><td class="col-num num" data-label="数值">{sp.downloadMbps} Mbps</td><td class="text-sm" data-label="怎么读">够日常网页和 720p 视频使用，但只是单次结果。</td></tr>
+              <tr><th scope="row" data-label="指标">上传速度</th><td class="col-num num" data-label="数值">{sp.uploadMbps} Mbps</td><td class="text-sm" data-label="怎么读">约为下载的 1/{d.downloadToUploadRatio}（{sp.downloadMbps} ÷ {sp.uploadMbps}）。</td></tr>
+              <tr><th scope="row" data-label="指标">空载延迟</th><td class="col-num num" data-label="数值">{sp.idleLatencyMs} ms</td><td class="text-sm" data-label="怎么读">没有明显流量时的往返时间。</td></tr>
+              <tr><th scope="row" data-label="指标">下载时延迟</th><td class="col-num num" data-label="数值">{sp.loadedDownloadLatencyMs} ms</td><td class="text-sm" data-label="怎么读">比空载高 {d.downloadLatencyIncreaseMs} ms（+{d.downloadLatencyIncreasePct}%）。</td></tr>
+              <tr><th scope="row" data-label="指标">上传时延迟</th><td class="col-num num" data-label="数值">{sp.loadedUploadLatencyMs} ms</td><td class="text-sm" data-label="怎么读">比空载高 {d.uploadLatencyIncreaseMs} ms（+{d.uploadLatencyIncreasePct}%）。</td></tr>
+              <tr><th scope="row" data-label="指标">抖动</th><td class="col-num num" data-label="数值">{sp.jitterMs} ms</td><td class="text-sm" data-label="怎么读">约为空载延迟的 {d.jitterToIdlePct}%。</td></tr>
+              <tr><th scope="row" data-label="指标">丢包率</th><td class="col-num" data-label="数值">未测得</td><td class="text-sm" data-label="怎么读">网页工具未能测出，本站不写成 0%。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <h3>空载延迟与负载延迟</h3>
+          <p>
+            下载 {sp.downloadMbps} Mbps 本身不算高，更值得看的是延迟的变化：空载延迟 {sp.idleLatencyMs} ms，下载时升到 {sp.loadedDownloadLatencyMs} ms（增加 {d.downloadLatencyIncreaseMs} ms，+{d.downloadLatencyIncreasePct}%），上传时升到 {sp.loadedUploadLatencyMs} ms（增加 {d.uploadLatencyIncreaseMs} ms，+{d.uploadLatencyIncreasePct}%）。满载时延迟明显抬高，说明链路在占满带宽时出现了排队，这对视频会议和游戏的影响，往往比下载速度本身更直接。{has('idle-vs-loaded-latency') && <> 两种延迟的区别见<a href="/articles/idle-vs-loaded-latency/">《机场节点测速中的空载延迟与负载延迟是什么？》</a>。</>}
+          </p>
+          <h3>上传为什么这么低</h3>
+          <p>
+            上传只有 {sp.uploadMbps} Mbps，约为下载的 1/{d.downloadToUploadRatio}。上下行差距大并不一定是机场的问题，家庭宽带的上行本来就常常远低于下行；但截图没有显示本地宽带的规格，所以无法判断瓶颈在本地上行、跨境线路还是出口端。抖动 {sp.jitterMs} ms 约为空载延迟的 {d.jitterToIdlePct}%，也偏大，实时通话类场景需要留意。
+          </p>
+          <p>
+            测速页识别的网络是 AUK HomeFiber (AS9664)。整理图说明测速流量经代理访问外部网络，所以这更可能是出口侧的信息，本站无法核验，也不把它当作本地宽带的运营商。
+          </p>
+        </div>
+      </section>
+
+      <section id="youtube" aria-labelledby="youtube-title">
+        <h2 id="youtube-title" class="mb-3">YouTube 播放观察</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--fit">
+            <caption>{fmtDateTime(yt.testDateTime)}（中国标准时间），YouTube「Stats for nerds」。</caption>
+            <thead>
+              <tr><th scope="col">项目</th><th scope="col">数值</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" data-label="项目">当前 / 最优分辨率</th><td class="num" data-label="数值">{yt.youtubeQuality}</td></tr>
+              <tr><th scope="row" data-label="项目">Connection Speed</th><td class="num" data-label="数值">{yt.extraMetrics?.connectionSpeedKbps?.value} Kbps（播放器估算）</td></tr>
+              <tr><th scope="row" data-label="项目">Network Activity</th><td class="num" data-label="数值">{yt.extraMetrics?.networkActivityKB?.value} KB</td></tr>
+              <tr><th scope="row" data-label="项目">Buffer Health</th><td class="num" data-label="数值">{yt.youtubeBufferSeconds} 秒（约 {d.youtubeBufferMinutes} 分钟）</td></tr>
+              <tr><th scope="row" data-label="项目">掉帧</th><td class="num" data-label="数值">{yt.extraMetrics?.droppedFrames?.value}</td></tr>
+              <tr><th scope="row" data-label="项目">播放器窗口 / 编码</th><td class="num" data-label="数值">{yt.extraMetrics?.viewport?.value} / {yt.extraMetrics?.codecs?.value}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            这一段 720p 视频的播放中，缓冲充足、没有掉帧。需要注意三点：第一，这只是一段视频、一个时刻；第二，Current Res 与 Optimal Res 相同，说明播放器是按它认为最合适的分辨率在播放；而 Optimal Res 与播放器窗口大小（本次为 {yt.extraMetrics?.viewport?.value}）有关，不代表线路最高只能到 720p，本次也没有测试 1080p 或 4K；第三，{fmtDateTime(yt.testDateTime)} 在预设晚高峰窗口（20:00–23:00）结束 4 分钟之后，所以不计入晚高峰统计。{has('youtube-stats-for-nerds') && <> 各项数字的含义见<a href="/guides/youtube-stats-for-nerds/">《YouTube Stats for nerds如何辅助判断节点视频播放表现？》</a>。</>}
+          </p>
+        </div>
+      </section>
+
+      <section id="reach" aria-labelledby="reach-title">
+        <h2 id="reach-title" class="mb-3">常用网站连通性</h2>
+        <p class="text-sm text-soft mb-3">测速页对 {reach.length} 个常用网站做了连通性检查：{nOk} 个“可连接”，{nSlow} 个“较慢”，{nTimeout} 个“超时或无法连接”。下表照整理图转录。</p>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--compact">
+            <caption>连通性只说明那一刻能否建立连接及其耗时，不等于解锁，也不等于能正常使用。</caption>
+            <thead>
+              <tr><th scope="col">网站</th><th scope="col">结果</th><th scope="col" class="col-num">耗时</th></tr>
+            </thead>
+            <tbody>
+              {
+                reach.map((r) => (
+                  <tr>
+                    <th scope="row" data-label="网站">{r.site}</th>
+                    <td data-label="结果"><span class={reachChip[r.status]}>{r.label}</span></td>
+                    <td class="col-num num" data-label="耗时">{r.ms === null ? '—' : `${r.ms} ms`}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            Claude 在这次检查中超时，所以本站不能写“这个节点支持所有 AI 工具”；ChatGPT（101 ms）和 Gemini（96 ms）显示可连接，也不代表它们的全部功能都可用。整理图把 201 ms 及以上标为“较慢”，Netflix（271 ms）因此被标为较慢——这只是连通耗时，不是能否播放的结论。
+          </p>
+        </div>
+      </section>
+
+      <section id="peak" aria-labelledby="peak-title">
+        <h2 id="peak-title" class="mb-3">晚高峰复测：2026-10-28 晚上 9 点多</h2>
+        <p class="text-sm text-soft mb-3">站长在晚高峰窗口（20:00–23:00）内对新加坡节点测速。测速页的代理检查显示出口在新加坡（AUK HomeFiber，AS9664），与此前那次测速的出口网络相同；本次下载 50MB、上传 15MB，共消耗 49MB 流量。</p>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack">
+            <caption>左列是此前那次测速（截图没有可见日期），右列是晚高峰复测。差值按“晚高峰 − 此前”计算。</caption>
+            <thead>
+              <tr><th scope="col">指标</th><th scope="col" class="col-num">此前</th><th scope="col" class="col-num">晚高峰</th><th scope="col">变化</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" data-label="指标">下载</th><td class="col-num num" data-label="此前">{sp.downloadMbps} Mbps</td><td class="col-num num" data-label="晚高峰">{pk.downloadMbps} Mbps</td><td class="text-sm" data-label="变化">低 {pct(pk.downloadMbps!, sp.downloadMbps!) * -1}%；下载曲线峰值 {pk.extraMetrics?.downloadPeakMbps?.value} Mbps</td></tr>
+              <tr><th scope="row" data-label="指标">上传</th><td class="col-num num" data-label="此前">{sp.uploadMbps} Mbps</td><td class="col-num num" data-label="晚高峰">{pk.uploadMbps} Mbps</td><td class="text-sm" data-label="变化">高得多；上传曲线峰值 {pk.extraMetrics?.uploadPeakMbps?.value} Mbps</td></tr>
+              <tr><th scope="row" data-label="指标">空载延迟</th><td class="col-num num" data-label="此前">{sp.idleLatencyMs} ms</td><td class="col-num num" data-label="晚高峰">{pk.idleLatencyMs} ms</td><td class="text-sm" data-label="变化">低 {Math.round((sp.idleLatencyMs! - pk.idleLatencyMs!) * 10) / 10} ms</td></tr>
+              <tr><th scope="row" data-label="指标">下载时延迟</th><td class="col-num num" data-label="此前">{sp.loadedDownloadLatencyMs} ms</td><td class="col-num num" data-label="晚高峰">{pk.loadedDownloadLatencyMs} ms</td><td class="text-sm" data-label="变化">低 {sp.loadedDownloadLatencyMs! - pk.loadedDownloadLatencyMs!} ms</td></tr>
+              <tr><th scope="row" data-label="指标">上传时延迟</th><td class="col-num num" data-label="此前">{sp.loadedUploadLatencyMs} ms</td><td class="col-num num" data-label="晚高峰">{pk.loadedUploadLatencyMs} ms</td><td class="text-sm" data-label="变化">高 {pk.loadedUploadLatencyMs! - sp.loadedUploadLatencyMs!} ms</td></tr>
+              <tr><th scope="row" data-label="指标">抖动</th><td class="col-num num" data-label="此前">{sp.jitterMs} ms</td><td class="col-num num" data-label="晚高峰">{pk.jitterMs} ms</td><td class="text-sm" data-label="变化">低 {Math.round((sp.jitterMs! - pk.jitterMs!) * 10) / 10} ms</td></tr>
+              <tr><th scope="row" data-label="指标">丢包率</th><td class="col-num" data-label="此前">未测得</td><td class="col-num" data-label="晚高峰">未测得</td><td class="text-sm" data-label="变化">浏览器测不了丢包（需要 UDP）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <h3>怎么看这次晚高峰的结果</h3>
+          <p>
+            下载 {pk.downloadMbps} Mbps 不算快：看网页、聊天、用 AI 都够，720p 视频也没问题，但同时看 4K 会比较吃力。不过这次的延迟表现比此前那次好：空载延迟 {pk.idleLatencyMs} ms、抖动 {pk.jitterMs} ms，下载时延迟升到 {pk.loadedDownloadLatencyMs} ms，都比此前低得多，说明晚上这个时段链路并没有明显拥堵。
+          </p>
+          <p>
+            需要留意的是上传占满时延迟升到 {pk.loadedUploadLatencyMs} ms。这通常意味着上行方向出现了排队，可能在本地宽带，也可能在线路上；截图没有显示本地宽带的规格，本站无法判断。对日常使用影响不大，但如果你经常一边上传大文件一边视频通话，会感觉到卡顿。
+          </p>
+          <p>
+            两次测速的下载速度差了不少，但此前那次没有日期，无法确定是哪个时段测的，所以不能直接说“晚上变慢了”。要判断这一点，需要在同一个节点、同一台设备上，白天和晚上各测几次再比较。{has('why-nodes-slow-down-at-night') && <> 晚上变慢的常见原因见<a href="/articles/why-nodes-slow-down-at-night/">《为什么同一个机场节点晚上会变慢？》</a>。</>}
+          </p>
+        </div>
+
+        <h3 class="mt-5 mb-3">晚高峰的网站连通性</h3>
+        <p class="text-sm text-soft mb-3">同一个测速页对 {preach.length} 个网站各连 4 次取中位数：{pkOk} 个“可连接”，{pkSlow} 个“较慢”或“很慢”，{pkTimeout} 个超时。右列是此前那次的结果，方便对照。</p>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--compact">
+            <caption>连通性只说明能否建立连接及其耗时，不等于解锁，也不等于能正常使用。</caption>
+            <thead>
+              <tr><th scope="col">网站</th><th scope="col">晚高峰结果</th><th scope="col" class="col-num">晚高峰耗时</th><th scope="col" class="col-num">此前耗时</th></tr>
+            </thead>
+            <tbody>
+              {
+                preach.map((r) => {
+                  const e = earlierMs.get(r.site);
+                  return (
+                    <tr>
+                      <th scope="row" data-label="网站">{r.site}</th>
+                      <td data-label="晚高峰结果"><span class={reachChip[r.status]}>{r.label}</span></td>
+                      <td class="col-num num" data-label="晚高峰耗时">{r.ms === null ? '—' : `${r.ms} ms`}</td>
+                      <td class="col-num num" data-label="此前耗时">{e ? (e.ms === null ? '超时' : `${e.ms} ms`) : '—'}</td>
+                    </tr>
+                  );
+                })
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            晚高峰时 Google、YouTube 的连接耗时从此前的 25 ms 升到 80 ms 左右，ChatGPT、Gemini 基本没变，TikTok 反而更快（37 ms）。Claude 两次都超时，所以本站仍然不能说这个节点适合所有 AI 工具。Netflix 从“较慢”（271 ms）变成“很慢”（346 ms），想用这个节点看 Netflix 的话，建议先自己试播一段。
+          </p>
+        </div>
+      </section>
+
+      <section id="nodes" aria-labelledby="nodes-title">
+        <h2 id="nodes-title" class="mb-3">节点在线记录</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--fit">
+            <caption>{fmtDateTime(av.checkedFrom)} 至 {av.checkedTo?.slice(11, 19)}（北京时间），服务商面板截图。流量倍率：{av.trafficMultiplier}。</caption>
+            <thead>
+              <tr><th scope="col">地区</th><th scope="col" class="col-num">在线 / 总数</th></tr>
+            </thead>
+            <tbody>
+              {av.byRegion.map((r) => <tr><th scope="row" data-label="地区">{r.label}</th><td class="col-num num" data-label="在线 / 总数">{r.online} / {r.total}</td></tr>)}
+              <tr><th scope="row" data-label="地区">合计</th><td class="col-num num" data-label="在线 / 总数">{av.onlineNodes} / {av.totalNodes}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            “{av.onlineNodes}/{av.totalNodes}”指截图中出现的节点全部在线，不代表服务商的全部节点；这个状态来自控制面板，只说明那一刻面板认为节点在线，不等于速度快，也不等于长期稳定。{has('online-rate-vs-stability') && <> 区别见<a href="/articles/online-rate-vs-stability/">《节点在线率与节点真实稳定性有什么不同？》</a>。</>}
+          </p>
+        </div>
+      </section>
+
+      <section id="method" aria-labelledby="method-title">
+        <h2 id="method-title" class="mb-3">方法与环境</h2>
+        <ul class="bullets">
+          <li><strong>测速工具：</strong>网页测速工具，整理图没有注明工具名称。</li>
+          <li><strong>出口与方式：</strong>出口在新加坡，测速流量经代理访问外部网络；具体是新加坡 8 个节点中的哪一个，整理图没有显示。</li>
+          <li><strong>本地环境：</strong>城市、客户端、设备，整理图都没有给出，记录为“未标注”；运营商为站长自述的中国联通（图上看不到）。</li>
+          <li><strong>次数：</strong>此前的测速和 YouTube 观察各一次；2026-10-28 晚高峰测速一次，网站连通性每个网站连 4 次取中位数。</li>
+          <li><strong>晚高峰复测的时间：</strong>测速截图本身没有时钟，时间取自同一页面下方连通性截图里的电脑系统时钟（2026-10-28 21:26）。</li>
+          <li><strong>资料来源：</strong>较早的三份证据来自站长整理图，原始截图已不保留，标记为“未核验”；晚高峰复测有两张原图，标记为“已核验”。</li>
+        </ul>
+        <p class="mt-3 text-sm text-soft">本站对一条记录的要求见<a href="/testing-methodology/">测试方法</a>；这三条记录在全站的位置见<a href="/test-records/">测试档案</a>和<a href="/time-tests/">分时段节点测试</a>。</p>
+      </section>
+
+      <section id="limits" aria-labelledby="limits-title">
+        <h2 id="limits-title" class="mb-3">这份报告不能说明什么</h2>
+        <div class="prose prose--wide">
+          <div class="limits">
+            <ul>
+              <li>晚高峰复测只有一次，不能说明这个节点每天晚上都是这样；较早那次测速截图没有可见日期，不进入任何分时段统计。</li>
+              <li>几份证据来自不同的时间，不是同一次连续测试。</li>
+              <li>没有测试 4K，也没有测试新加坡以外的节点，不能由此推断“全部节点”的表现。</li>
+              <li>Claude 检查超时，所以不能说它支持所有 AI 工具；整理图文字总结里提到“适合视频与 AI 对话”，本站不据此写出通用结论。</li>
+              <li>整理图里有一栏按用途给出“优秀 / 良好 / 一般”的场景评分。评分标准没有说明，又基于单次测试，本站不采用，也不在站内引用。</li>
+              <li>丢包率网页工具没有测出，记为“未测得”，没有写成 0%。</li>
+              <li>较早三份证据的原始截图已不保留，这三条记录暂不标记为“已核验”。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="evidence" aria-labelledby="evidence-title">
+        <h2 id="evidence-title" class="mb-3">证据文件</h2>
+        <p class="text-sm text-soft mb-3">点开图片可以查看测速原图。</p>
+        <EvidenceGallery files={LDY_EVIDENCE.filter((e) => e.kind !== 'plan-screenshot')} />
+      </section>
+
+      <section aria-labelledby="next-title">
+        <h2 id="next-title" class="mb-3">接下来补什么</h2>
+        <div class="prose prose--wide">
+          <p>
+            已经有了一次晚高峰记录。要回答“这个节点晚上稳不稳”，还需要同一个节点在早间、午间、晚间、晚高峰和深夜多天的重复测试，并附上原始截图。
+            {has('seven-day-node-speed-log') && <> 记录方法见<a href="/guides/seven-day-node-speed-log/">《如何记录一个节点连续7天的速度变化？》</a>。</>}
+            {has('how-to-speedtest-at-peak-hours') && <> 晚高峰测试的注意事项见<a href="/articles/how-to-speedtest-at-peak-hours/">《机场晚高峰测速应该怎样进行？》</a>。</>}
+          </p>
+          <p>
+            更多相关资料：<a href="/airports/lingdongyun/peak-2026-10-28/">同一晚的美国节点晚高峰实测</a>；<a href={`/airports/${brand.slug}/`}>灵动云的套餐、节点与来源整理</a>；<a href="/regions/singapore/">新加坡节点地区页</a>；{has('singapore-node-speedtest-metrics') && <><a href="/articles/singapore-node-speedtest-metrics/">新加坡节点测速看哪些数据</a>；</>}<a href="/time-tests/">分时段节点测试</a>。
+          </p>
+        </div>
+        <div class="panel mt-5">
+          <p class="text-soft">想了解灵动云目前的套餐和报价，可以前往它的官网自行确认。</p>
+          <div class="mt-3"><AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" /></div>
+          <p class="disclosure mt-3">{AFFILIATE_NOTE}</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

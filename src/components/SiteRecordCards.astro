@@ -1,0 +1,82 @@
+---
+/** 本站测试记录与节点在线快照的摘要卡片（地区页、测试档案页复用）。 */
+import GradeBadge from './GradeBadge.astro';
+import { RECORD_KIND_LABEL } from '../data/labels';
+import { getBrand } from '../data/brands';
+import { fmtDateTime } from '../lib/format';
+import type { AvailabilitySnapshot, TestRecord } from '../data/types';
+
+interface Props {
+  records: readonly TestRecord[];
+  snapshots?: { snapshot: AvailabilitySnapshot; online: number; total: number }[];
+  regionLabel?: string;
+  /** 卡片标题的层级：放在 H2 之下用 3，放在 H3 之下用 4（默认） */
+  level?: 3 | 4;
+}
+const { records, snapshots = [], regionLabel, level = 4 } = Astro.props;
+const Heading = `h${level}` as 'h3' | 'h4';
+---
+
+<div class="grid grid--2">
+  {
+    snapshots.map(({ snapshot, online, total }) => {
+      const brand = getBrand(snapshot.brandId);
+      return (
+        <article class="panel" id={snapshot.snapshotId}>
+          <Heading class="panel__title">
+            节点在线快照 · <a href={`/airports/${snapshot.brandId}/`}>{brand?.shortName}</a>
+          </Heading>
+          <p class="stat">
+            <span class="stat__num num">{online}/{total}</span>
+            <span class="stat__label">{regionLabel ? `${regionLabel}节点` : '节点'}显示在线</span>
+          </p>
+          <p class="mt-3 text-sm text-soft">
+            检查时间：{fmtDateTime(snapshot.checkedFrom)}
+            {snapshot.checkedTo && ` – ${snapshot.checkedTo.slice(11, 19)}`}（北京时间）
+          </p>
+          <p class="mt-2 chip-row">
+            <span class="chip">站长实测</span>
+          </p>
+          <ul class="bullets text-xs text-mute mt-3">
+            {snapshot.caveats.map((c) => <li>{c}</li>)}
+          </ul>
+        </article>
+      );
+    })
+  }
+  {
+    records.map((r) => {
+      const brand = getBrand(r.brandId);
+      return (
+        <article class="panel" id={r.testId}>
+          <Heading class="panel__title">
+            {RECORD_KIND_LABEL[r.recordKind]} · <a href={`/airports/${r.brandId}/`}>{brand?.shortName}</a>
+          </Heading>
+          <p class="text-sm text-soft">
+            {r.nodeDisplayName} · {r.testDateTime ? fmtDateTime(r.testDateTime) : '截图没有可见日期'}
+          </p>
+          <dl class="mini-facts mt-3">
+            {r.downloadMbps !== null && (<div><dt>下载</dt><dd class="num">{r.downloadMbps} Mbps</dd></div>)}
+            {r.uploadMbps !== null && (<div><dt>上传</dt><dd class="num">{r.uploadMbps} Mbps</dd></div>)}
+            {r.idleLatencyMs !== null && (<div><dt>空载延迟</dt><dd class="num">{r.idleLatencyMs} ms</dd></div>)}
+            {r.loadedDownloadLatencyMs !== null && (<div><dt>下载时延迟</dt><dd class="num">{r.loadedDownloadLatencyMs} ms</dd></div>)}
+            {r.loadedUploadLatencyMs !== null && (<div><dt>上传时延迟</dt><dd class="num">{r.loadedUploadLatencyMs} ms</dd></div>)}
+            {r.jitterMs !== null && (<div><dt>抖动</dt><dd class="num">{r.jitterMs} ms</dd></div>)}
+            <div><dt>丢包率</dt><dd>{r.packetLossPercent !== null ? `${r.packetLossPercent}%` : '未测得'}</dd></div>
+            {r.youtubeQuality && (<div><dt>YouTube 画质</dt><dd class="num">{r.youtubeQuality}</dd></div>)}
+            {r.youtubeBufferSeconds !== null && (<div><dt>缓冲</dt><dd class="num">{r.youtubeBufferSeconds} 秒</dd></div>)}
+          </dl>
+          <p class="mt-3 chip-row">
+            <GradeBadge grade={r.sourceType} />
+            <span class="chip chip--ok">{r.isVerified ? '附测速原图' : '站长实测'}</span>
+          </p>
+          {r.caveats.length > 0 && (
+            <ul class="bullets text-xs text-mute mt-3">
+              {r.caveats.slice(0, 3).map((c) => <li>{c}</li>)}
+            </ul>
+          )}
+        </article>
+      );
+    })
+  }
+</div>

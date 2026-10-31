@@ -1,0 +1,71 @@
+---
+/**
+ * 实测截图：整齐的卡片网格，每张图有标题、“看什么”说明和截图时间，点击打开原图。
+ * 只显示已有文件的截图；套餐页截图（站长参考用）与缺失文件不显示。
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import type { EvidenceFile } from '../data/types';
+
+interface Props {
+  files: readonly EvidenceFile[];
+}
+const { files } = Astro.props;
+const root = path.resolve('public');
+
+const REGION: [RegExp, string][] = [[/-hk-/, '香港节点'], [/-us-/, '美国节点'], [/-sg-|composite/, '新加坡节点']];
+const regionOf = (id: string) => REGION.find(([re]) => re.test(id))?.[1] ?? '灵动云节点';
+const heading = (f: EvidenceFile): { title: string; what: string } => {
+  const r = regionOf(f.evidenceId);
+  if (f.kind === 'composite-image') return { title: `${r} · 测速汇总图`, what: '测速、节点在线数与 YouTube 播放情况汇总在一张图里' };
+  if (f.kind === 'youtube-stats-screenshot') return { title: `${r} · YouTube 播放状态`, what: '看播放分辨率、连接速度和缓冲时长，判断看视频顺不顺' };
+  if (f.kind === 'node-status-screenshot') return { title: `${r} · 节点在线状态`, what: '各地区节点是否在线' };
+  if (/reachability/.test(f.evidenceId)) return { title: `${r} · 常用网站连通性`, what: '打开 Google、YouTube、ChatGPT 等网站的连接延迟' };
+  return { title: `${r} · 晚高峰测速`, what: '下载 / 上传速度、延迟和抖动' };
+};
+const when = (f: EvidenceFile) => {
+  const m = /(\d{4}-\d{2}-\d{2})(?:\s+(\d{2}:\d{2}))?/.exec(`${f.capturedAtText ?? ''} ${f.title}`);
+  return m ? `${m[1]}${m[2] ? ` ${m[2]}` : ''}` : null;
+};
+
+const items = (
+  await Promise.all(
+    files
+      .filter((f) => f.kind !== 'plan-screenshot')
+      .map(async (f) => {
+        const abs = path.join(root, f.publicPath);
+        if (!fs.existsSync(abs)) return null;
+        const m = await sharp(abs).metadata();
+        const wp = f.publicPath.replace(/\.(png|jpe?g)$/i, '.webp');
+        const webp = wp !== f.publicPath && fs.existsSync(path.join(root, wp)) ? wp : null;
+        return { f, w: m.width ?? 0, h: m.height ?? 0, webp, ...heading(f), date: when(f) };
+      }),
+  )
+).filter((x): x is NonNullable<typeof x> => x !== null);
+---
+
+{
+  items.length > 0 && (
+    <ul class="shots">
+      {items.map(({ f, w, h, webp, title, what, date }) => (
+        <li class="shot" id={f.evidenceId}>
+          <figure>
+            <figcaption class="shot__head">
+              <strong class="shot__title">{title}</strong>
+              <span class="shot__what">{what}</span>
+            </figcaption>
+            <a class="shot__img" href={f.publicPath} target="_blank" rel="noopener">
+              <img src={webp ?? f.publicPath} width={w} height={h} loading="lazy" decoding="async" alt={`${title}：${f.title}`} />
+              <span class="visually-hidden">（在新窗口打开原图）</span>
+            </a>
+            <p class="shot__foot">
+              <span>{date ? `截图时间 ${date}` : '灵动云实测'}</span>
+              <a href={f.publicPath} target="_blank" rel="noopener">查看原图</a>
+            </p>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  )
+}

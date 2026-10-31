@@ -1,0 +1,16 @@
+---
+import VerificationChip from './VerificationChip.astro';
+import { BRANDS } from '../data/brands';
+---
+
+<ol class="roster">
+  {
+    BRANDS.map((b) => (
+      <li>
+        <span class="roster__rank num">{String(b.displayRank).padStart(2, '0')}</span>
+        <a href={`/airports/${b.slug}/`}>{b.brandName}</a>
+        <span class="roster__state"><VerificationChip status={b.verificationStatus} /></span>
+      </li>
+    ))
+  }
+</ol>

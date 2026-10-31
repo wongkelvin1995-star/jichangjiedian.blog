@@ -1,0 +1,87 @@
+---
+import '../styles/map.css';
+import WorldMap from './WorldMap.astro';
+import RegionPanel from './RegionPanel.astro';
+import { BRANDS } from '../data/brands';
+import { MAP_DISCLAIMER } from '../data/regions';
+import { ROUTE_TYPES } from '../data/routes';
+import { ALL_REGION_SUMMARIES } from '../lib/queries';
+
+const DEFAULT = 'HK';
+const summaries = ALL_REGION_SUMMARIES();
+---
+
+<div class="map-explorer" id="global-map" data-map-explorer data-default={DEFAULT}>
+  <div class="map-card">
+    <div class="map-card__bar">
+      <h2 class="map-card__title">全球节点航线示意</h2>
+      <ul class="legend" aria-label="图例">
+        <li><span class="legend__swatch legend__swatch--documented"></span>有该地区节点</li>
+        <li><span class="legend__swatch legend__swatch--unverified"></span>资料补充中</li>
+        <li><span class="legend__swatch legend__swatch--selected"></span>当前选中</li>
+        <li><span class="legend__swatch legend__swatch--entrance"></span>国内入口（示意）</li>
+      </ul>
+    </div>
+
+    <div class="map-filters" data-map-filters>
+      <label class="field">
+        <span>按品牌</span>
+        <select class="select" data-filter="brand" disabled>
+          <option value="">全部品牌</option>
+          {BRANDS.map((b) => <option value={b.slug}>{String(b.displayRank).padStart(2, '0')} {b.shortName}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>按线路类型</span>
+        <select class="select" data-filter="route" disabled>
+          <option value="">全部线路</option>
+          {ROUTE_TYPES.map((r) => <option value={r.id}>{r.name}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span>按资料状态</span>
+        <select class="select" data-filter="level" disabled>
+          <option value="">全部状态</option>
+          <option value="documented">有该地区节点</option>
+          <option value="unverified">资料补充中</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="map-stage">
+      <WorldMap selected={DEFAULT} />
+    </div>
+
+    <div class="map-card__foot">
+      <span>{MAP_DISCLAIMER}地区名后的数字是提供该地区节点的机场数量。</span>
+      <button class="link-btn" type="button" data-map-reset hidden>重置视图</button>
+    </div>
+
+    <nav class="seg" aria-label="切换地区" data-region-tabs>
+      {
+        summaries.map((s) => (
+          <a
+            class="seg__item"
+            href={`/regions/${s.point.regionSlug}/`}
+            data-region-tab={s.point.countryCode}
+            data-selected={s.point.countryCode === DEFAULT ? 'true' : 'false'}
+            aria-current={s.point.countryCode === DEFAULT ? 'true' : undefined}
+          >
+            {s.point.name}
+            <span class="seg__n">{s.documented.length}</span>
+          </a>
+        ))
+      }
+      <a class="seg__item" href="#region-list">查看地区列表</a>
+    </nav>
+  </div>
+
+  <aside class="region-side" aria-label="地区资料面板">
+    {summaries.map((s) => <RegionPanel summary={s} hidden={s.point.countryCode !== DEFAULT} />)}
+    <p class="visually-hidden" role="status" data-map-live></p>
+  </aside>
+</div>
+
+<script>
+  import '../scripts/map-explorer';
+</script>

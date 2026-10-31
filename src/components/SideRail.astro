@@ -1,0 +1,124 @@
+---
+/**
+ * 侧边栏：机场节点与机场推荐。宽屏时固定在页面右侧空白处，窄屏时放在页面底部。
+ * 上半部分是站长指定的 5 家推荐（灵动云、暮光加速、隐形人、梯子云、FlyV），价格与节点都从站内资料读取；
+ * 下半部分是其余机场的快速入口。
+ */
+import { BRANDS, mustGetBrand } from '../data/brands';
+import { SHEET_LOWEST } from '../data/owner-sheet-prices';
+import type { Brand } from '../data/types';
+import AffiliateLink from './AffiliateLink.astro';
+import Flames from './Flames.astro';
+import Coupon from './Coupon.astro';
+
+interface Props { path?: string }
+const { path = '' } = Astro.props;
+
+const low = (slug: string) => SHEET_LOWEST[slug];
+const plan = (b: Brand, key: string) => b.plans.find((p) => p.planId === `${b.slug}-${key}`);
+const offer = (b: Brand, key: string, period: string) => plan(b, key)?.offers.find((o) => o.billingPeriod === period);
+const nodes = (b: Brand) => (b.nodeCount.value === null ? '' : `${b.nodeCount.value}${/不少于|下限|50\+/.test(b.nodeCount.note ?? '') ? '+' : ''} 个节点`);
+const yuan = (n: number | null | undefined) => (n === null || n === undefined ? '' : `¥${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}`);
+
+const ldy = mustGetBrand('lingdongyun');
+const cy = offer(ldy, 'chuanyun', 'annual');
+const cyMonthly = cy?.priceCNY ? Math.round((cy.priceCNY / 12) * 100) / 100 : null;
+
+const mg = mustGetBrand('muguangjiasu');
+const fm = mustGetBrand('feimaoyun');
+const wf = mustGetBrand('breezenet');
+const fmYear = offer(fm, 'student', 'annual');
+const wfYear = offer(wf, 'qingfeng', 'annual');
+const yx = mustGetBrand('yinxingren');
+const tz = mustGetBrand('laddercloud');
+const fv = mustGetBrand('flyv');
+const mgYear = offer(mg, 'annual-lite', 'annual');
+const yxYear = offer(yx, 'xingyao', 'annual');
+const tzYear = offer(tz, 'annual-keep', 'annual');
+const fvAdv = offer(fv, 'adv', 'monthly');
+
+const picks = [
+  {
+    b: mg,
+    tag: '稳定之选',
+    text: `${nodes(mg)}，月付 ${yuan(low(mg.slug)?.price)} 起含 ${low(mg.slug)?.monthlyGB}GB；年付轻量版 ${yuan(mgYear?.priceCNY)}/年走全 IPLC 专线，不限设备。`,
+  },
+  {
+    b: fm,
+    tag: '全 IPLC',
+    text: `${nodes(fm)}，月付 ${yuan(low(fm.slug)?.price)} 起含 ${low(fm.slug)?.monthlyGB}GB，全 IPLC 专线、不限设备；学生版年付 ${yuan(fmYear?.priceCNY)}，每月 ${fmYear?.monthlyTrafficGB}GB。`,
+  },
+  {
+    b: wf,
+    tag: '性价比',
+    text: `乘风 ${yuan(low(wf.slug)?.price)}/月就有 ${low(wf.slug)?.monthlyGB}GB，IPLC 专线 + 日本直连，不限设备；清风年付 ${yuan(wfYear?.priceCNY)}，每月 ${wfYear?.monthlyTrafficGB}GB。`,
+  },
+  {
+    b: yx,
+    tag: '专线年付',
+    text: `星耀风暴年付 ${yuan(yxYear?.priceCNY)}，每月 ${yxYear?.monthlyTrafficGB}GB，全 IEPL 专线；月付 ${yuan(low(yx.slug)?.price)} 起 ${low(yx.slug)?.monthlyGB}GB。`,
+  },
+  {
+    b: tz,
+    tag: '大流量',
+    text: `月付 ${yuan(low(tz.slug)?.price)} 起 ${low(tz.slug)?.monthlyGB}GB，高阶套餐走 IEPL 专线；年度保活 ${yuan(tzYear?.priceCNY)}/年，每月 ${tzYear?.monthlyTrafficGB}GB。`,
+  },
+  {
+    b: fv,
+    tag: '流媒体 · AI',
+    text: `入门 ${yuan(low(fv.slug)?.price)}/月 ${low(fv.slug)?.monthlyGB}GB，进阶 ${yuan(fvAdv?.priceCNY)}/月起 BGP + IEPL / IPLC 专线；Netflix、ChatGPT、Claude 都能用。`,
+  },
+];
+const pickSlugs = new Set(['lingdongyun', ...picks.map((p) => p.b.slug)]);
+const rest = BRANDS.filter((b) => !pickSlugs.has(b.slug));
+const cur = (slug: string) => (path === `/airports/${slug}/` ? 'page' : undefined);
+---
+
+<aside class="rail" aria-labelledby="rail-title">
+  <h2 id="rail-title" class="rail__title">机场节点与机场推荐</h2>
+  <p class="rail__intro">按价格、节点覆盖和站长使用体验挑出的 7 家，点名字看完整套餐与节点。</p>
+
+  <div class="rail__featured flame-frame flame-frame--tight">
+    <Flames size="xs" />
+    <span class="rail__badge">本站主推</span>
+    <a class="rail__featured-link" href={`/airports/${ldy.slug}/`} aria-current={cur(ldy.slug)}><strong>{ldy.brandName}</strong></a>
+    <span class="rail__meta">{nodes(ldy)} · IPLC / IEPL 专线 + BGP · 不限设备</span>
+    {
+      cy && (
+        <span class="rail__deal">
+          穿云年付 <b>{yuan(cy.priceCNY)}</b>，折合约 <b>{yuan(cyMonthly)}/月</b>，每月 {cy.monthlyTrafficGB}GB、每 30 天刷新，官网写 IEPL / IPLC 线路。香港 / 新加坡 / 美国节点有 10 月 28 日晚高峰实测。
+        </span>
+      )
+    }
+    <AffiliateLink url={ldy.affiliateUrl} brandName={ldy.shortName} variant="primary" small label="立即注册" />
+    <Coupon slug="lingdongyun" compact />
+  </div>
+
+  <ol class="rail__picks">
+    {
+      picks.map(({ b, tag, text }) => (
+        <li>
+          <a href={`/airports/${b.slug}/`} aria-current={cur(b.slug)}>
+            <span class="rail__pick-head"><strong>{b.shortName}</strong><span class="rail__tag">{tag}</span></span>
+            <span class="rail__pick-text">{text}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+
+  <h3 class="rail__sub">更多机场</h3>
+  <ol class="rail__list">
+    {
+      rest.map((b) => (
+        <li>
+          <a href={`/airports/${b.slug}/`} aria-current={cur(b.slug)}>
+            <span>{b.shortName}</span>
+            {low(b.slug) !== undefined && <span class="rail__price">¥{low(b.slug)!.price}</span>}
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+  <a class="rail__all" href="/airports/">查看全部 {BRANDS.length} 家</a>
+</aside>

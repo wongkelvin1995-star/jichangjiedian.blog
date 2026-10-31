@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GradeBadge from '../components/GradeBadge.astro';
+import { BRANDS, getBrand } from '../data/brands';
+import { GRADE_INFO } from '../data/labels';
+import { SOURCES, SOURCE_KIND_LABEL } from '../data/source-registry';
+import { fmtDate } from '../lib/format';
+import { DATA_UPDATED } from '../lib/site';
+
+const path = '/sources/';
+const title = '资料来源：证据等级 A–D 与每条来源的类型、日期和用途｜机场节点';
+const description = `机场节点站用到的${SOURCES.length}份来源资料清单：来源类型、页面标注日期、证据等级与对应品牌。推广链接不属于来源，也不被当作证据。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '资料来源', href: path },
+];
+const order = new Map(BRANDS.map((b) => [b.slug, b.displayRank]));
+const rank = (id?: string) => (id ? order.get(id) ?? 999 : 0);
+const sorted = [...SOURCES].sort((a, b) => rank(a.brandId) - rank(b.brandId) || a.sourceId.localeCompare(b.sourceId));
+const byKind = new Map<string, number>();
+for (const s of SOURCES) byKind.set(s.kind, (byKind.get(s.kind) ?? 0) + 1);
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>资料来源：每条数据从哪里来，可信到什么程度</h1>
+      <p class="page-head__lead">
+        站内每个有判断价值的字段都标注来源等级，并能追溯到下面的来源编号。来源页面没有标注日期的，显示本站整理资料的日期，不会替来源补一个日期。
+      </p>
+      <p class="page-head__meta"><span>资料整理日期：{fmtDate(DATA_UPDATED)}</span><span>共 {SOURCES.length} 份来源</span></p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <h2 class="mb-3">证据等级</h2>
+      <div class="grid grid--2">
+        {
+          (['A', 'B', 'C', 'D'] as const).map((g) => (
+            <div class="panel">
+              <GradeBadge grade={g} />
+              <p class="mt-2 text-soft">{GRADE_INFO[g].desc}</p>
+            </div>
+          ))
+        }
+      </div>
+      <div class="prose prose--wide mt-6">
+        <h2>怎么判断等级</h2>
+        <ul>
+          <li>本站自己测试、带时间和环境的记录属于 A；但没有挂载原始截图的，只算“未核验”，等级保留 A，状态不是“已核验”。</li>
+          <li>服务商后台或官网截图属于 B。自称品牌官网、但没有日期的页面存档，只能算 C，因为本站无法独立确认它的归属和抓取时间。</li>
+          <li>第三方评测或聚合站的页面存档属于 C；两个第三方来源给出同一个数字，也仍是 C。</li>
+          <li>只出现在二次整理的汇编资料里、与页面存档冲突或来自静态演示站的内容属于 D，只作线索。</li>
+        </ul>
+        <p>推广链接是商业合作入口，不是来源；本站从不引用推广页面作为证据。</p>
+      </div>
+
+      <h2 class="mt-7 mb-3">来源清单</h2>
+      <div class="table-scroll">
+        <table class="data-table data-table--stack">
+          <caption>来源页面域名只作追溯，不做链接；站长上传文件名因上传通道限制可能丢失中文字符，以站长本地文件为准。</caption>
+          <thead>
+            <tr>
+              <th scope="col">编号</th>
+              <th scope="col">品牌</th>
+              <th scope="col">类型</th>
+              <th scope="col">标题</th>
+              <th scope="col">页面标注日期</th>
+              <th scope="col">默认等级</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              sorted.map((s) => (
+                <tr id={s.sourceId}>
+                  <th scope="row" class="col-nowrap" data-label="编号">{s.sourceId}</th>
+                  <td class="col-nowrap" data-label="品牌">
+                    {s.brandId && getBrand(s.brandId) ? <a href={`/airports/${s.brandId}/`}>{getBrand(s.brandId)!.shortName}</a> : <span class="text-mute">全站</span>}
+                  </td>
+                  <td class="text-sm" data-label="类型">{SOURCE_KIND_LABEL[s.kind]}</td>
+                  <td class="text-sm" data-label="标题">
+                    {s.title}
+                    {s.originUrl && <span class="cell-sub">来源页面：{s.originUrl}</span>}
+                    {s.notes && <span class="cell-sub">{s.notes}</span>}
+                  </td>
+                  <td class="text-sm col-nowrap" data-label="日期">{fmtDate(s.statedDate)}</td>
+                  <td data-label="默认等级"><GradeBadge grade={s.defaultGrade} showName={false} /></td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

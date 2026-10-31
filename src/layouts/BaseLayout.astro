@@ -1,0 +1,81 @@
+---
+import SideRail from '../components/SideRail.astro';
+import Cosmos from '../components/Cosmos.astro';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/layout.css';
+import '../styles/components.css';
+import '../styles/flame.css';
+import '../styles/prose.css';
+import '../styles/space.css';
+import Seo from '../components/Seo.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import { breadcrumbLd, organizationLd, websiteLd } from '../lib/seo';
+import type { Crumb, JsonLd } from '../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  /** 站内路径；默认取当前页面路径 */
+  path?: string;
+  noindex?: boolean;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  published?: string;
+  modified?: string;
+  breadcrumbs?: Crumb[];
+  jsonLd?: JsonLd[];
+}
+const { title, description, noindex, ogImage, ogType, published, modified, breadcrumbs, jsonLd = [] } = Astro.props;
+const path = Astro.props.path ?? Astro.url.pathname;
+const isHome = path === '/';
+// 背景模式：首页大面积深空；文章、指南与说明类长文用更安静的深空背景，方便阅读；其余内页居中
+const quiet = /^\/(articles|guides)\/[^/]+\/$/.test(path) || ['/privacy/', '/affiliate-disclosure/'].includes(path);
+const space: 'home' | 'page' | 'quiet' = isHome ? 'home' : quiet ? 'quiet' : 'page';
+
+const ld: JsonLd[] = [];
+if (isHome) ld.push(organizationLd(), websiteLd());
+if (breadcrumbs && breadcrumbs.length > 1) ld.push(breadcrumbLd(breadcrumbs, path));
+ld.push(...jsonLd);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Seo {title} {description} {path} {noindex} {ogImage} {ogType} {published} {modified} jsonLd={ld} />
+    <!-- 顶部星云是首屏最大的图（LCP 候选），文件只有十几 KB：手机与桌面各预载一张，不支持 AVIF 的浏览器会忽略 -->
+    <link rel="preload" as="image" type="image/avif" href="/images/space/nebula-800.avif" media="(max-width: 720px)" />
+    <link rel="preload" as="image" type="image/avif" imagesrcset="/images/space/nebula-1280.avif 1280w, /images/space/nebula-1920.avif 1920w" imagesizes="100vw" media="(min-width: 721px)" />
+  </head>
+  <body data-space={space}>
+    <Cosmos mode={space} />
+    <!-- 火焰的渐变色定义（全页共用一份，火焰路径用 CSS fill: url(#…) 引用）；0×0 不占位 -->
+    <svg class="flame-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="fg-o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff2600" /><stop offset="0.55" stop-color="#ff5a14" /><stop offset="1" stop-color="#ff9a2e" /></linearGradient>
+        <linearGradient id="fg-m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a00" /><stop offset="0.6" stop-color="#ffae1f" /><stop offset="1" stop-color="#ffd45c" /></linearGradient>
+        <linearGradient id="fg-i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd86b" /><stop offset="0.5" stop-color="#fff2b8" /><stop offset="1" stop-color="#fffdf2" /></linearGradient>
+        <linearGradient id="fg-hl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0.75" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></linearGradient>
+        <linearGradient id="fg-bo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a31200" /><stop offset="0.6" stop-color="#c93f08" /><stop offset="1" stop-color="#d9661a" /></linearGradient>
+        <linearGradient id="fg-bm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c25400" /><stop offset="1" stop-color="#e09a2a" /></linearGradient>
+        <linearGradient id="fg-bi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7a24a" /><stop offset="1" stop-color="#f6d79a" /></linearGradient>
+      </defs>
+    </svg>
+    <a class="skip-link" href="#main">跳到正文</a>
+    <Header {path} />
+    {breadcrumbs && breadcrumbs.length > 1 && <Breadcrumb items={breadcrumbs} />}
+    <main id="main">
+      <slot />
+    </main>
+    <SideRail path={path} />
+    <Footer />
+    <a class="to-top" href="#main" aria-label="返回页面顶部" hidden>↑<span class="to-top__text">顶部</span></a>
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

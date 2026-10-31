@@ -1,0 +1,283 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import GradeBadge from '../components/GradeBadge.astro';
+import TimeBand from '../components/TimeBand.astro';
+import TimeWindowTable from '../components/TimeWindowTable.astro';
+import TrendChart from '../components/TrendChart.astro';
+import EvidenceGallery from '../components/EvidenceGallery.astro';
+import { getBrand } from '../data/brands';
+import { GRADE_INFO } from '../data/labels';
+import { MAP_POINTS } from '../data/regions';
+import { EVIDENCE_FILES, SITE_TEST_RECORDS, TEST_COUNTS } from '../data/test-records';
+import { TIME_WINDOWS } from '../data/time-windows';
+import { LDY_REPORT_PATH } from '../data/reports/lingdongyun-sg-2026-10';
+import { loadPosts } from '../lib/content';
+import { browserRows } from '../lib/records-view';
+import { MIN_TREND_DAYS, buildTrendSeries } from '../lib/trend';
+import { bandMarkers } from '../lib/window-stats';
+import { fmtDate } from '../lib/format';
+import { DATA_UPDATED } from '../lib/site';
+
+const path = '/time-tests/';
+const title = '分时段节点指南：早间、晚高峰、深夜怎么选机场节点｜机场节点';
+const eligible = TEST_COUNTS.statEligible;
+const description = '早上、午间、下班、晚高峰和深夜，机场节点的速度和延迟都不一样。本页按五个时间段给出香港、日本、新加坡、美国节点的选择建议，并附灵动云晚高峰实测截图。';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '分时段节点测试', href: path },
+];
+
+const posts = await loadPosts();
+const has = (id: string) => posts.some((p) => p.id === id);
+const series = buildTrendSeries();
+const rows = browserRows();
+const brandOptions = [...new Set(rows.map((r) => r.brandSlug))]
+  .map((slug) => getBrand(slug)!)
+  .sort((a, b) => a.displayRank - b.displayRank);
+const regionOptions = MAP_POINTS.filter((p) => rows.some((r) => r.regionCodes.includes(p.countryCode)));
+const gradeOptions = (['A', 'B', 'C', 'D'] as const).filter((g) => rows.some((r) => r.grade === g));
+const toneLabel = { pending: 'chip chip--pending', third: 'chip chip--gray', claim: 'chip chip--gray' } as const;
+
+const dash = (v: string | null | undefined) => (v && v.trim() ? v : '未标注');
+
+const metrics: { term: string; text: string; article?: string }[] = [
+  { term: '下载速度', text: '单位时间内收到的数据量，常用 Mbps。网页测速通常多连接并发，结果受测速服务器、宽带上限和时间影响，单次数字只代表那一次。' },
+  { term: '上传速度', text: '向外发送数据的速度。家庭宽带的上行带宽往往远低于下行，所以上传明显偏低不一定是机场的问题，需要结合宽带本身判断。' },
+  { term: '空载延迟', text: '没有明显流量时的往返时间，反映路径本身的距离与路由质量。', article: 'idle-vs-loaded-latency' },
+  { term: '负载延迟', text: '下载或上传占满带宽时测到的往返时间。它比空载延迟高得越多，说明排队越严重，视频会议和游戏越容易卡。', article: 'idle-vs-loaded-latency' },
+  { term: '抖动', text: '延迟的波动幅度。平均延迟不高但抖动很大，实时通话和游戏的体验会明显变差。', article: 'jitter-impact-on-use-cases' },
+  { term: '丢包率', text: '发送的数据包中没有到达的比例。网页工具没能测出时，本站记为“未测得”，不写成 0%。' },
+  { term: '节点在线', text: '服务商面板在某个时间点显示节点可用。它不等于速度快，也不等于长期稳定。', article: 'online-rate-vs-stability' },
+  { term: 'Connection Speed / Buffer Health', text: 'YouTube「Stats for nerds」里播放器估算的当前连接速度，以及已缓冲的可播放秒数，用来观察视频播放，不是测速。', article: 'youtube-stats-for-nerds' },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>分时段节点指南：早上、晚高峰、深夜怎么选节点</h1>
+      <p class="page-head__lead">
+        同一个节点，早上和晚上 9 点的体验可能差很多。下面按时间段给出选节点的建议，并附上本站主推灵动云在晚高峰的香港、新加坡、美国节点实测。
+      </p>
+      <p class="page-head__meta">
+        <span>更新于 {fmtDate(DATA_UPDATED)}</span>
+        <span>满足统计条件的本站记录：<b class="num text-electric">{eligible}</b> 条</span>
+        <span>本站记录 {TEST_COUNTS.siteRecords} 条 · 节点在线快照 {TEST_COUNTS.snapshots} 次 · 其他测速参考 {TEST_COUNTS.thirdPartyRows} 行</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight" id="windows" aria-labelledby="windows-title">
+    <div class="container">
+      <h2 id="windows-title" class="mb-3">五个时间段怎么选节点</h2>
+      <p class="section__lead mb-4">
+        下面的时间轴标出了本站做过实测的时间点。晚上 8–11 点是一天中最拥堵的时段，选节点时优先考虑专线线路。
+      </p>
+      <TimeBand markers={bandMarkers(false)} />
+      <div class="mt-5">
+        <TimeWindowTable />
+      </div>
+      <p class="chip-row mt-4">
+        {TIME_WINDOWS.map((w) => <a class="chip chip--electric" href={`?window=${w.id}#records`}>只看{w.label}的记录</a>)}
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--band" id="trends" aria-labelledby="trends-title">
+    <div class="container">
+      <h2 id="trends-title" class="mb-3">趋势：同一节点、同一窗口的变化</h2>
+      {
+        series.length > 0 ? (
+          <div class="stack-lg">
+            <p class="text-soft">下面每条线都满足“同一品牌、同一节点、同一窗口，至少 {MIN_TREND_DAYS} 个不同日期，且原始证据已挂载”。线条只连接真实记录，不做平均或平滑。</p>
+            {series.map((s) => <TrendChart series={s} />)}
+          </div>
+        ) : (
+          <div class="stack">
+            <p class="empty">目前没有任何节点满足画趋势线的条件，所以这里没有图——一条只有一两个点的“趋势”没有意义。</p>
+            <div class="panel">
+              <h3 class="panel__title">什么时候才会出现趋势图</h3>
+              <ul class="bullets">
+                <li>同一个品牌、同一个节点、同一个预设窗口，至少有 <b class="num">{MIN_TREND_DAYS}</b> 个不同日期的测试；</li>
+                <li>每条记录都是本站测试（A 级），带完整的日期时间，并且原始截图或日志已经挂载；</li>
+                <li>不做平均、插值或平滑；同一天测了几次就画几个点；纵轴从 0 开始，不截断。</li>
+              </ul>
+              <p class="mt-3 text-sm text-soft">
+                想自己记录一周的变化，可以参考{has('seven-day-node-speed-log') ? <a href="/guides/seven-day-node-speed-log/">《如何记录一个节点连续7天的速度变化？》</a> : '站内的测试教程'}。
+              </p>
+            </div>
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="section section--tight" id="records" aria-labelledby="records-title">
+    <div class="container" data-record-browser>
+      <h2 id="records-title" class="mb-3">全部实测记录：按机场、地区和时段筛选</h2>
+      <p class="section__lead mb-4">
+        按机场、地区或时段筛选，看看不同节点的速度和延迟。
+      </p>
+      <form class="filter-bar" role="search" aria-label="筛选测试记录" data-record-filters hidden>
+        <label class="field field--grow">
+          <span>关键词</span>
+          <input class="input" type="search" name="q" placeholder="品牌、节点或地区，例如：灵动 新加坡" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>品牌</span>
+          <select class="select" name="brand">
+            <option value="">全部品牌</option>
+            {brandOptions.map((b) => <option value={b.slug}>{String(b.displayRank).padStart(2, '0')} {b.shortName}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>节点地区</span>
+          <select class="select" name="region">
+            <option value="">全部地区</option>
+            {regionOptions.map((p) => <option value={p.countryCode}>{p.name}</option>)}
+          </select>
+        </label>
+        <label class="field">
+          <span>时间窗口</span>
+          <select class="select" name="window">
+            <option value="">全部</option>
+            {TIME_WINDOWS.map((w) => <option value={w.id}>{w.label} {w.start}–{w.end}</option>)}
+            <option value="outside">预设窗口之外</option>
+            <option value="unknown">没有日期</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>来源等级</span>
+          <select class="select" name="grade">
+            <option value="">全部等级</option>
+            {gradeOptions.map((g) => <option value={g}>{g} {GRADE_INFO[g].name}</option>)}
+          </select>
+        </label>
+        <button class="btn btn--ghost btn--small" type="reset">清除筛选</button>
+      </form>
+      <p class="text-sm text-mute mt-3" data-record-count aria-live="polite">共 {rows.length} 条记录</p>
+      <div class="table-scroll mt-3">
+        <table class="data-table data-table--stack" data-record-table>
+          <caption>时间一律为北京时间。“所属窗口”只根据记录自带的时间判断；没有日期的记录不会被归入任何窗口。</caption>
+          <thead>
+            <tr>
+              <th scope="col">品牌</th>
+              <th scope="col">类型</th>
+              <th scope="col">等级</th>
+              <th scope="col">测试时间</th>
+              <th scope="col">所属窗口</th>
+              <th scope="col">地区</th>
+              <th scope="col">内容</th>
+              <th scope="col">状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              rows.map((r) => (
+                <tr data-search={r.search} data-brand={r.brandSlug} data-regions={r.regionCodes.join(' ')} data-window={r.windowId} data-grade={r.grade}>
+                  <th scope="row" class="col-nowrap" data-label="品牌"><a href={`/airports/${r.brandSlug}/`}>{r.brandName}</a></th>
+                  <td class="text-sm" data-label="类型"><a href={`/test-records/#${r.anchor}`}>{r.kindLabel}</a></td>
+                  <td data-label="等级"><GradeBadge grade={r.grade} showName={false} /></td>
+                  <td class="text-sm" data-label="测试时间">{r.timeText}</td>
+                  <td class="text-sm" data-label="所属窗口">{r.windowText}</td>
+                  <td class="text-sm" data-label="地区">{r.regionText}</td>
+                  <td class="text-sm" data-label="内容">{r.countText}</td>
+                  <td data-label="状态"><span class={toneLabel[r.tone]}>{r.status}</span></td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="empty" data-record-empty hidden>没有符合筛选条件的记录。可以放宽品牌、地区或窗口的选择。</p>
+    </div>
+  </section>
+
+  <section class="section section--band" id="environment" aria-labelledby="environment-title">
+    <div class="container">
+      <h2 id="environment-title" class="mb-3">测试环境</h2>
+      <p class="section__lead mb-4">
+        不同宽带、客户端和测速工具的结果会有差别，对照自己的网络环境来看。
+      </p>
+      <div class="table-scroll">
+        <table class="data-table data-table--stack">
+          <caption>本站记录的环境字段（来自记录本身，缺失即未标注）</caption>
+          <thead>
+            <tr>
+              <th scope="col">记录</th>
+              <th scope="col">运营商 / 接入</th>
+              <th scope="col">所在城市</th>
+              <th scope="col">客户端</th>
+              <th scope="col">设备</th>
+              <th scope="col">测速工具与方式</th>
+              <th scope="col">测试次数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              SITE_TEST_RECORDS.map((r) => (
+                <tr>
+                  <th scope="row" data-label="记录">
+                    <a href={`/test-records/#${r.testId}`}>{getBrand(r.brandId)?.shortName}　{r.nodeDisplayName}</a>
+                    <span class="cell-sub">{r.testDateTime ? r.testDateTime.slice(0, 16).replace('T', ' ') : '截图没有可见日期'}</span>
+                  </th>
+                  <td class="text-sm col-nowrap" data-label="运营商 / 接入">{dash(r.originISP)}</td>
+                  <td class="text-sm col-nowrap" data-label="所在城市">{dash(r.originCity)}</td>
+                  <td class="text-sm col-nowrap" data-label="客户端">{dash([r.clientName, r.clientVersion].filter(Boolean).join(' '))}</td>
+                  <td class="text-sm col-nowrap" data-label="设备">{dash(r.deviceType)}</td>
+                  <td class="text-sm" data-label="测速工具与方式">{dash(r.testMethod)}</td>
+                  <td class="text-sm num" data-label="测试次数">{r.sampleCount ?? '未标注'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tight" id="evidence" aria-labelledby="evidence-title">
+    <div class="container">
+      <h2 id="evidence-title" class="mb-3">实测截图</h2>
+      <p class="section__lead mb-4">
+        点开图片可以看测速原图。
+      </p>
+      <EvidenceGallery files={EVIDENCE_FILES} />
+      <p class="mt-4 text-sm"><a href={LDY_REPORT_PATH}>查看这些证据对应的专题报告 →</a></p>
+    </div>
+  </section>
+
+  <section class="section section--band" id="metrics" aria-labelledby="metrics-title">
+    <div class="container">
+      <h2 id="metrics-title" class="mb-3">这些指标怎么读</h2>
+      <dl class="facts">
+        {
+          metrics.map((m) => (
+            <>
+              <dt>{m.term}</dt>
+              <dd>
+                {m.text}
+                {m.article && has(m.article) && <> <a href={`/${m.article === 'youtube-stats-for-nerds' ? 'guides' : 'articles'}/${m.article}/`}>详细解释</a></>}
+              </dd>
+            </>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="section section--tight" id="download" aria-labelledby="download-title">
+    <div class="container">
+      <h2 id="download-title" class="mb-3">下载测试记录（CSV）</h2>
+      <p class="section__lead">
+        全部 {TEST_COUNTS.siteRecords + TEST_COUNTS.thirdPartyRows} 行测试记录可以下载为 CSV，方便你自己整理或核对。文件里没有订阅链接、令牌或任何个人信息；空单元格表示来源没有给出该数值（不是 0）；第三方速度保留原图标注的单位，写在 <code>*_original</code> 列，没有换算为 Mbps。
+      </p>
+      <p class="mt-4"><a class="btn btn--primary" href="/data/test-records.csv" download>下载 test-records.csv</a></p>
+      <p class="mt-4 text-sm text-mute">测试方法与哪些记录才算数，见<a href="/testing-methodology/">测试方法</a>；全部原始表格见<a href="/test-records/">测试档案</a>。</p>
+    </div>
+  </section>
+
+  <script>
+    import '../scripts/time-tests';
+  </script>
+</BaseLayout>

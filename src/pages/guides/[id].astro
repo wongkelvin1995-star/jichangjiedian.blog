@@ -1,0 +1,13 @@
+---
+import { getCollection, render } from 'astro:content';
+import PostPage from '../../components/PostPage.astro';
+
+export async function getStaticPaths() {
+  const entries = (await getCollection('guides')).filter((e) => !e.data.draft);
+  return entries.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+---
+
+<PostPage kind="guides" {entry} {headings}><Content /></PostPage>

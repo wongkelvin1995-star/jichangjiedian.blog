@@ -1,0 +1,16 @@
+---
+import { GRADE_INFO } from '../data/labels';
+import type { EvidenceGrade } from '../data/types';
+interface Props {
+  grade: EvidenceGrade;
+  /** 是否显示文字名称；false 时只显示字母，名称放在屏幕阅读器文本里 */
+  showName?: boolean;
+}
+const { grade, showName = true } = Astro.props;
+const info = GRADE_INFO[grade];
+---
+
+<span class="grade" data-grade={grade} title={`${grade} 级：${info.name}。${info.desc}`}>
+  <span class="grade__letter" aria-hidden="true">{grade}</span>
+  {showName ? <span>{info.name}</span> : <span class="visually-hidden">{grade} 级，{info.name}</span>}
+</span>

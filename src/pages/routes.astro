@@ -1,0 +1,101 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { BRANDS } from '../data/brands';
+import { ROUTE_TYPES } from '../data/routes';
+import { routeChipsOf } from '../lib/queries';
+import { loadPosts } from '../lib/content';
+import { collectionLd } from '../lib/seo';
+import { DATA_UPDATED } from '../lib/site';
+import { fmtDate } from '../lib/format';
+
+const path = '/routes/';
+const title = '线路知识：IPLC、IEPL、BGP、中转与直连分别是什么｜机场节点';
+const description = '用通俗的话解释机场资料里常见的线路术语：IPLC、IEPL、BGP、CN2、中转、直连、独享出口，并说明本站如何标注“资料所写”与“已核验”的区别。';
+const posts = await loadPosts();
+const art = (id: string) => posts.find((p) => p.id === id);
+const stats = ROUTE_TYPES.map((r) => {
+  const confirmed: string[] = [];
+  const pending: string[] = [];
+  for (const b of BRANDS) {
+    const chip = routeChipsOf(b).find((c) => c.id === r.id);
+    if (!chip) continue;
+    (chip.confirmed ? confirmed : pending).push(b.shortName);
+  }
+  return { r, confirmed, pending };
+});
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '线路知识', href: path },
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('机场线路术语', description, path, [])]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>线路知识：机场资料里的线路术语怎么读</h1>
+      <p class="page-head__lead">
+        IPLC、IEPL、BGP、CN2、中转、直连……这些词在机场介绍页里随处可见，却很少有人解释它们到底说明了什么。本页只讲术语的含义，以及本站怎样标注“资料这样写”和“本站验证过”的区别。
+      </p>
+      <p class="page-head__meta"><span>更新于 {fmtDate(DATA_UPDATED)}</span></p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">先说一个前提</span>
+        绝大多数线路类型是服务商自己的宣传说法，从用户一侧没有办法直接验证。本站在品牌档案里把它标成“资料所写”并给出来源等级；只有 C 级及以上来源、且没有来源冲突的，才显示为普通标签，其余显示为“待核验”。
+      </p>
+
+      <div class="stack mt-6">
+        {
+          stats.map(({ r, confirmed, pending }) => (
+            <article class="panel" id={r.slug}>
+              <h2 class="panel__title">{r.name}<span class="text-mute text-sm">　{r.fullName}</span></h2>
+              <p class="text-soft">{r.short}</p>
+              <p class="mt-3 text-sm">
+                资料里提到它的机场：有来源 <b class="num text-electric">{confirmed.length}</b> 家
+                {pending.length > 0 && <span>，待核验 <b class="num">{pending.length}</b> 家</span>}。
+              </p>
+              {
+                confirmed.length + pending.length > 0 && (
+                  <details class="row-note mt-3">
+                    <summary>查看是哪些机场（按固定编辑顺序）</summary>
+                    <p class="text-sm text-soft mt-2">
+                      {confirmed.length > 0 && <span>有来源：{confirmed.join('、')}。</span>}
+                      {pending.length > 0 && <span> 待核验：{pending.join('、')}。</span>}
+                    </p>
+                  </details>
+                )
+              }
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--band">
+    <div class="container prose prose--wide">
+      <h2>IPLC、IEPL 和 BGP 到底差在哪</h2>
+      <p>从技术角度看，IPLC 和 IEPL 都是“专线”的说法，区别主要在承载方式和接口形态；BGP 则是一种路由协议，机场介绍里的“BGP 线路”通常指入口使用了多线 BGP 接入。这三个词放在一起并不是同一个维度的比较，所以单看标签很难判断哪个更好。真正影响体验的，是入口到出口整条路径的质量、带宽是否被超卖，以及晚高峰时的拥塞情况。</p>
+      {art('iepl-iplc-bgp-differences') && <p>更详细的比较见<a href="/articles/iepl-iplc-bgp-differences/">《IEPL、IPLC与BGP究竟有什么区别？》</a>。</p>}
+      <h2>“中转”和“直连”是什么意思</h2>
+      <p>中转是指用户先连接到一个入口节点，再由入口把流量转发到真正的出口节点；直连是用户直接连接出口服务器。中转并不一定比直连差，直连也不一定更快——前者多了一段转发，后者取决于用户所在网络到出口机房的公网路径。判断的办法仍然是看带时间和环境的测试，而不是看名词。</p>
+      <h2>看到线路标签时可以问自己的三个问题</h2>
+      <ul>
+        <li>这个说法出自哪里？服务商官网、第三方评测还是汇编资料？本站会标出来源等级。</li>
+        <li>它描述的是品牌整体、某个套餐，还是某一个节点？资料里写得不具体的，本站不会替它补全。</li>
+        <li>有没有带时间和环境的测试能支持它？没有的话，它只是一个说法。</li>
+      </ul>
+      <p>想按线路类型查看机场，可以到<a href="/airports/">机场目录</a>，或在<a href="/plans/">套餐对比</a>里按“线路类型”筛选；按地区看见<a href="/regions/">节点地区</a>。</p>
+    </div>
+  </section>
+</BaseLayout>

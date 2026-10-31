@@ -1,0 +1,56 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { BRANDS } from '../data/brands';
+import { AFFILIATE_REL } from '../data/labels';
+import { fmtDate } from '../lib/format';
+import { DATA_UPDATED, SITE_NAME } from '../lib/site';
+
+const path = '/affiliate-disclosure/';
+const title = '合作推广声明：本站的推广链接如何标注，佣金是否影响内容｜机场节点';
+const description = `机场节点站含${BRANDS.length}家机场的推广链接，通过链接注册或购买，本站可能获得佣金。本页说明链接的标注方式、哪些页面有推广，以及推广不会被当作证据。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '合作推广声明', href: path },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>合作推广声明</h1>
+      <p class="page-head__lead">本站含推广链接。通过这些链接注册或购买，{SITE_NAME}可能获得佣金。下面写清楚它们在哪里、怎么标注、对内容有什么影响。</p>
+      <p class="page-head__meta"><span>更新于 {fmtDate(DATA_UPDATED)}</span></p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <div class="prose prose--wide">
+      <h2>哪些链接是推广链接</h2>
+      <p>站内每家机场的“官网”按钮都是推广链接，共 {BRANDS.length} 个，出现在<a href="/airports/">机场目录</a>和各机场的资料页。它们都带有“推广”标签，并且在新窗口打开。除此之外，站内的普通链接（品牌页、文章、来源）都不是推广链接。</p>
+
+      <h2>链接怎么标注</h2>
+      <ul>
+        <li>按钮上有“推广”字样，屏幕阅读器会读出“推广链接，在新窗口打开”。</li>
+        <li>链接的 <code>rel</code> 属性为 <code>{AFFILIATE_REL}</code>，明确告诉搜索引擎这是付费或赞助关系，不传递权重。</li>
+        <li>资料页的链接旁边有一句固定说明：通过它注册或购买，本站可能获得佣金；佣金不影响资料如何整理，价格与规则以服务商结算页为准。</li>
+      </ul>
+
+      <h2>佣金不会改变什么</h2>
+      <ul>
+        <li><strong>来源等级。</strong>每个字段的 A 到 D 等级只取决于它的来源，对所有品牌用同一套规则，和是否有推广链接无关。</li>
+        <li><strong>冲突与“未核验”标记。</strong>来源冲突、品牌对应关系存疑、原图已不保留，这些提示不会因为合作关系被隐藏或弱化。</li>
+        <li><strong>证据。</strong>推广页面和服务商的营销文案从不被当作证据引用；测试结论只来自带时间和环境的测试记录。</li>
+        <li><strong>目录顺序。</strong>目录按站点固定的编辑顺序排列，不是排名，也不代表速度、稳定性或推荐程度。</li>
+      </ul>
+
+      <h2>你需要自己确认的事</h2>
+      <p>价格、流量、可用地区和退款规则可能随时变化，页面上的数字是整理资料时的记录，以服务商的结算页和用户协议为准。购买前请自行阅读服务条款，并确认你所在地区的法律是否允许使用相关服务。我们不保证任何一家机场的速度、稳定性或持续经营，也不对购买决定负责。</p>
+
+      <h2>隐私</h2>
+      <p>点击推广链接后，你会进入服务商的网站，服务商和推广平台可能使用 Cookie 或类似技术来识别这次访问来自本站，以便结算佣金。这些由对方网站控制，详见各自的隐私政策。本站自身的数据处理见<a href="/privacy/">隐私政策</a>。</p>
+
+      <h2>有疑问</h2>
+      <p>如果你认为某处标注不清楚或有误导，请通过<a href="/about/">关于本站</a>里的联系方式告诉我们。</p>
+    </div>
+  </div>
+</BaseLayout>

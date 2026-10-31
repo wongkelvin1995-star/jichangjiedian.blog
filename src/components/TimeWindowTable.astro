@@ -1,0 +1,58 @@
+---
+/** 分时段使用建议 + 本站实测（有记录的时段显示记录，没有的显示“—”） */
+import { fmtDateTime } from '../lib/format';
+import { windowRows } from '../lib/window-stats';
+import { LDY_PEAK_PAGE_PATH } from '../data/reports/lingdongyun-peak-2026-10-28';
+
+const TIPS: Record<string, string> = {
+  morning: '用的人少，下载大文件、更新系统和游戏的好时间，大多数节点都跑得快。',
+  noon: '午休刷视频的人变多。看 4K 建议选日本、新加坡节点，日常网页用香港节点就够。',
+  evening: '下班后负载开始上升。社交、网页、ChatGPT 用香港或美国节点都比较顺。',
+  peak: '一天里最拥堵的时段。优先选 IPLC / IEPL 专线节点，视频卡顿时先降到 1080p。',
+  'late-night': '负载回落，适合挂下载、更新游戏；联机游戏选香港、台湾节点延迟最低。',
+};
+const rows = windowRows();
+---
+
+<div class="table-scroll">
+  <table class="data-table">
+    <caption>北京时间。实测一栏为灵动云节点的晚高峰记录，会持续补充其他时段。</caption>
+    <thead>
+      <tr>
+        <th scope="col">时间段</th>
+        <th scope="col">北京时间</th>
+        <th scope="col">怎么用最顺</th>
+        <th scope="col">实测</th>
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r) => {
+          const n = r.speedRecords.length + r.otherSiteRecords.length + r.snapshots.length;
+          return (
+            <tr>
+              <th scope="row" class="col-nowrap">
+                <span class="text-sunset">{r.def.label}</span>
+              </th>
+              <td class="num col-nowrap">{r.def.start}–{r.def.end}</td>
+              <td class="text-sm">{TIPS[r.def.id] ?? r.def.note}</td>
+              <td class="text-sm">
+                {n === 0 ? (
+                  <span class="text-mute">—</span>
+                ) : r.def.id === 'peak' ? (
+                  <a href={LDY_PEAK_PAGE_PATH}>香港 / 新加坡 / 美国节点实测</a>
+                ) : (
+                  <ul class="link-list">
+                    {r.snapshots.map((s) => <li>节点在线 <span class="num">{s.onlineNodes}/{s.totalNodes}</span>（{fmtDateTime(s.checkedFrom)}）</li>)}
+                    {r.otherSiteRecords.map((x) => <li>{x.recordKind === 'youtube' ? 'YouTube 播放' : '测速'}（{fmtDateTime(x.testDateTime)}）</li>)}
+                    {r.speedRecords.length > 0 && <li>测速 {r.speedRecords.length} 条</li>}
+                  </ul>
+                )}
+              </td>
+            </tr>
+          );
+        })
+      }
+    </tbody>
+  </table>
+</div>

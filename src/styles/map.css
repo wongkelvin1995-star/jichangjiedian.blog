@@ -1,0 +1,685 @@
+/* ------------------------------------------------------------ 首页首屏 */
+.hero {
+  padding-block: var(--s6) var(--s6);
+  background:
+    radial-gradient(1100px 380px at 85% -30%, rgba(var(--nebula-rgb), 0.16), transparent 70%),
+    var(--ink);
+}
+.hero__text {
+  display: flow-root;
+  margin-bottom: var(--s5);
+}
+.hero__sub {
+  margin-top: var(--s3);
+  color: var(--text-soft);
+  font-size: var(--fs-md);
+}
+.hero__slogan {
+  max-width: 34em;
+  margin-top: var(--s3);
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+/* 背景地球的圆形槽：浮在标题右侧，文字沿着圆形绕排，不会压到字（窄屏不显示） */
+.hero__globe {
+  display: none;
+}
+@media (min-width: 900px) {
+  .hero__globe {
+    display: block;
+    float: right;
+    position: relative;
+    width: clamp(14rem, 30vw, 26rem);
+    aspect-ratio: 1;
+    margin: 0 0 var(--s3) var(--s4);
+    shape-outside: circle(50%) border-box;
+    shape-margin: var(--s4);
+  }
+}
+
+/* ------------------------------------------------------------ 地图探索器 */
+.map-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: stretch;
+}
+@media (max-width: 980px) {
+  .map-explorer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.map-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ink-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.map-card__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--line-soft);
+}
+.map-card__title {
+  font-size: var(--fs-base);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-xs);
+  color: var(--text-soft);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+}
+.legend__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+}
+.legend__swatch--documented {
+  background: var(--electric);
+}
+.legend__swatch--unverified {
+  border: 1.5px dashed var(--gray);
+}
+.legend__swatch--selected {
+  background: var(--sunset);
+}
+.legend__swatch--ok {
+  background: var(--ok);
+}
+.legend__swatch--info {
+  background: var(--electric);
+}
+.legend__swatch--window {
+  border-radius: 2px;
+  background: rgba(var(--sunset-rgb), 0.3);
+  border: 1px solid var(--sunset);
+}
+.legend__swatch--entrance {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 1px;
+  background: var(--text);
+  transform: rotate(45deg);
+}
+
+.map-stage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: var(--ink-deep);
+  flex: 1 1 auto;
+  min-height: 12rem;
+}
+.worldmap {
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+.map-ocean {
+  fill: var(--ocean);
+}
+.map-grat {
+  fill: none;
+  stroke: var(--electric);
+  stroke-opacity: 0.07;
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+.map-land {
+  fill: var(--land);
+  stroke: var(--electric);
+  stroke-opacity: 0.4;
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.map-zoom {
+  transform-origin: 0 0;
+  transform: translate(var(--zx, 0px), var(--zy, 0px)) scale(var(--zs, 1));
+  transition: transform 720ms var(--ease);
+}
+
+/* 航线：示意，逐条绘制（pathLength=1 的 stroke-dash 动画，不依赖 JS） */
+.route {
+  fill: none;
+  stroke: var(--electric);
+  stroke-opacity: 0.55;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: route-draw 1.5s var(--ease) forwards;
+  transition: stroke 240ms var(--ease), stroke-opacity 240ms var(--ease), stroke-width 240ms var(--ease);
+}
+.route[data-level='unverified'] {
+  stroke: var(--gray);
+  stroke-dasharray: 0.012 0.018;
+  stroke-dashoffset: 0;
+  animation: route-fade 1.2s var(--ease) both;
+}
+.route:nth-of-type(1) { animation-delay: 0.15s; }
+.route:nth-of-type(2) { animation-delay: 0.27s; }
+.route:nth-of-type(3) { animation-delay: 0.39s; }
+.route:nth-of-type(4) { animation-delay: 0.51s; }
+.route:nth-of-type(5) { animation-delay: 0.63s; }
+.route:nth-of-type(6) { animation-delay: 0.75s; }
+.route:nth-of-type(7) { animation-delay: 0.87s; }
+.route:nth-of-type(8) { animation-delay: 0.99s; }
+.route:nth-of-type(9) { animation-delay: 1.11s; }
+.route.is-selected {
+  stroke: var(--sunset);
+  stroke-opacity: 1;
+  stroke-width: 2;
+}
+@keyframes route-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes route-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.entrance__mark {
+  fill: var(--text);
+}
+.entrance__label {
+  fill: var(--text-soft);
+  font-size: 11px;
+}
+
+/* 地区点：圆点 + 呼吸光环 + 标签 */
+.dot {
+  cursor: pointer;
+  outline: none;
+}
+.dot__inner {
+  transform-origin: 0 0;
+  transform: scale(calc(1 / var(--zs, 1)));
+  transition: transform 720ms var(--ease);
+}
+.dot__hit {
+  fill: transparent;
+  r: 16px;
+}
+.dot__halo {
+  r: 9px;
+  fill: var(--electric);
+  fill-opacity: 0.22;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* 只让“当前选中”的光环呼吸，用来指示焦点。
+   九个光环同时无限动画，会让浏览器每一帧都重绘整张 SVG 地图：在中低端手机上（CPU 4 倍降速的实测）
+   会把点击的响应时间拖长约 60–90ms，所以不这么做。手机上（见下方 720px 规则）连选中项也不循环动画。 */
+.dot.is-selected .dot__halo {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+.dot__core {
+  r: 4.5px;
+  fill: var(--electric);
+  stroke: var(--ink-deep);
+  stroke-width: 1.5;
+  transition: fill var(--dur) var(--ease);
+}
+.dot[data-level='unverified'] .dot__core {
+  fill: var(--ink-deep);
+  stroke: var(--gray);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 1.5;
+}
+.dot[data-level='unverified'] .dot__halo {
+  fill: var(--gray);
+}
+.dot__label {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.dot__count {
+  fill: var(--electric);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dot:hover .dot__core {
+  fill: var(--electric-hover);
+}
+.dot:focus-visible .dot__hit {
+  stroke: var(--sunset);
+  stroke-width: 2;
+}
+.dot.is-selected .dot__core {
+  fill: var(--sunset);
+}
+.dot.is-selected .dot__halo {
+  fill: var(--sunset);
+  fill-opacity: 0.32;
+}
+.dot.is-selected .dot__label {
+  fill: var(--sunset);
+}
+.dot.is-selected .dot__count {
+  fill: var(--sunset);
+}
+@media (max-width: 720px) {
+  .dot.is-selected .dot__halo {
+    animation: none; /* 手机上不做无限循环动画：省电，也避免拖慢点击响应 */
+  }
+  /* 手机上地图缩放直接到位、不做 720ms 过渡：过渡期间整张 SVG 每帧重绘，实测把点地区的响应拖慢约 40–60ms（CPU 4 倍降速） */
+  .map-zoom,
+  .dot__inner {
+    transition: none;
+  }
+  /* 触摸命中区约 34 CSS px：地图随屏宽缩放（比例≈(屏宽-34)/1000），所以不同屏宽用不同半径。
+     相邻地区的命中区会重叠，由 map-explorer.ts 按“离圆点中心最近”决定选中谁。 */
+  .dot__hit {
+    r: 28px;
+  }
+  .dot__core {
+    r: 8px;
+  }
+  .dot__halo {
+    r: 15px;
+  }
+  .dot__label {
+    font-size: 30px;
+    stroke-width: 7px;
+  }
+  .dot__count,
+  .entrance__label {
+    display: none;
+  }
+  .dot:not(.is-selected) .dot__label {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .dot__hit {
+    r: 38px;
+  }
+}
+@media (max-width: 420px) {
+  .dot__hit {
+    r: 50px;
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .route {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .route[data-level='unverified'] {
+    animation: none;
+  }
+  .dot__halo {
+    animation: none;
+    transform: scale(1);
+  }
+  .map-zoom,
+  .dot__inner {
+    transition: none;
+  }
+}
+
+.map-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  padding: var(--s2) var(--s4);
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
+.link-btn {
+  all: unset;
+  cursor: pointer;
+  color: var(--electric);
+  font-size: var(--fs-xs);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.link-btn:hover {
+  color: var(--electric-hover);
+}
+.link-btn:focus-visible {
+  outline: 2px solid var(--sunset);
+  outline-offset: 2px;
+}
+.link-btn[hidden] {
+  display: none;
+}
+
+/* 地区切换条（无 JS 时就是指向地区专题页的链接） */
+.seg {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid var(--line-soft);
+  scrollbar-width: thin;
+}
+.seg__item {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.seg__item:hover {
+  border-color: var(--electric);
+  color: var(--electric);
+}
+.seg__item[data-selected='true'] {
+  border-color: var(--sunset);
+  color: var(--sunset);
+  background: rgba(var(--sunset-rgb), 0.14);
+  font-weight: 700;
+}
+.seg__n {
+  font-size: var(--fs-xs);
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+.seg__item[data-selected='true'] .seg__n {
+  color: var(--sunset);
+}
+
+/* ------------------------------------------------------------ 地区资料面板 */
+.region-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--star-deep);
+  border: 1px solid var(--star-line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.map-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  background: var(--ink-raised);
+  border-bottom: 1px solid var(--line-soft);
+}
+.map-filters .select {
+  width: 100%;
+  background-color: var(--ink-deep);
+}
+.map-filters .select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+@media (max-width: 520px) {
+  /* 手机上三个筛选并成一行，别把地图挤出第一屏。
+     下拉框首项（“全部品牌”等）本身已说明用途，文字标签改为只给读屏软件。 */
+  .map-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s1);
+    padding: var(--s2) var(--s3);
+  }
+  .map-filters .field > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .map-filters .select {
+    padding-left: var(--s2);
+    padding-right: 1.5rem;
+    background-position: right 0.4rem center;
+  }
+}
+
+.region-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: var(--s4);
+  gap: var(--s3);
+}
+.region-panel[hidden] {
+  display: none;
+}
+.region-panel.is-entering {
+  animation: panel-in 260ms var(--ease);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.region-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s1) var(--s3);
+}
+.region-panel__head h3 {
+  font-size: var(--fs-md);
+}
+.region-panel__en {
+  color: var(--text-mute);
+  font-size: var(--fs-sm);
+  margin-left: 0.4em;
+  font-weight: 500;
+}
+.cover-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+}
+.cover-line b {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-right: 0.15em;
+}
+.cover-line .is-doc b {
+  color: var(--electric);
+}
+.cover-line .is-unv b {
+  color: var(--text-soft);
+}
+.cover-line .is-none b {
+  color: var(--text-mute);
+}
+.region-panel__facts {
+  display: grid;
+  gap: var(--s2);
+  font-size: var(--fs-sm);
+  color: var(--text-soft);
+}
+.region-panel__facts dt {
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.region-panel__facts dd {
+  margin: 0.15rem 0 0;
+}
+.region-brands {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+  border-top: 1px solid var(--star-line);
+  scrollbar-width: thin;
+}
+.region-brands > li {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  column-gap: var(--s2);
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.region-brands > li[hidden] {
+  display: none;
+}
+.rb__rank {
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+  padding-top: 0.1rem;
+}
+.rb__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+}
+.rb__main a {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.rb__main a:hover {
+  color: var(--electric);
+}
+.rb__meta {
+  grid-column: 2;
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s2);
+  align-items: center;
+  color: var(--text-soft);
+  font-size: var(--fs-xs);
+}
+.region-count {
+  margin: 0;
+  color: var(--text-mute);
+  font-size: var(--fs-xs);
+}
+.region-empty {
+  padding: var(--s4) 0;
+  color: var(--text-soft);
+  font-size: var(--fs-sm);
+}
+
+/* ------------------------------------------------------------ 24 小时时间带 */
+.timeband {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tb-track {
+  fill: var(--ink-raised);
+  stroke: var(--line);
+}
+.tb-hour {
+  stroke: var(--star-line);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+}
+.tb-hour--major {
+  stroke-opacity: 1;
+}
+.tb-hour-label {
+  fill: var(--text-mute);
+  font-size: 11px;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+.tb-window {
+  fill: var(--sunset);
+  fill-opacity: 0.2;
+  stroke: var(--sunset);
+  stroke-opacity: 0.85;
+}
+.tb-window--peak {
+  fill-opacity: 0.38;
+}
+.tb-window-label {
+  fill: var(--sunset);
+  font-size: 12px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.tb-mark--ok {
+  fill: var(--ok);
+}
+.tb-mark--info {
+  fill: var(--electric);
+}
+.tb-mark--ring {
+  fill: var(--ink);
+  stroke: var(--electric);
+  stroke-width: 1.5;
+}
+.tb-mark-label {
+  fill: var(--text-soft);
+  font-size: 11px;
+}
+.hero__cta { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: calc(var(--s3) + var(--s4)); }

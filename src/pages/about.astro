@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { BRANDS } from '../data/brands';
+import { TEST_COUNTS } from '../data/test-records';
+import { datasetStats } from '../lib/queries';
+import { loadPosts } from '../lib/content';
+import { fmtDate } from '../lib/format';
+import { CONTACT_EMAIL } from '../lib/contact';
+import { COMPLIANCE_NOTE, DATA_UPDATED, SITE_NAME } from '../lib/site';
+
+const path = '/about/';
+const title = '关于本站：机场节点是什么，怎么整理资料，不做什么｜机场节点';
+const description = `机场节点是一个独立的中文资料站，整理${BRANDS.length}家机场的套餐、线路与节点地区资料，研究分时段的速度、延迟与稳定性。这里说明资料如何整理、哪些做不到、如何联系更正。`;
+const stats = datasetStats();
+const posts = await loadPosts();
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '关于本站', href: path },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>关于{SITE_NAME}：这个站在做什么，不做什么</h1>
+      <p class="page-head__lead">先把边界说清楚：这里是资料站，不是机场，也不卖任何网络服务。</p>
+      <p class="page-head__meta"><span>更新于 {fmtDate(DATA_UPDATED)}</span></p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <div class="prose prose--wide">
+      <h2>这个站是什么</h2>
+      <p>{SITE_NAME}（jichangjiedian.blog）是一个独立的中文资料站。它做两件事：一是把 {stats.brands} 家机场的套餐、价格、协议、线路类型和节点地区整理成可以对照的资料；二是研究同一个节点在早间、午间、晚间、晚高峰和深夜的速度、延迟与稳定性有什么不同。</p>
+      <p>本站不是机场，不出售订阅，不托管节点，也不提供任何网络接入服务。站里出现的“官网”按钮是推广链接，详见<a href="/affiliate-disclosure/">合作推广声明</a>。</p>
+
+      <h2>资料怎么整理</h2>
+      <ul>
+        <li><strong>先说来源。</strong>站内每个有判断价值的字段（价格、协议、节点地区、测速）都单独标注来源等级 A 到 D，并能追溯到<a href="/sources/">资料来源</a>里的具体编号。同一家机场的不同字段可以是不同等级。</li>
+        <li><strong>不知道就写不知道。</strong>来源没有写的内容显示为“资料未提供”，不会用估计值、平均数或随机数补上；来源页面没有标注日期的，只写本站整理资料的日期，不替它补日期。</li>
+        <li><strong>不靠名字相似合并品牌。</strong>资料页面用的名称和站长清单不一样时（例如“神行云”与“神行加速”），只有站长确认是同一服务后才当作一家，并把另一个名字留作别名；没有确认的，页面上会一直标着“待核验”。</li>
+        <li><strong>固定编辑顺序不是排名。</strong>目录里 {stats.brands} 家机场按站点固定的编辑顺序排列，这个顺序不代表速度、稳定性或推荐程度；你自己筛选或排序时，页面会临时重排，并能一键恢复默认顺序。</li>
+        <li><strong>冲突如实摆出来。</strong>不同来源对同一件事说法不一致时（流量、套餐、线路等），本站记录了 {stats.conflicts} 处冲突，并写明采用什么处理办法，冲突字段不参与精确排序。</li>
+      </ul>
+
+      <h2>本站自己的测试</h2>
+      <p>目前本站自己的测试记录只有 {TEST_COUNTS.siteBrands} 家（灵动云）：一次新加坡节点网页测速、一次 YouTube 播放观察和一次节点在线快照。这三项来自不同的时间，相互不是同一次连续测试；而且原始截图已不保留，因此都标记为“未核验”，不进入分时段统计。其余机场的测试数据来自第三方页面的历史摘录（{TEST_COUNTS.thirdPartyBrands} 家，共 {TEST_COUNTS.thirdPartyRows} 行），只作参考。</p>
+      <p>什么样的记录才算数，写在<a href="/testing-methodology/">测试方法</a>里；所有记录都能在<a href="/test-records/">测试档案</a>查到，并下载为不含个人信息的 CSV。</p>
+
+      <h2>目前做不到的事</h2>
+      <ul>
+        <li>没有服务器侧的持续监控，所以站内没有任何“实时在线”“实时流量”这样的数据。</li>
+        <li>没有长期数据：一次测试只代表那一刻，几个时间点也画不出可靠的趋势，所以趋势图要等同一节点在同一窗口积累到足够多的日期才会出现。</li>
+        <li>资料以公开页面和站长整理的材料为主，价格、流量和规则随时可能变化，一切以服务商的结算页和用户协议为准。</li>
+        <li>不承诺任何搜索引擎的收录时间或排名位置，也不对购买决定负责。</li>
+      </ul>
+
+      <h2>商业说明</h2>
+      <p>本站含推广链接：通过链接注册或购买，本站可能获得佣金。佣金不改变资料的整理方式——来源等级、冲突标注和“未核验”标记对所有品牌使用同一套规则，推广页面也从不被当作证据引用。完整说明见<a href="/affiliate-disclosure/">合作推广声明</a>。</p>
+
+      <h2>更正与补充</h2>
+      <p>发现资料有误、来源失效，或者你有带时间和环境的原始测试截图，欢迎告诉我们。更正后，对应页面的资料整理日期会更新，必要时在页面上写明改了什么。</p>
+      <p>
+        联系方式：{
+          CONTACT_EMAIL ? (
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          ) : (
+            <span>暂未公布。联系方式确定后会在这里公开，不会通过推广渠道代收反馈。</span>
+          )
+        }
+      </p>
+
+      <h2>使用提示</h2>
+      <p>{COMPLIANCE_NOTE}</p>
+      {posts.length > 0 && <p>想先看看站内的研究文章，可以到<a href="/articles/">研究文章</a>或<a href="/guides/">客户端教程</a>。</p>}
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,46 @@
+---
+/**
+ * 深空背景层（纯装饰，aria-hidden，不接收鼠标事件）。
+ * 由下往上：body 上的平铺星点 → 顶部蓝紫星云（按屏宽/格式选图） → 页面中段的星云光团（缓慢漂移）
+ *   → 带光环的行星与空间站 → 星际光轨 → 少量闪烁星光。
+ * 所有动效只用 transform / opacity，开启“减少动态效果”时由 base.css 统一停掉。
+ * mode：home 首页大面积背景；page 内页；quiet 文章页（更暗更安静，适合阅读）。
+ */
+interface Props {
+  mode: 'home' | 'page' | 'quiet';
+}
+const { mode } = Astro.props;
+const twinkles = mode === 'home' ? 14 : 8;
+---
+
+<div class="cosmos" data-mode={mode} aria-hidden="true">
+  <div class="cosmos__nebula">
+    <picture>
+      <source media="(max-width: 720px)" type="image/avif" srcset="/images/space/nebula-800.avif" />
+      <source media="(max-width: 720px)" type="image/webp" srcset="/images/space/nebula-800.webp" />
+      <source type="image/avif" srcset="/images/space/nebula-1280.avif 1280w, /images/space/nebula-1920.avif 1920w" sizes="100vw" />
+      <source type="image/webp" srcset="/images/space/nebula-1280.webp 1280w, /images/space/nebula-1920.webp 1920w" sizes="100vw" />
+      <img src="/images/space/nebula-1280.webp" alt="" width="1280" height="800" decoding="async" fetchpriority="high" />
+    </picture>
+  </div>
+  <div class="cosmos__glow cosmos__glow--a"></div>
+  <div class="cosmos__glow cosmos__glow--b"></div>
+  {mode !== 'quiet' && <div class="cosmos__glow cosmos__glow--c"></div>}
+  {
+    mode !== 'quiet' && (
+      <div class="cosmos__orbit">
+        <picture class="cosmos__planet">
+          <source media="(max-width: 720px)" type="image/avif" srcset="/images/space/planet-520.avif" />
+          <source media="(max-width: 720px)" type="image/webp" srcset="/images/space/planet-520.webp" />
+          <source type="image/avif" srcset="/images/space/planet-900.avif" />
+          <img src="/images/space/planet-900.webp" alt="" width="900" height="900" loading="lazy" decoding="async" />
+        </picture>
+        <img class="cosmos__station" src="/images/space/station.svg" alt="" width="320" height="160" loading="lazy" decoding="async" />
+      </div>
+    )
+  }
+  <div class="cosmos__trail cosmos__trail--1"></div>
+  <div class="cosmos__trail cosmos__trail--2"></div>
+  {mode === 'home' && <div class="cosmos__trail cosmos__trail--3"></div>}
+  <div class="cosmos__stars">{Array.from({ length: twinkles }, () => <i></i>)}</div>
+</div>

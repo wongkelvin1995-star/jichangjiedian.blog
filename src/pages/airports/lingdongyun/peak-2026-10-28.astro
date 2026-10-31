@@ -1,0 +1,245 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AffiliateLink from '../../../components/AffiliateLink.astro';
+import EvidenceGallery from '../../../components/EvidenceGallery.astro';
+import GradeBadge from '../../../components/GradeBadge.astro';
+import { mustGetBrand } from '../../../data/brands';
+import { AFFILIATE_NOTE } from '../../../data/labels';
+import { LDY_EVIDENCE, LDY_PEAK, LDY_PEAK_REACHABILITY, LDY_REPORT_PATH } from '../../../data/reports/lingdongyun-sg-2026-10';
+import type { ReachabilityRow } from '../../../data/reports/lingdongyun-sg-2026-10';
+import {
+  LDY_HK_EVIDENCE,
+  LDY_HK_PEAK,
+  LDY_HK_REACHABILITY,
+  LDY_HK_YOUTUBE,
+  LDY_PEAK_PAGE_MODIFIED,
+  LDY_PEAK_PAGE_PATH,
+  LDY_PEAK_PAGE_PUBLISHED,
+  LDY_PEAK_PAGE_TITLE,
+  LDY_US_EVIDENCE,
+  LDY_US_PEAK,
+  LDY_US_REACHABILITY,
+} from '../../../data/reports/lingdongyun-peak-2026-10-28';
+import { loadPosts } from '../../../lib/content';
+import { articleLd } from '../../../lib/seo';
+import { fmtDate } from '../../../lib/format';
+import { BRAND_COUNT } from '../../../lib/site';
+
+const brand = mustGetBrand('lingdongyun');
+const hk = LDY_HK_PEAK;
+const sg = LDY_PEAK;
+const us = LDY_US_PEAK;
+const yt = LDY_HK_YOUTUBE;
+const posts = await loadPosts();
+const has = (id: string) => posts.some((p) => p.id === id);
+const hhmm = (iso: string | null) => (iso ? iso.slice(11, 16) : '—');
+
+const regions = [
+  { label: '香港', rec: hk, reach: LDY_HK_REACHABILITY },
+  { label: '新加坡', rec: sg, reach: LDY_PEAK_REACHABILITY },
+  { label: '美国', rec: us, reach: LDY_US_REACHABILITY },
+];
+const count = (r: ReachabilityRow[], ...st: ReachabilityRow['status'][]) => r.filter((x) => st.includes(x.status)).length;
+const sites = LDY_HK_REACHABILITY.map((r) => r.site);
+const msOf = (rows: ReachabilityRow[], site: string) => rows.find((x) => x.site === site);
+const reachChip = { ok: 'chip chip--ok', slow: 'chip chip--sunset', veryslow: 'chip chip--err', timeout: 'chip chip--err' } as const;
+const sgEvidence = LDY_EVIDENCE.filter((e) => e.evidenceId.includes('peak'));
+
+const path = LDY_PEAK_PAGE_PATH;
+const title = `${LDY_PEAK_PAGE_TITLE}｜机场节点`;
+const description = `2026-10-28 晚高峰，同一个测速页先后测了灵动云的香港、新加坡、美国节点：下载 ${hk.downloadMbps} / ${sg.downloadMbps} / ${us.downloadMbps} Mbps，空载延迟 ${hk.idleLatencyMs} / ${sg.idleLatencyMs} / ${us.idleLatencyMs} ms，附网站连通性、YouTube 观察与原始截图。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: `${BRAND_COUNT}家机场目录`, href: '/airports/' },
+  { name: brand.shortName, href: `/airports/${brand.slug}/` },
+  { name: '晚高峰三地实测', href: path },
+];
+const ld = [
+  articleLd({
+    title: LDY_PEAK_PAGE_TITLE,
+    description,
+    path,
+    published: LDY_PEAK_PAGE_PUBLISHED,
+    modified: LDY_PEAK_PAGE_MODIFIED,
+    image: LDY_HK_EVIDENCE[0]!.publicPath,
+    section: '测速报告',
+    keywords: ['灵动云', '晚高峰测速', '香港节点', '新加坡节点', '美国节点', '网站连通性'],
+  }),
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} jsonLd={ld} ogType="article" published={LDY_PEAK_PAGE_PUBLISHED} modified={LDY_PEAK_PAGE_MODIFIED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>{LDY_PEAK_PAGE_TITLE}</h1>
+      <p class="page-head__lead">
+        2026-10-28 晚上 9 点半前后，站长在晚高峰用同一个测速页，先后测了灵动云的新加坡、美国和香港节点，每次都截了图。三个地区在同一个晚上、同样的测试数据量下比较，比单独看一个数字更能说明问题。
+      </p>
+      <p class="chip-row mt-4">
+        <GradeBadge grade="A" />
+        <span class="chip chip--ok">已核验（附原图）</span>
+        <span class="chip chip--gray">每个地区各测一次</span>
+      </p>
+      <p class="page-head__meta">
+        <span>发布 <time datetime={LDY_PEAK_PAGE_PUBLISHED}>{fmtDate(LDY_PEAK_PAGE_PUBLISHED)}</time></span>
+        <span>品牌资料：<a href={`/airports/${brand.slug}/`}>{brand.brandName}</a></span>
+      </p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <nav class="toc-inline" aria-label="本页目录">
+      <ul>
+        <li><a href="#compare">三地对比</a></li>
+        <li><a href="#reading">怎么看</a></li>
+        <li><a href="#reach">网站连通性</a></li>
+        <li><a href="#youtube">香港 YouTube</a></li>
+        <li><a href="#limits">局限</a></li>
+        <li><a href="#evidence">原始截图</a></li>
+      </ul>
+    </nav>
+
+    <div class="stack-lg">
+      <section id="compare" aria-labelledby="compare-title">
+        <h2 id="compare-title" class="mb-3">三个地区的测速结果</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack">
+            <caption>都是 2026-10-28 晚高峰（20:00–23:00）、同一个网页测速工具、下载 50MB / 上传 15MB。时间为北京时间。</caption>
+            <thead>
+              <tr><th scope="col">指标</th>{regions.map((r) => <th scope="col" class="col-num">{r.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" data-label="指标">测试时间</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>约 {hhmm(r.rec.testDateTime)}</td>)}</tr>
+              <tr><th scope="row" data-label="指标">下载</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.downloadMbps} Mbps</td>)}</tr>
+              <tr><th scope="row" data-label="指标">上传</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.uploadMbps} Mbps</td>)}</tr>
+              <tr><th scope="row" data-label="指标">空载延迟</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.idleLatencyMs} ms</td>)}</tr>
+              <tr><th scope="row" data-label="指标">抖动</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.jitterMs} ms</td>)}</tr>
+              <tr><th scope="row" data-label="指标">下载时延迟</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.loadedDownloadLatencyMs} ms</td>)}</tr>
+              <tr><th scope="row" data-label="指标">上传时延迟</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.loadedUploadLatencyMs} ms</td>)}</tr>
+              <tr><th scope="row" data-label="指标">下载曲线峰值</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{r.rec.extraMetrics?.downloadPeakMbps?.value} Mbps</td>)}</tr>
+              <tr><th scope="row" data-label="指标">出口网络</th>{regions.map((r) => <td class="text-sm" data-label={r.label}>{r.rec.extraMetrics?.pageDetectedNetwork?.value}</td>)}</tr>
+              <tr><th scope="row" data-label="指标">网站可连接</th>{regions.map((r) => <td class="col-num num" data-label={r.label}>{count(r.reach, 'ok')} / {r.reach.length}</td>)}</tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reading" aria-labelledby="reading-title">
+        <h2 id="reading-title" class="mb-3">怎么看这三组数字</h2>
+        <div class="prose prose--wide">
+          <h3>延迟：远近决定了下限</h3>
+          <p>
+            空载延迟新加坡 {sg.idleLatencyMs} ms、香港 {hk.idleLatencyMs} ms、美国 {us.idleLatencyMs} ms。香港离得最近，延迟却比新加坡高，说明延迟不只看距离，也看这条线路怎么绕、入口在哪里。美国的 {us.idleLatencyMs} ms 接近中美之间光纤往返的物理下限，本身已经不算差。
+          </p>
+          <h3>抖动：香港最稳</h3>
+          <p>
+            抖动香港只有 {hk.jitterMs} ms，新加坡 {sg.jitterMs} ms，美国 {us.jitterMs} ms。抖动低意味着延迟忽高忽低的情况少，视频通话和游戏更顺畅。从这一晚的这一次测试看，香港节点的延迟波动最小。{has('jitter-impact-on-use-cases') && <> 抖动的影响见<a href="/articles/jitter-impact-on-use-cases/">《机场节点抖动高会影响哪些使用场景？》</a>。</>}
+          </p>
+          <h3>速度：三个地区都不快</h3>
+          <p>
+            下载新加坡 {sg.downloadMbps}、香港 {hk.downloadMbps}、美国 {us.downloadMbps} Mbps，峰值也都在 17 Mbps 以内。这样的速度看网页、用 AI、看 720p 视频够用，1080p 以上或下载大文件会比较慢。三个地区速度都在 7–14 Mbps 之间，瓶颈可能在线路，也可能在测试者本地的宽带；截图没有显示本地带宽，本站无法区分。
+          </p>
+          <h3>负载时延迟都会明显升高</h3>
+          <p>
+            三个地区在占满带宽时延迟都升到 160–580 ms，上传方向更明显。边上传大文件边视频通话会感觉到卡顿，这一点和地区无关。{has('idle-vs-loaded-latency') && <> 区别见<a href="/articles/idle-vs-loaded-latency/">《空载延迟与负载延迟》</a>。</>}
+          </p>
+        </div>
+      </section>
+
+      <section id="reach" aria-labelledby="reach-title">
+        <h2 id="reach-title" class="mb-3">三个地区的网站连通性</h2>
+        <p class="text-sm text-soft mb-3">同一个测速页对 15 个网站各连 4 次取中位数。香港 {count(LDY_HK_REACHABILITY, 'ok')} 个可连接，新加坡 {count(LDY_PEAK_REACHABILITY, 'ok')} 个，美国 {count(LDY_US_REACHABILITY, 'ok')} 个。美国那张截图没有时钟，是在测速之前截的。</p>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--compact">
+            <caption>连通性只说明能否建立连接及其耗时，不等于解锁，也不等于能正常使用。</caption>
+            <thead>
+              <tr><th scope="col">网站</th>{regions.map((r) => <th scope="col">{r.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              {
+                sites.map((site) => (
+                  <tr>
+                    <th scope="row" data-label="网站">{site}</th>
+                    {regions.map((r) => {
+                      const x = msOf(r.reach, site)!;
+                      return (
+                        <td data-label={r.label}>
+                          <span class={reachChip[x.status]}>{x.label}</span> <span class="num text-sm">{x.ms === null ? '' : `${x.ms} ms`}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            香港和新加坡对 Google、YouTube、ChatGPT、TikTok 等常用网站都能在 100 ms 左右连上；美国节点每次连接都要先跨太平洋，所以全部在 200 ms 以上。Claude 在三个地区都超时，说明问题不在地区，可能是这个服务对这类出口的限制；想用 Claude 的话，需要另外确认。Telegram 在香港最慢（390 ms），Netflix 三个地区都不快，想看 Netflix 的话建议先自己试播。
+          </p>
+        </div>
+      </section>
+
+      <section id="youtube" aria-labelledby="youtube-title">
+        <h2 id="youtube-title" class="mb-3">香港节点的 YouTube 播放</h2>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack data-table--fit">
+            <caption>2026-10-28 21:45:51（截图里 Date 字段，GMT+0800），YouTube「Stats for nerds」。</caption>
+            <thead><tr><th scope="col">项目</th><th scope="col">数值</th></tr></thead>
+            <tbody>
+              <tr><th scope="row" data-label="项目">当前 / 最优分辨率</th><td class="num" data-label="数值">{yt.youtubeQuality}</td></tr>
+              <tr><th scope="row" data-label="项目">Connection Speed</th><td class="num" data-label="数值">{yt.extraMetrics?.connectionSpeedKbps?.value} Kbps（播放器估算）</td></tr>
+              <tr><th scope="row" data-label="项目">Buffer Health</th><td class="num" data-label="数值">{yt.youtubeBufferSeconds} 秒</td></tr>
+              <tr><th scope="row" data-label="项目">掉帧</th><td class="num" data-label="数值">{yt.extraMetrics?.droppedFrames?.value}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            测速后两分钟，香港节点播放 720p 视频，缓冲 {yt.youtubeBufferSeconds} 秒、掉帧 13/750（约 1.7%），播放是顺畅的。缓冲比 10 月 24 日新加坡节点那次（80.84 秒）少，掉帧也多一点，但 720p 观看不会有明显卡顿。截图里的时间来自电脑的系统时钟和时区（GMT+0800），能证明观察时间在晚高峰内。{has('youtube-stats-for-nerds') && <> 各项数字的含义见<a href="/guides/youtube-stats-for-nerds/">《YouTube Stats for nerds 教程》</a>。</>}
+          </p>
+        </div>
+      </section>
+
+      <section id="limits" aria-labelledby="limits-title">
+        <h2 id="limits-title" class="mb-3">这组测试不能说明什么</h2>
+        <div class="prose prose--wide">
+          <div class="limits">
+            <ul>
+              <li>每个地区只测了一次，不能说明每天晚上都是这样，也不能说明白天的表现。</li>
+              <li>截图没有显示是哪一个具体节点；同一地区的不同节点可能差别很大。</li>
+              <li>测速受本地宽带影响，本地运营商为站长自述的中国联通（截图上看不到），带宽没有记录；系统时区是 GMT+0800，但截图本身不能单独证明测试者所在的城市。</li>
+              <li>香港和新加坡的测速截图没有时钟，时间取自同一页面连通性截图里的系统时钟；美国的连通性截图没有时钟，和美国测速不是同一次。</li>
+              <li>测速页另有一栏“使用场景评分”，评分规则不公开，本站不采用。丢包率浏览器测不了，记为“未测得”。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="evidence" aria-labelledby="evidence-title">
+        <h2 id="evidence-title" class="mb-3">原始截图</h2>
+        <h3 class="mb-3">香港</h3>
+        <EvidenceGallery files={LDY_HK_EVIDENCE} />
+        <h3 class="mt-5 mb-3">新加坡</h3>
+        <EvidenceGallery files={sgEvidence} />
+        <h3 class="mt-5 mb-3">美国</h3>
+        <EvidenceGallery files={LDY_US_EVIDENCE} />
+      </section>
+
+      <section aria-labelledby="next-title">
+        <h2 id="next-title" class="mb-3">相关资料</h2>
+        <div class="prose prose--wide">
+          <p>
+            新加坡节点和此前一次测速的逐项对比见<a href={LDY_REPORT_PATH}>灵动云新加坡节点测速报告</a>；灵动云的套餐、节点和来源整理见<a href={`/airports/${brand.slug}/`}>灵动云资料页</a>。{has('singapore-vs-us-nodes') && <> 两个地区怎么选，见<a href="/articles/singapore-vs-us-nodes/">《新加坡节点与美国节点应该怎样选择？》</a>。</>}
+          </p>
+        </div>
+        <div class="panel mt-5">
+          <p class="text-soft">想了解灵动云目前的套餐和报价，可以前往它的官网自行确认。</p>
+          <div class="mt-3"><AffiliateLink url={brand.affiliateUrl} brandName={brand.shortName} variant="primary" /></div>
+          <p class="disclosure mt-3">{AFFILIATE_NOTE}</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,84 @@
+---
+/**
+ * 全球节点航线示意地图（构建期生成的内联 SVG）。
+ * - 点位 = 地区示意位置，不是服务器坐标；航线 = 地区关系示意，不是物理路由；
+ * - 点与航线的状态（有该地区节点 / 待核验 / 选中）全部来自数据层；
+ * - 无 JS 时，圆点是指向地区专题页的普通链接。
+ */
+import { buildWorldMap } from '../lib/geo';
+import { MAP_DISCLAIMER } from '../data/regions';
+import { pointLevel, summarizeRegion } from '../lib/queries';
+
+interface Props {
+  selected?: string;
+}
+const { selected = 'HK' } = Astro.props;
+const geo = buildWorldMap();
+const dots = geo.dots.map((d) => {
+  const s = summarizeRegion(d.countryCode);
+  return { ...d, level: pointLevel(d.countryCode), documented: s.documented.length, unverified: s.unverified.length };
+});
+---
+
+<svg
+  class="worldmap"
+  viewBox={`0 0 ${geo.width} ${geo.height}`}
+  role="group"
+  aria-labelledby="worldmap-title worldmap-desc"
+  data-w={geo.width}
+  data-h={geo.height}
+>
+  <title id="worldmap-title">全球节点航线示意地图</title>
+  <desc id="worldmap-desc">{MAP_DISCLAIMER}地图上的每个圆点对应一个地区专题页，可用键盘 Tab 键逐个选中。</desc>
+  <g class="map-zoom">
+    <rect class="map-ocean" width={geo.width} height={geo.height}></rect>
+    <path class="map-grat" d={geo.graticulePath}></path>
+    <path class="map-land" d={geo.landPath}></path>
+    <g class="map-routes" aria-hidden="true">
+      {
+        dots.map((d) => (
+          <path
+            class:list={['route', { 'is-selected': d.countryCode === selected }]}
+            d={d.route}
+            pathLength="1"
+            data-region={d.countryCode}
+            data-level={d.level}
+          />
+        ))
+      }
+    </g>
+    <g class="entrance" transform={`translate(${geo.entrance.x} ${geo.entrance.y})`} aria-hidden="true">
+      <g class="dot__inner">
+        <rect class="entrance__mark" x="-3.6" y="-3.6" width="7.2" height="7.2" transform="rotate(45)"></rect>
+        <text class="entrance__label" x="-9" y="-6" text-anchor="end">国内入口（示意）</text>
+      </g>
+    </g>
+    <g class="map-dots">
+      {
+        dots.map((d) => (
+          <a
+            class:list={['dot', { 'is-selected': d.countryCode === selected }]}
+            href={`/regions/${d.regionSlug}/`}
+            data-region={d.countryCode}
+            data-level={d.level}
+            data-x={d.x}
+            data-y={d.y}
+            aria-label={`${d.name}：${d.documented} 家机场提供节点${d.unverified ? `，另有 ${d.unverified} 家资料补充中` : ''}。选中后在右侧查看机场。`}
+          >
+            <g transform={`translate(${d.x} ${d.y})`}>
+              <g class="dot__inner">
+                <circle class="dot__hit" r="16"></circle>
+                <circle class="dot__halo" r="9"></circle>
+                <circle class="dot__core" r="4.5"></circle>
+                <text class="dot__label" x={d.labelDx} y={d.labelDy} text-anchor={d.anchor}>
+                  {d.name}
+                  <tspan class="dot__count" dx="4">{d.documented}</tspan>
+                </text>
+              </g>
+            </g>
+          </a>
+        ))
+      }
+    </g>
+  </g>
+</svg>

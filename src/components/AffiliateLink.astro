@@ -1,0 +1,27 @@
+---
+import { AFFILIATE_REL } from '../data/labels';
+import FlameIcon from './FlameIcon.astro';
+interface Props {
+  url: string;
+  brandName: string;
+  variant?: 'primary' | 'ghost';
+  small?: boolean;
+  label?: string;
+}
+const { url, brandName, variant = 'ghost', small = false, label } = Astro.props;
+// 主推灵动云的每一个注册入口都带一朵跳动的小火焰
+const fire = /灵动云/.test(brandName);
+---
+
+<a
+  class:list={['btn', variant === 'primary' ? 'btn--primary' : 'btn--ghost', { 'btn--small': small, 'btn--fire': fire }]}
+  href={url}
+  target="_blank"
+  rel={AFFILIATE_REL}
+  data-affiliate="true"
+>
+  {fire && <FlameIcon class="btn__flame" />}
+  <span>{label ?? `前往${brandName}官网`}</span>
+  <span class="btn__tag">推广</span>
+  <span class="visually-hidden">（推广链接，在新窗口打开）</span>
+</a>

@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteRecordCards from '../components/SiteRecordCards.astro';
+import ThirdPartyTable from '../components/ThirdPartyTable.astro';
+import EvidenceGallery from '../components/EvidenceGallery.astro';
+import { AVAILABILITY_SNAPSHOTS, CLAIM_ONLY_RECORDS, EVIDENCE_FILES, SITE_TEST_RECORDS, TEST_COUNTS, THIRD_PARTY_RECORDS } from '../data/test-records';
+import { LDY_REPORT_PATH, LDY_REPORT_TITLE } from '../data/reports/lingdongyun-sg-2026-10';
+import { LDY_PEAK_PAGE_PATH, LDY_PEAK_PAGE_TITLE } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { getBrand } from '../data/brands';
+import { groupRecords } from '../lib/records-view';
+import { fmtDate } from '../lib/format';
+import { DATA_UPDATED } from '../lib/site';
+
+const path = '/test-records/';
+const title = '测试档案：本站测试记录与其他测速参考，附证据状态｜机场节点';
+const description = `机场节点站的全部测试记录：本站测试 ${TEST_COUNTS.siteRecords} 条、节点在线快照 ${TEST_COUNTS.snapshots} 次、其他测速参考 ${TEST_COUNTS.thirdPartyRows} 行。每条标注时间、来源等级和原图是否已挂载。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '测试档案', href: path },
+];
+const groups = groupRecords(THIRD_PARTY_RECORDS);
+const snaps = AVAILABILITY_SNAPSHOTS.map((s) => ({ snapshot: s, online: s.onlineNodes, total: s.totalNodes }));
+const toc = [
+  ['site', '本站记录'],
+  ['evidence', '证据文件'],
+  ['third-party', '其他测速参考'],
+  ...(CLAIM_ONLY_RECORDS.length > 0 ? [['claims', '仅有文字描述的内容']] : []),
+  ['download', '下载 CSV'],
+] as const;
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>测试档案：每一条测试记录的原始表格</h1>
+      <p class="page-head__lead">
+        本站自己的测试、服务商面板的节点在线快照和第三方页面的历史摘录，在这里分开存放。每条都带着时间、来源等级和证据状态，缺失的值显示为“—”或“未测得”，不写成 0。
+      </p>
+      <p class="page-head__meta">
+        <span>更新于 {fmtDate(DATA_UPDATED)}</span>
+        <span>本站记录 <b class="num text-electric">{TEST_COUNTS.siteRecords}</b> 条</span>
+        <span>节点在线快照 <b class="num text-electric">{TEST_COUNTS.snapshots}</b> 次</span>
+        <span>其他测速参考 <b class="num text-electric">{TEST_COUNTS.thirdPartyRows}</b> 行（{TEST_COUNTS.thirdPartyBrands} 家）</span>
+      </p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <nav class="toc-inline" aria-label="本页目录">
+      <ul>{toc.map(([id, label]) => <li><a href={`#${id}`}>{label}</a></li>)}</ul>
+    </nav>
+
+    <div class="stack-lg">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">先读这一条</span>
+        本站目前只有 {getBrand('lingdongyun')?.shortName} 一家有本站测试记录，且原始截图已不保留，所以这些记录标记为“未核验”，也没有进入任何分时段统计。其他测速参考来自别人的评测页，不是本站测试，也不代表现在的表现。分时段的整体情况见<a href="/time-tests/">分时段节点测试</a>。
+      </p>
+
+      <section id="site" aria-labelledby="site-title">
+        <h2 id="site-title" class="mb-3">本站记录</h2>
+        <SiteRecordCards records={SITE_TEST_RECORDS} snapshots={snaps} level={3} />
+        <p class="mt-4 chip-row"><a class="btn btn--ghost btn--wrap" href={LDY_REPORT_PATH}>{LDY_REPORT_TITLE}</a><a class="btn btn--ghost btn--wrap" href={LDY_PEAK_PAGE_PATH}>{LDY_PEAK_PAGE_TITLE}</a></p>
+      </section>
+
+      <section id="evidence" aria-labelledby="evidence-title">
+        <h2 id="evidence-title" class="mb-3">证据文件</h2>
+        <EvidenceGallery files={EVIDENCE_FILES} />
+      </section>
+
+      <section id="third-party" aria-labelledby="third-party-title">
+        <h2 id="third-party-title" class="mb-3">其他测速参考（{groups.length} 组，{THIRD_PARTY_RECORDS.length} 行）</h2>
+        <p class="text-sm text-soft mb-4">
+          这些是第三方评测页收录的测速或延迟截图的摘录：不是本站测试，时间以原页面标注为准，速度保留原图单位（MB/KB/B）、没有换算为 Mbps。同一页面内的两个数字是否在同一条件下测得，本站无法确认。
+        </p>
+        <div class="stack-lg">
+          <ThirdPartyTable records={THIRD_PARTY_RECORDS} level={3} />
+        </div>
+      </section>
+
+      {
+        CLAIM_ONLY_RECORDS.length > 0 && (
+          <section id="claims" aria-labelledby="claims-title">
+            <h2 id="claims-title" class="mb-3">仅有文字描述的内容（不算测试记录）</h2>
+            <p class="text-sm text-soft mb-3">下面是来源页面对节点的文字介绍，没有任何延迟或速度数字，所以不放进测试记录，也不进入 CSV。</p>
+            <ul class="bullets text-sm">
+              {CLAIM_ONLY_RECORDS.map((r) => <li><a href={`/airports/${r.brandId}/`}>{getBrand(r.brandId)?.shortName}</a>　{r.nodeDisplayName}：{r.notes}</li>)}
+            </ul>
+          </section>
+        )
+      }
+
+      <section id="download" aria-labelledby="download-title">
+        <h2 id="download-title" class="mb-3">下载 CSV</h2>
+        <p class="section__lead">
+          上面的测试记录可以下载为 CSV。文件里没有订阅链接、令牌或个人信息；空单元格表示来源没有给出该数值。
+        </p>
+        <p class="mt-4"><a class="btn btn--primary" href="/data/test-records.csv" download>下载 test-records.csv</a></p>
+        <p class="mt-4 text-sm text-mute">需要补充或更正记录？请带上测试时间、环境和原始截图，见<a href="/testing-methodology/">测试方法</a>和<a href="/about/">关于本站</a>。</p>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

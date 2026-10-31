@@ -1,0 +1,10 @@
+---
+/**
+ * 单朵火焰：外焰、中焰、焰心三层 + 一道左侧高光。只有形状；渐变颜色来自 BaseLayout 里的 <svg class="flame-defs">（fill: url(#…)），
+ * 跳动动画在 src/styles/flame.css 里。页面里没有内联样式和脚本（严格 CSP）。纯装饰，读屏软件忽略。
+ */
+interface Props { class?: string }
+const { class: extra = '' } = Astro.props;
+---
+
+<svg class:list={['flame', extra]} viewBox="0 0 48 72" aria-hidden="true" focusable="false"><path class="flame__o" d="M25 1C27 13 41 22 42 42C43 59 34 71 24 71C14 71 5 60 6 45C7 34 13 29 15 20C17 26 19 29 22 31C24 22 21 11 25 1Z" /><path class="flame__m" d="M24 17C28 30 37 38 37 52C37 63 31 71 24 71C17 71 11 63 11 52C11 40 20 34 24 17Z" /><path class="flame__i" d="M24 40C27 47 32 52 32 59C32 66 28 71 24 71C20 71 16 66 16 59C16 52 21 47 24 40Z" /><path class="flame__hl" d="M17 30C13 37 11 44 12 52C13 59 17 64 21 66C17 62 15 57 15 51C15 44 17 38 20 32Z" /></svg>

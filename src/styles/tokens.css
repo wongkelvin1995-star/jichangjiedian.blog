@@ -1,0 +1,110 @@
+/*
+ * 机场节点 · 视觉系统「Deep Space Matrix（深空矩阵）」
+ *
+ * 2026-10-31 改为深空主题：页面底色是深空蓝，背景有蓝紫星云、带光环的行星与星点；
+ * 面板一律是半透明的深蓝玻璃卡片（见 space.css）。品牌四色语义不变，只换成深底上的取值：
+ *   电光蓝  链接、可交互元素、关键数字、节点与航线
+ *   星云紫  与电光蓝组成渐变：按钮、边框、当前栏目高亮
+ *   琥珀色  选中状态、价格、时间窗口、关键测试信息（深底上用亮琥珀，原“日落橙”）
+ *   绿色    仅表示“已记录的正常状态”     红色  仅表示真实错误     灰色  未核验
+ * 所有文字颜色在页面底色与玻璃面板上的对比度 ≥ 4.5:1（图形元素 ≥ 3:1）。
+ */
+:root {
+  color-scheme: dark;
+
+  /* 主题色 */
+  --bg: #070b1b; /* 页面底色 */
+  --deep: #0b1735; /* 深空蓝：面板底 */
+  --nebula: #7047ff; /* 星云紫 */
+  --electric: #398bff; /* 电光蓝 */
+  --cyan: #36d7ff; /* 科技青 */
+  --silver: #f4f7ff; /* 标题白 */
+
+  --midnight: #f4f7ff; /* 原“午夜蓝”语义：最强调的文字（深底上为标题白） */
+  --star: #2e4a8c; /* 星蓝：标签底色 */
+  --sunset: #ffb357; /* 琥珀：选中、价格、时间窗口 */
+
+  /* 层级：底色 → 深空蓝面板 → 玻璃卡片 */
+  --ink: var(--bg); /* 页面底色 */
+  --ink-deep: #0b1735; /* 页头页脚、地图洋面 */
+  --ink-raised: rgba(16, 29, 66, 0.72); /* 内容面板底（半透明，叠在星空上） */
+  --star-deep: rgba(27, 44, 96, 0.62); /* 次级大面积背景 */
+  --star-line: #4b6fd6; /* 边框强调 */
+  --line: rgba(122, 152, 230, 0.24);
+  --line-soft: rgba(122, 152, 230, 0.14);
+
+  /* 玻璃卡片 */
+  --glass: rgba(11, 23, 53, 0.66);
+  --glass-strong: rgba(10, 20, 48, 0.86);
+  --glass-border: linear-gradient(135deg, rgba(57, 139, 255, 0.62), rgba(112, 71, 255, 0.52) 55%, rgba(54, 215, 255, 0.36));
+  --glass-blur: 14px;
+  --glow-blue: rgba(57, 139, 255, 0.32);
+  --glow-purple: rgba(112, 71, 255, 0.3);
+  --grad-brand: linear-gradient(135deg, #2f6fe8 0%, #6b3ff5 100%); /* 按钮：蓝紫渐变（白字对比度 ≥ 5:1） */
+  --grad-text: linear-gradient(90deg, #8ec1ff, #36d7ff 45%, #b39cff);
+
+  /* 交互衍生 */
+  --electric-hover: #7fb8ff; /* 链接与按钮悬停 */
+  --on-electric: #ffffff; /* 蓝紫渐变上的文字 */
+  --on-sunset: #1a0f00; /* 琥珀底上的文字 */
+  --ocean: #0a1431; /* 地图洋面 */
+  --land: #1a2d5f; /* 地图陆地 */
+  --halo: rgba(7, 11, 27, 0.92); /* 地图文字描边 */
+  --shadow-pop: rgba(2, 6, 20, 0.6);
+
+  /* 文字 */
+  --text: #f4f7ff;
+  --text-soft: #b8c6e1;
+  --text-mute: #8fa0c3;
+
+  /* 状态色（语义受限） */
+  --ok: #3ddc97;
+  --err: #ff7b7b;
+  --gray: #7f8da8; /* 边框、圆点、图形用（非文字对比度 ≥ 3:1） */
+  --gray-text: #a6b3cc; /* 灰色文字用：在面板底色上对比度 ≥ 4.5:1 */
+
+  /* 半透明调色用的 RGB 分量 */
+  --electric-rgb: 57, 139, 255;
+  --nebula-rgb: 112, 71, 255;
+  --cyan-rgb: 54, 215, 255;
+  --sunset-rgb: 255, 179, 87;
+  --ok-rgb: 61, 220, 151;
+  --err-rgb: 255, 123, 123;
+  --tint-rgb: 96, 130, 230; /* 面板上的淡蓝底纹 */
+
+  /* 字体：Noto Sans SC 优先，其次系统中文字体 */
+  --font:
+    'Noto Sans SC', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'Source Han Sans SC', 'Noto Sans CJK SC',
+    'WenQuanYi Micro Hei', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* 字号 */
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-h3: 1.125rem;
+  --fs-h2: clamp(1.375rem, 1.18rem + 0.7vw, 1.75rem);
+  --fs-h1: clamp(1.75rem, 1.3rem + 1.7vw, 2.625rem);
+
+  /* 间距（4px 基数） */
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 0.75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+  --s8: 4.5rem;
+
+  /* 圆角：全站统一三档——面板/卡片 14px、控件/按钮 10px、标签 6px */
+  --r-lg: 14px;
+  --r-md: 10px;
+  --r-sm: 6px;
+
+  --container: 1240px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --measure: 40em; /* 中文正文行宽 */
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur: 180ms;
+}

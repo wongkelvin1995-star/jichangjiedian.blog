@@ -1,0 +1,30 @@
+---
+/** 单个节点、单个时间窗口、单个指标的趋势线 + 数据表。只在满足 MIN_TREND_DAYS 时才会被页面渲染。 */
+import { layoutTrend } from '../lib/trend';
+import type { TrendSeries } from '../lib/trend';
+
+interface Props {
+  series: TrendSeries;
+}
+const { series: s } = Astro.props;
+const L = layoutTrend(s.points, s.unit);
+const summary = `${s.brandName} ${s.nodeName} 在${s.windowText}窗口的${s.metricLabel}，共 ${s.points.length} 次记录，从 ${s.points[0]!.date.slice(0, 10)} 到 ${s.points[s.points.length - 1]!.date.slice(0, 10)}。`;
+---
+
+<figure class="trend">
+  <figcaption class="trend__title">
+    {s.brandName} · {s.nodeName} · {s.windowText} · {s.metricLabel}（{s.unit}）
+  </figcaption>
+  <svg class="trend__svg" viewBox={`0 0 ${L.width} ${L.height}`} role="img" aria-label={summary}>
+    {L.yTicks.map((t) => (<g><line class="trend__grid" x1="52" x2={L.width - 16} y1={t.y} y2={t.y}></line><text class="trend__tick" x="46" y={t.y + 4} text-anchor="end">{t.label}</text></g>))}
+    {L.xTicks.map((t) => <text class="trend__tick" x={t.x} y={L.height - 10} text-anchor="middle">{t.label}</text>)}
+    <path class="trend__line" d={L.path}></path>
+    {L.dots.map((d) => (<circle class="trend__dot" cx={d.x} cy={d.y} r="5"><title>{d.label}</title></circle>))}
+  </svg>
+  <details class="row-note">
+    <summary>查看这条趋势线的数据点</summary>
+    <ul class="text-sm">
+      {s.points.map((p) => <li><a href={`/test-records/#${p.testId}`}>{p.date.slice(0, 10)} {p.date.slice(11, 16)}</a>：<span class="num">{p.value} {s.unit}</span></li>)}
+    </ul>
+  </details>
+</figure>

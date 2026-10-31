@@ -1,0 +1,206 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapExplorer from '../components/MapExplorer.astro';
+import RegionTable from '../components/RegionTable.astro';
+import BrandCards from '../components/BrandCards.astro';
+import FeaturedLdy from '../components/FeaturedLdy.astro';
+import TimeWindowTable from '../components/TimeWindowTable.astro';
+import { loadPosts } from '../lib/content';
+import { datasetStats } from '../lib/queries';
+import { fmtDate } from '../lib/format';
+import { faqLd } from '../lib/brand-pitch';
+import { DATA_UPDATED, HOME_DESCRIPTION, HOME_H1, HOME_SLOGAN, HOME_SUBTITLE, HOME_TITLE } from '../lib/site';
+
+const stats = datasetStats();
+const HOME_FAQ = [{"q": "机场节点是什么？", "a": "“机场”是对代理服务商的俗称，“节点”就是它在香港、日本、新加坡、美国等地的服务器。买了机场套餐后，把订阅链接导入客户端，选一个节点连上，就能正常访问 Google、YouTube、ChatGPT 等网站。"}, {"q": "2026年机场推荐哪家？", "a": `本站主推灵动云：60 个节点、覆盖 10 个地区，IPLC / IEPL 专线 + BGP 线路，不限设备，月付 ¥20 起。如果预算更低或需要特定地区，可以在上面的 ${stats.brands} 家机场卡片里按价格和节点对比。`}, {"q": "机场多少钱一个月？", "a": `本站收录的 ${stats.brands} 家机场，入门月付大多在 ¥19–30 之间，含 100–200GB 流量；常看视频、多设备共用选 ¥40–70 的 300–600GB 套餐更划算。只是偶尔用可以买年付小套餐或一次性流量包。`}, {"q": "新手第一次买机场要注意什么？", "a": "先买月付试一个月，重点看晚上 8–11 点的速度；确认节点地区覆盖你要用的服务（AI 选美国、看剧选日本/新加坡、游戏选香港）；只从官网注册，不要相信来路不明的 Telegram 账号和仿冒网站。"}, {"q": "香港、日本、新加坡、美国节点怎么选？", "a": "香港离大陆最近、延迟最低，适合日常和游戏；日本、新加坡适合 Netflix、YouTube 等流媒体；美国节点用来访问 ChatGPT、Claude 等 AI 服务。详细对比见“节点地区”和“线路知识”。"}, {"q": "IPLC、IEPL 专线和普通线路有什么区别？", "a": "IPLC / IEPL 是走专线的跨境线路，不经过公网拥堵段，晚高峰更稳、延迟更低，价格也更高；BGP / 中转线路性价比高，但高峰时段可能波动。"}];
+const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 6);
+
+---
+
+<BaseLayout title={HOME_TITLE} description={HOME_DESCRIPTION} jsonLd={[faqLd(HOME_FAQ)]}>
+  <section class="hero" aria-labelledby="home-title">
+    <div class="container">
+      <div class="hero__text">
+        <div class="hero__globe" data-globe-host aria-hidden="true"></div>
+        <h1 id="home-title">{HOME_H1}</h1>
+        <p class="hero__sub">{HOME_SUBTITLE}</p>
+        <p class="hero__slogan">{HOME_SLOGAN}</p>
+        <p class="hero__cta"><a class="btn btn--primary" href="#airports">看{stats.brands}家机场价格与节点</a> <a class="btn btn--ghost" href="/articles/choose-airport-by-use-case/">按用途选机场</a></p>
+      </div>
+      <MapExplorer />
+    </div>
+  </section>
+
+  <FeaturedLdy />
+
+  <section class="section" id="airports" aria-labelledby="airports-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="airports-title">{stats.brands}家机场推荐：价格、节点与注册</h2>
+          <p class="section__lead">
+            每张卡片列出这家机场的<strong>最低月付价格</strong>、节点数量与覆盖地区、线路类型和常用服务情况，点“注册”直接去官网开通，点“套餐与节点”看全部套餐和每个地区的节点。
+          </p>
+        </div>
+        <a class="btn btn--ghost" href="/airports/">查看完整目录</a>
+      </div>
+      <BrandCards />
+      <p class="disclosure mt-4">
+        按站长编辑顺序排列。价格为各家最便宜的月付套餐，资料整理于 {fmtDate(DATA_UPDATED)}，下单前以官网当天价格为准；“注册”按钮是推广链接。
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--band" id="region-list" aria-labelledby="region-list-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="region-list-title">按地区找机场：香港、日本、新加坡、美国节点哪家多</h2>
+          <p class="section__lead">
+            想要香港节点低延迟、日本节点看流媒体，或者美国节点用 ChatGPT？先选地区，看看有哪些机场提供这个地区的节点，点进去能看到每家的节点数量和线路。
+          </p>
+        </div>
+      </div>
+      <RegionTable />
+    </div>
+  </section>
+
+  <section class="section section--guide" id="how-to-choose" aria-labelledby="choose-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="choose-title">2026机场节点与机场推荐指南</h2>
+          <p class="section__lead">选机场节点之前，先弄清楚哪些因素真正影响使用体验。</p>
+        </div>
+      </div>
+      <div class="guide">
+        <article class="guide-card">
+          <h3 class="guide-card__title"><span class="guide-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0" /><path d="M12 18l4-6" /></svg></span>了解机场节点，为什么不能只看速度？</h3>
+          <p>选择机场节点时，很多用户首先关注节点数量和下载速度，却容易忽略影响实际体验的其他因素。即使两个节点显示相似的延迟，它们在晚高峰、连续视频播放或长时间连接过程中，也可能表现出明显差异。</p>
+          <p>机场节点的使用体验通常受到测试地点、运营商、线路质量、国际网络拥塞、服务器负载、客户端配置以及目标服务等因素影响。因此，一次测速无法完整代表一个节点的长期表现。</p>
+          <p class="guide-card__note">「机场节点」以全球地区节点资料、线路知识与分时段网络观察为核心，整理 {stats.brands} 家机场的价格、节点和线路，并附上本站主推灵动云的晚高峰实测，帮你挑到真正好用的机场。</p>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card__title"><span class="guide-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></svg></span>不同时间段，机场节点为什么会有速度差异？</h3>
+          <p>同一个机场节点，在早晨、白天、晚高峰与深夜可能出现不同的网络表现。例如，某些网络路径在使用人数增加时，可能出现延迟上升、带宽下降或丢包增加等现象。但晚间变慢并不能直接证明机场服务器性能较差，还需要结合测试网络、连接协议与目标服务器的实际情况分析，常见原因见<a href="/articles/why-nodes-slow-down-at-night/">为什么同一个节点晚上会变慢</a>。</p>
+          <p>本站将<a href="/time-tests/">分时段观察</a>作为重点研究方向，关注延迟、下载速度、上传速度、抖动、丢包和连接成功率的变化。实测都会写清楚测试时间和节点，方便你对照自己的使用时段。</p>
+        </article>
+
+        <article class="guide-card guide-card--wide">
+          <h3 class="guide-card__title"><span class="guide-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16" /></svg></span>香港、日本、新加坡与美国节点应该如何选择？</h3>
+          <p>不同地区的机场节点，适合的使用场景可能存在差异。</p>
+          <ul class="region-tiles">
+            <li><a href="/regions/hong-kong/"><strong>香港节点</strong><span class="region-tiles__use">日常 · 游戏</span></a><p>对中国大陆部分用户而言，香港距离较近，具备获得较低延迟的地理条件，但最终体验仍取决于运营商、线路与实际网络负载。</p></li>
+            <li><a href="/regions/japan/"><strong>日本节点</strong><span class="region-tiles__use">流媒体 · 日区服务</span></a><p>常用于需要日本地区出口的网络服务，实际速度与连接质量需要结合测试位置进行判断。</p></li>
+            <li><a href="/regions/singapore/"><strong>新加坡节点</strong><span class="region-tiles__use">东南亚 · 流媒体</span></a><p>可用于需要新加坡或东南亚出口的服务场景，适用性取决于用户所在地区和实际路由。</p></li>
+            <li><a href="/regions/united-states/"><strong>美国节点</strong><span class="region-tiles__use">ChatGPT · AI 服务</span></a><p>可用于需要美国地区网络出口的服务，但对于距离较远的用户，往返延迟通常更高。</p></li>
+          </ul>
+          <p class="guide-card__note">节点标注的地区不一定等于数据实际经过的全部路径。选择节点时，还应关注<a href="/routes/">线路类型</a>、出口位置和实际连接结果。</p>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card__title"><span class="guide-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6" /></svg></span>如何判断机场节点的稳定性？</h3>
+          <p>稳定性不应该只由某一次速度峰值决定。延迟反映数据往返所需的时间；抖动反映延迟变化幅度；丢包率反映测试过程中数据包丢失的情况；下载与上传速度则反映特定测试条件下的数据传输能力。对于日常网页浏览、视频观看、远程办公等用途，各指标的重要性并不完全相同。</p>
+          <p>更可靠的判断方式，是在多个时间段重复测试同一个节点，并将结果与相同环境下的其他节点进行对比。</p>
+        </article>
+
+        <article class="guide-card">
+          <h3 class="guide-card__title"><span class="guide-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 10h8M8 14h5" /></svg></span>{stats.brands}家机场节点资料如何使用？</h3>
+          <p>本站提供机场品牌、节点地区、线路类型与相关资料的分类检索。读者可以先在<a href="/#global-map">全球节点地图</a>选择目标地区，再按线路筛选，查看对应机场的套餐、节点数量和注册入口；每家机场都有独立页面，写明适合人群和常见问题。</p>
+          <p>选机场时结合预算、用途和地区覆盖来判断，不要只看宣传里的节点数量。价格可以在<a href="/plans/">套餐对比</a>里按预算和流量筛选。</p>
+          <p class="guide-card__actions"><a class="btn btn--primary btn--small" href="#airports">看{stats.brands}家机场价格</a><a class="btn btn--ghost btn--small" href="/airports/lingdongyun/">主推：灵动云</a></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="time-tests" aria-labelledby="time-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="time-title">什么时间用机场最顺：早间、午间、晚高峰怎么选节点</h2>
+          <p class="section__lead">同一个节点，早上和晚上 9 点的体验可能差很多。按时段换节点，比一味买贵的套餐更有效。</p>
+        </div>
+        <a class="btn btn--ghost" href="/time-tests/">分时段节点指南</a>
+      </div>
+      <TimeWindowTable />
+    </div>
+  </section>
+
+
+
+  {
+    posts.length > 0 && (
+      <section class="section section--band" id="articles" aria-labelledby="articles-title">
+        <div class="container">
+          <div class="section__head">
+            <div>
+              <h2 id="articles-title">机场选购攻略</h2>
+              <p class="section__lead">按用途选机场、看懂套餐流量和节点线路，少踩坑。</p>
+            </div>
+            <a class="btn btn--ghost" href="/articles/">全部文章</a>
+          </div>
+          <ul class="post-list">
+            {posts.map((p) => (
+              <li>
+                <h3><a href={p.href}>{p.h1}</a></h3>
+                <p>{p.description}</p>
+                <div class="meta">
+                  <span>{p.category}</span>
+                  <span>更新于 <time datetime={p.modified}>{fmtDate(p.modified)}</time></span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="container">
+      <div class="section__head">
+        <h2 id="faq-title">机场节点常见问题</h2>
+      </div>
+      <div class="prose--wide">
+        <details class="fold" open>
+          <summary>机场节点是什么？</summary>
+          <div class="fold__body">
+            <p>“机场”是对代理服务商的俗称，“节点”就是它在香港、日本、新加坡、美国等地的服务器。买了机场套餐后，把订阅链接导入客户端，选一个节点连上，就能正常访问 Google、YouTube、ChatGPT 等网站。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>2026年机场推荐哪家？</summary>
+          <div class="fold__body">
+            <p>本站主推灵动云：60 个节点、覆盖 10 个地区，IPLC / IEPL 专线 + BGP 线路，不限设备，月付 ¥20 起。如果预算更低或需要特定地区，可以在上面的 {stats.brands} 家机场卡片里按价格和节点对比。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>机场多少钱一个月？</summary>
+          <div class="fold__body">
+            <p>本站收录的 {stats.brands} 家机场，入门月付大多在 ¥19–30 之间，含 100–200GB 流量；常看视频、多设备共用选 ¥40–70 的 300–600GB 套餐更划算。只是偶尔用可以买年付小套餐或一次性流量包。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>新手第一次买机场要注意什么？</summary>
+          <div class="fold__body">
+            <p>先买月付试一个月，重点看晚上 8–11 点的速度；确认节点地区覆盖你要用的服务（AI 选美国、看剧选日本/新加坡、游戏选香港）；只从官网注册，不要相信来路不明的 Telegram 账号和仿冒网站。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>香港、日本、新加坡、美国节点怎么选？</summary>
+          <div class="fold__body">
+            <p>香港离大陆最近、延迟最低，适合日常和游戏；日本、新加坡适合 Netflix、YouTube 等流媒体；美国节点用来访问 ChatGPT、Claude 等 AI 服务。详细对比见“节点地区”和“线路知识”。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>IPLC、IEPL 专线和普通线路有什么区别？</summary>
+          <div class="fold__body">
+            <p>IPLC / IEPL 是走专线的跨境线路，不经过公网拥堵段，晚高峰更稳、延迟更低，价格也更高；BGP / 中转线路性价比高，但高峰时段可能波动。</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

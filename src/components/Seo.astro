@@ -1,0 +1,60 @@
+---
+import { SITE_NAME, absoluteUrl } from '../lib/site';
+import { serializeLd } from '../lib/seo';
+import type { JsonLd } from '../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  /** 站内路径，例如 /airports/；用于 canonical 与 og:url */
+  path: string;
+  noindex?: boolean;
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  published?: string;
+  modified?: string;
+  jsonLd?: JsonLd[];
+}
+const { title, description, path, noindex = false, ogImage = '/og/default.png', ogType = 'website', published, modified, jsonLd = [] } = Astro.props;
+
+const canonical = absoluteUrl(path);
+const image = absoluteUrl(ogImage);
+const robots = noindex
+  ? 'noindex,follow'
+  : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
+const bing = import.meta.env.PUBLIC_BING_SITE_VERIFICATION as string | undefined;
+const google = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION as string | undefined;
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={robots} />
+<meta name="theme-color" content="#070b1b" />
+<meta name="color-scheme" content="dark" />
+<meta name="format-detection" content="telephone=no" />
+{bing && <meta name="msvalidate.01" content={bing} />}
+{google && <meta name="google-site-verification" content={google} />}
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+<meta property="og:site_name" content={SITE_NAME} />
+<meta property="og:locale" content="zh_CN" />
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={image} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${SITE_NAME}：环球节点地图与分时段网络表现研究`} />
+{published && <meta property="article:published_time" content={`${published}T00:00:00+08:00`} />}
+{modified && <meta property="article:modified_time" content={`${modified}T00:00:00+08:00`} />}
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={image} />
+
+{jsonLd.map((d) => <script type="application/ld+json" set:html={serializeLd(d)} />)}

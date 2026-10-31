@@ -1,0 +1,686 @@
+{
+ "pages": 75,
+ "internalUrls": 84,
+ "externalUrls": 35,
+ "interactions": 11199,
+ "passed": 11199,
+ "failed": 0,
+ "failures": [],
+ "perPage": [
+  {
+   "url": "/",
+   "problems": [],
+   "links": 479,
+   "buttons": 0,
+   "controls": 4,
+   "noJsH1": true,
+   "noJsChars": 9182
+  },
+  {
+   "url": "/404.html",
+   "problems": [],
+   "links": 99,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 172
+  },
+  {
+   "url": "/about/",
+   "problems": [],
+   "links": 98,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1337
+  },
+  {
+   "url": "/affiliate-disclosure/",
+   "problems": [],
+   "links": 94,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 806
+  },
+  {
+   "url": "/airports/",
+   "problems": [],
+   "links": 163,
+   "buttons": 1,
+   "controls": 4,
+   "noJsH1": true,
+   "noJsChars": 2726
+  },
+  {
+   "url": "/airports/breezenet/",
+   "problems": [],
+   "links": 113,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 3254
+  },
+  {
+   "url": "/airports/dalaoyun/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2250
+  },
+  {
+   "url": "/airports/edgenova/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2579
+  },
+  {
+   "url": "/airports/ermaoyun/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2414
+  },
+  {
+   "url": "/airports/feimaoyun/",
+   "problems": [],
+   "links": 113,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2997
+  },
+  {
+   "url": "/airports/firefly/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2740
+  },
+  {
+   "url": "/airports/flashleap/",
+   "problems": [],
+   "links": 109,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2208
+  },
+  {
+   "url": "/airports/flyv/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2339
+  },
+  {
+   "url": "/airports/guangnianti/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2067
+  },
+  {
+   "url": "/airports/guangsuyun/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2258
+  },
+  {
+   "url": "/airports/huanqiuyun/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2572
+  },
+  {
+   "url": "/airports/jilianyun/",
+   "problems": [],
+   "links": 116,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2464
+  },
+  {
+   "url": "/airports/kexinyun/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2726
+  },
+  {
+   "url": "/airports/kuaili/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2633
+  },
+  {
+   "url": "/airports/kuajie/",
+   "problems": [],
+   "links": 109,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2432
+  },
+  {
+   "url": "/airports/laddercloud/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2458
+  },
+  {
+   "url": "/airports/lingdongyun/",
+   "problems": [],
+   "links": 151,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 6320
+  },
+  {
+   "url": "/airports/lingdongyun/peak-2026-10-28/",
+   "problems": [],
+   "links": 121,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 3023
+  },
+  {
+   "url": "/airports/lingdongyun/singapore-speedtest-2026-10/",
+   "problems": [],
+   "links": 125,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 5397
+  },
+  {
+   "url": "/airports/lingmao/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2476
+  },
+  {
+   "url": "/airports/liulianyun/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2592
+  },
+  {
+   "url": "/airports/muguangjiasu/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2247
+  },
+  {
+   "url": "/airports/quanqiuyun/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2643
+  },
+  {
+   "url": "/airports/shandianyun/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2532
+  },
+  {
+   "url": "/airports/shenxingyun/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2139
+  },
+  {
+   "url": "/airports/sogoyun/",
+   "problems": [],
+   "links": 113,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2428
+  },
+  {
+   "url": "/airports/sujie/",
+   "problems": [],
+   "links": 116,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2208
+  },
+  {
+   "url": "/airports/u1s1/",
+   "problems": [],
+   "links": 113,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2163
+  },
+  {
+   "url": "/airports/wavenet/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2636
+  },
+  {
+   "url": "/airports/weituyun/",
+   "problems": [],
+   "links": 114,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2656
+  },
+  {
+   "url": "/airports/wuyou/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2956
+  },
+  {
+   "url": "/airports/xingdaomeng/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2908
+  },
+  {
+   "url": "/airports/yifanyun/",
+   "problems": [],
+   "links": 113,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2795
+  },
+  {
+   "url": "/airports/yinxingren/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2493
+  },
+  {
+   "url": "/airports/yunjieyun/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 4054
+  },
+  {
+   "url": "/airports/yuzhouyun/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2599
+  },
+  {
+   "url": "/articles/",
+   "problems": [],
+   "links": 119,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1825
+  },
+  {
+   "url": "/articles/choose-airport-by-use-case/",
+   "problems": [],
+   "links": 120,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2893
+  },
+  {
+   "url": "/articles/hong-kong-vs-japan-nodes/",
+   "problems": [],
+   "links": 112,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2510
+  },
+  {
+   "url": "/articles/how-to-choose-airport-nodes-2026/",
+   "problems": [],
+   "links": 115,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2495
+  },
+  {
+   "url": "/articles/how-to-speedtest-at-peak-hours/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2580
+  },
+  {
+   "url": "/articles/idle-vs-loaded-latency/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2502
+  },
+  {
+   "url": "/articles/iepl-iplc-bgp-differences/",
+   "problems": [],
+   "links": 108,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2182
+  },
+  {
+   "url": "/articles/jitter-impact-on-use-cases/",
+   "problems": [],
+   "links": 109,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2443
+  },
+  {
+   "url": "/articles/low-latency-not-fast-download/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2572
+  },
+  {
+   "url": "/articles/online-rate-vs-stability/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2082
+  },
+  {
+   "url": "/articles/singapore-node-speedtest-metrics/",
+   "problems": [],
+   "links": 111,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2514
+  },
+  {
+   "url": "/articles/singapore-vs-us-nodes/",
+   "problems": [],
+   "links": 114,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2764
+  },
+  {
+   "url": "/articles/traffic-multiplier-explained/",
+   "problems": [],
+   "links": 107,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1995
+  },
+  {
+   "url": "/articles/why-nodes-slow-down-at-night/",
+   "problems": [],
+   "links": 108,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2114
+  },
+  {
+   "url": "/guides/",
+   "problems": [],
+   "links": 98,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 860
+  },
+  {
+   "url": "/guides/clash-verge-latency-test/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 3144
+  },
+  {
+   "url": "/guides/seven-day-node-speed-log/",
+   "problems": [],
+   "links": 110,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2605
+  },
+  {
+   "url": "/guides/youtube-stats-for-nerds/",
+   "problems": [],
+   "links": 107,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2285
+  },
+  {
+   "url": "/plans/",
+   "problems": [],
+   "links": 651,
+   "buttons": 2,
+   "controls": 7,
+   "noJsH1": true,
+   "noJsChars": 3701
+  },
+  {
+   "url": "/privacy/",
+   "problems": [],
+   "links": 92,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 850
+  },
+  {
+   "url": "/regions/",
+   "problems": [],
+   "links": 117,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1780
+  },
+  {
+   "url": "/regions/europe/",
+   "problems": [],
+   "links": 138,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 3462
+  },
+  {
+   "url": "/regions/hong-kong/",
+   "problems": [],
+   "links": 159,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 7055
+  },
+  {
+   "url": "/regions/japan/",
+   "problems": [],
+   "links": 155,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 6058
+  },
+  {
+   "url": "/regions/singapore/",
+   "problems": [],
+   "links": 162,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 7240
+  },
+  {
+   "url": "/regions/south-korea/",
+   "problems": [],
+   "links": 137,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 2294
+  },
+  {
+   "url": "/regions/taiwan/",
+   "problems": [],
+   "links": 148,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 5395
+  },
+  {
+   "url": "/regions/united-states/",
+   "problems": [],
+   "links": 156,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 6836
+  },
+  {
+   "url": "/routes/",
+   "problems": [],
+   "links": 95,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1439
+  },
+  {
+   "url": "/search/",
+   "problems": [],
+   "links": 163,
+   "buttons": 1,
+   "controls": 2,
+   "noJsH1": true,
+   "noJsChars": 915
+  },
+  {
+   "url": "/sources/",
+   "problems": [],
+   "links": 168,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 9888
+  },
+  {
+   "url": "/test-records/",
+   "problems": [],
+   "links": 136,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 7428
+  },
+  {
+   "url": "/testing-methodology/",
+   "problems": [],
+   "links": 97,
+   "buttons": 0,
+   "controls": 1,
+   "noJsH1": true,
+   "noJsChars": 1903
+  },
+  {
+   "url": "/time-tests/",
+   "problems": [],
+   "links": 167,
+   "buttons": 1,
+   "controls": 6,
+   "noJsH1": true,
+   "noJsChars": 4430
+  }
+ ]
+}

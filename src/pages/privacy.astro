@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { fmtDate } from '../lib/format';
+import { CONTACT_EMAIL } from '../lib/contact';
+import { DATA_UPDATED, SITE_NAME } from '../lib/site';
+
+const path = '/privacy/';
+const title = '隐私政策：本站收集什么、不收集什么｜机场节点';
+const description = '机场节点是静态资料站：没有账号、评论或订阅表单，站内不设置 Cookie，站内搜索在你的浏览器里完成。本页说明托管日志、第三方链接与未来加入统计工具时的处理方式。';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '隐私政策', href: path },
+];
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
+  <header class="page-head">
+    <div class="container">
+      <h1>隐私政策</h1>
+      <p class="page-head__lead">{SITE_NAME}是一个静态资料站，设计上就不收集你的个人信息。下面是目前的实际情况。</p>
+      <p class="page-head__meta"><span>生效与更新：{fmtDate(DATA_UPDATED)}</span></p>
+    </div>
+  </header>
+
+  <div class="container section section--tight">
+    <div class="prose prose--wide">
+      <h2>本站不做的事</h2>
+      <ul>
+        <li>没有用户账号、登录、评论或订阅表单，不向你索取姓名、邮箱、手机号或支付信息。</li>
+        <li>站内页面不设置 Cookie，也不使用浏览器的本地存储（localStorage、sessionStorage、IndexedDB）保存任何信息。</li>
+        <li>目前没有安装任何访问统计、广告或用户行为追踪工具。</li>
+        <li>不出售、不出租、不交换任何访客数据——因为本站没有这些数据。</li>
+      </ul>
+
+      <h2>站内搜索</h2>
+      <p>启用 JavaScript 时，搜索在你的浏览器里完成：页面加载一份公开的搜索索引文件，匹配过程不会把你输入的关键词发送给我们。没有启用 JavaScript 时，搜索框会以普通表单的方式请求 <code>/search/?q=关键词</code>，关键词会出现在请求地址里，托管服务的访问日志可能因此记录它。</p>
+
+      <h2>托管服务的访问日志</h2>
+      <p>本站托管在第三方静态托管服务上。和几乎所有网站一样，托管服务可能在服务器日志中记录访问的 IP 地址、时间、请求的页面地址、浏览器类型和来源页面，用于安全防护和故障排查。这些日志由托管服务按其自己的政策处理，本站无法也不会用它们识别个人。</p>
+
+      <h2>你点开的外部链接</h2>
+      <p>站内的“官网”按钮是推广链接，会把你带到机场服务商的网站；资料来源里的域名只用于追溯，不是链接。离开本站后，服务商和推广平台可能使用 Cookie 或类似技术识别这次访问来自本站（用于结算佣金），并按它们自己的隐私政策处理你的信息。请在注册或购买前阅读对方的政策。</p>
+
+      <h2>如果以后加入统计工具</h2>
+      <p>如果将来为了了解页面是否好用而加入访问统计，本站会先更新这一页，写明使用的工具、收集的内容和关闭的办法，并且优先选择不使用 Cookie、不记录个人身份的方案。</p>
+
+      <h2>你的选择与联系方式</h2>
+      <p>因为本站不保存与你有关的个人信息，通常没有需要你申请删除或更正的内容。如果你对本政策有疑问，或认为某处处理有问题，请通过以下方式联系：{
+        CONTACT_EMAIL ? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> : <span>联系方式暂未公布，确定后会在<a href="/about/">关于本站</a>公开。</span>
+      }</p>
+      <p>本站不面向未成年人提供服务，也不会有意收集未成年人的信息。</p>
+    </div>
+  </div>
+</BaseLayout>

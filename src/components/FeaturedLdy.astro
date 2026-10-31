@@ -1,0 +1,66 @@
+---
+/**
+ * 首页主推：灵动云。套餐、节点、线路全部取自站内灵动云资料。
+ * 外面套一圈火焰边框（flame.css），上沿有会跳动的火焰，“本站主推”标签里也有一朵小火焰。
+ */
+import AffiliateLink from './AffiliateLink.astro';
+import Coupon from './Coupon.astro';
+import Flames from './Flames.astro';
+import FlameIcon from './FlameIcon.astro';
+import { mustGetBrand } from '../data/brands';
+import { brandPitch } from '../lib/brand-pitch';
+import { LDY_PEAK_PAGE_PATH } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { fmtCNY } from '../lib/format';
+
+const b = mustGetBrand('lingdongyun');
+const p = brandPitch(b);
+const tiers = b.plans
+  .filter((pl) => pl.category === 'monthly-tier' || pl.category === 'annual-small')
+  .map((pl) => {
+    const o = pl.offers[0]!;
+    return { name: pl.name.replace(/（年付）/, ''), price: o.priceCNY, gb: o.monthlyTrafficGB, annual: o.billingPeriod === 'annual' };
+  });
+// 年付套餐折合每月：年费 ÷ 12，保留两位小数（穿云 ¥99 ÷ 12 = ¥8.25）
+const perMonth = (price: number | null) => (price === null ? null : Math.round((price / 12) * 100) / 100);
+---
+
+<section class="featured" aria-labelledby="featured-title">
+  <div class="container">
+    <div class="flame-frame">
+      <Flames size="lg" />
+      <div class="featured__grid">
+        <div class="featured__text">
+          <p class="featured-flag"><FlameIcon />本站主推</p>
+          <h2 id="featured-title">灵动云：{p.nodes} 个节点、{p.regions.length} 个地区，{p.routes.join(' + ')} 线路</h2>
+          <p class="featured__lead">
+            香港、台湾、日本、新加坡、美国、韩国到欧洲都有节点，不限设备数量，月付 ¥20 起。站长自己在用：10 月 28 日晚高峰实测，香港节点打开 Google、YouTube、ChatGPT 的连接延迟都在 90ms 以内，YouTube 播放流畅。
+          </p>
+          <ul class="featured__points">
+            <li><strong>{p.nodes}</strong> 个节点</li>
+            <li><strong>{p.regions.length}</strong> 个地区</li>
+            <li><strong>不限</strong> 设备</li>
+            <li><strong>{p.stable.length}</strong> 项常用服务稳定</li>
+          </ul>
+          <p class="featured__cta">
+            <AffiliateLink url={b.affiliateUrl} brandName="灵动云" variant="primary" label="注册灵动云" />
+            <a class="btn btn--ghost" href="/airports/lingdongyun/">看灵动云全部套餐</a>
+            <a class="btn btn--ghost" href={LDY_PEAK_PAGE_PATH}>晚高峰实测</a>
+          </p>
+          <p class="featured__coupon"><Coupon slug="lingdongyun" /></p>
+        </div>
+        <ol class="featured__plans" aria-label="灵动云套餐">
+          {
+            tiers.map((t) => (
+              <li class:list={['fplan', { 'fplan--pick': t.annual }]}>
+                <span class="fplan__name">{t.name}</span>
+                <span class="fplan__price"><strong class="num">{fmtCNY(t.price)}</strong>{t.annual ? '/年' : '/月'}</span>
+                <span class="fplan__gb">每月 {t.gb}GB{t.annual && ` · 折合约 ${fmtCNY(perMonth(t.price))}/月`}</span>
+                {t.annual && <span class="fplan__tag">优选</span>}
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>

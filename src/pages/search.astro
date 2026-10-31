@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { BRANDS } from '../data/brands';
+import { REGION_PAGES } from '../data/regions';
+import { ROUTE_TYPES } from '../data/routes';
+import { BRAND_COUNT, NAV_ITEMS } from '../lib/site';
+import { loadPosts } from '../lib/content';
+
+const title = '站内搜索｜机场节点';
+const description = '在机场节点站内搜索机场、节点地区、线路术语、研究文章和客户端教程。';
+const path = '/search/';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '站内搜索', href: path },
+];
+const posts = await loadPosts();
+---
+
+<BaseLayout {title} {description} {path} breadcrumbs={crumbs} noindex>
+  <header class="page-head">
+    <div class="container">
+      <h1>站内搜索</h1>
+      <p class="page-head__lead">
+        可以搜机场名称（全称、简称、英文名都行）、地区、线路缩写，也可以直接搜“抖动”“倍率”“晚高峰”这类想了解的词。搜索在你的浏览器里完成，不会把输入内容发送到任何服务器。
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight" data-search-page>
+    <div class="container">
+      <form class="filter-bar" role="search" aria-label="在本页输入关键词搜索" action="/search/" method="get">
+        <label class="field field--grow">
+          <span>搜索内容</span>
+          <input class="input" id="search-page-q" type="search" name="q" maxlength="40" autocomplete="off" placeholder="例如：灵动云、香港、IEPL、抖动、倍率" />
+        </label>
+        <button class="btn btn--primary" type="submit">搜索</button>
+      </form>
+
+      <p class="search-status" role="status" aria-live="polite" data-search-status></p>
+      <div class="search-results" data-search-results></div>
+
+      <div class="search-fallback mt-6" data-search-fallback>
+        <h2>从这些入口查找</h2>
+        <p class="text-soft">如果浏览器没有启用 JavaScript，搜索无法在页面内进行，可以从下面的目录直接进入。</p>
+
+        <h3 class="mt-5">栏目</h3>
+        <ul class="link-list">
+          {NAV_ITEMS.map((n) => <li><a href={n.href}>{n.label}</a>　<span class="text-mute text-sm">{n.hint}</span></li>)}
+        </ul>
+
+        <h3 class="mt-5">节点地区</h3>
+        <ul class="link-list">
+          {REGION_PAGES.map((r) => <li><a href={`/regions/${r.slug}/`}>{r.fullName}</a></li>)}
+        </ul>
+
+        <h3 class="mt-5">线路术语</h3>
+        <ul class="link-list">
+          {ROUTE_TYPES.map((r) => <li><a href={`/routes/#${r.slug}`}>{r.name}</a></li>)}
+        </ul>
+
+        <h3 class="mt-5">研究文章与教程</h3>
+        <ul class="link-list">
+          {posts.map((p) => <li><a href={p.href}>{p.title}</a></li>)}
+        </ul>
+
+        <h3 class="mt-5">{BRAND_COUNT}家机场资料卡（固定编辑顺序，不是排名）</h3>
+        <ul class="link-list">
+          {BRANDS.map((b) => <li><a href={`/airports/${b.slug}/`}>{b.brandName}</a></li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import '../scripts/search-page';
+  </script>
+</BaseLayout>
