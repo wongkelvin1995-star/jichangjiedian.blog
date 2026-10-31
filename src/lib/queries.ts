@@ -101,7 +101,7 @@ export function summarizeRegion(code: string): RegionSummary {
   const snapshots = AVAILABILITY_SNAPSHOTS.flatMap((s) => {
     const reg = s.byRegion.find((r) => r.countryCode === code);
     return reg ? [{ snapshot: s, online: reg.online, total: reg.total }] : [];
-  });
+  }).sort((a, b) => b.snapshot.checkedFrom.localeCompare(a.snapshot.checkedFrom)); // 最新的快照排在最前面，地图面板取第一条
 
   const summary: RegionSummary = {
     point,

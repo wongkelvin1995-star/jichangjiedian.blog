@@ -6,6 +6,7 @@ modified: 2026-10-31
 category: 测速指标
 keywords: [抖动, 延迟抖动, 视频会议卡顿, 游戏延迟, 丢包]
 regions: []
+brands: [lingdongyun]
 related:
   - /articles/idle-vs-loaded-latency/
   - /guides/clash-verge-latency-test/
