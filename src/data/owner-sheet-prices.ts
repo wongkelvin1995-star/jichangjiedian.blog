@@ -234,7 +234,7 @@ export function applyOwnerNodes(seed: BrandSeed): BrandSeed {
  * 放在流水线最后，覆盖之前按地区相加或第三方资料得出的节点数。
  */
 export const OWNER_NODE_TOTALS: Readonly<Record<string, { value: number; atLeast: boolean }>> = {
-  lingdongyun: { value: 57, atLeast: false },
+  lingdongyun: { value: 60, atLeast: false },
   muguangjiasu: { value: 55, atLeast: false },
   feimaoyun: { value: 57, atLeast: false },
   ...Object.fromEntries(
@@ -245,6 +245,20 @@ export const OWNER_NODE_TOTALS: Readonly<Record<string, { value: number; atLeast
 export function applyOwnerNodeTotals(seed: BrandSeed): BrandSeed {
   const t = OWNER_NODE_TOTALS[seed.slug];
   if (!t) return seed;
+  // 灵动云：2026-10-31 的后台节点面板逐行数出 60 个节点，比 10-29 的口头确认（57）更新，以面板为准。
+  if (seed.slug === 'lingdongyun') {
+    return {
+      ...seed,
+      nodeCount: {
+        value: t.value,
+        grade: 'B',
+        sourceIds: ['owner-2026-10-31-ldy-panel', 'owner-2026-10-28'],
+        recordedAt: '2026-10-31',
+        note: `站长 2026-10-31 的后台节点面板逐行共 ${t.value} 个节点（香港 20、台湾 10、日本 10、新加坡 10、美国 10，全部在线、倍率 1x）；站长 2026-10-29 曾确认 57 个，2026-10-21 的截图也是 57 个，以较新的面板为准。`,
+      },
+      sourceIds: [...new Set([...seed.sourceIds, 'owner-2026-10-31-ldy-panel', 'owner-2026-10-28'])],
+    };
+  }
   const note = t.atLeast ? '站长 2026-10-29 确认：全站不少于 50 个节点。' : `站长 2026-10-29 确认：全站共 ${t.value} 个节点。`;
   return {
     ...seed,
