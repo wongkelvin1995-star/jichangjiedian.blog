@@ -77,7 +77,7 @@ const summaries = ALL_REGION_SUMMARIES();
   </div>
 
   <aside class="region-side" aria-label="地区资料面板">
-    {summaries.map((s) => <RegionPanel summary={s} hidden={s.point.countryCode !== DEFAULT} />)}
+    {summaries.map((s) => <RegionPanel summary={s} hidden={s.point.countryCode !== DEFAULT} lazy />)}
     <p class="visually-hidden" role="status" data-map-live></p>
   </aside>
 </div>

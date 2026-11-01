@@ -1,8 +1,36 @@
 /**
  * 地图探索器：点击地区 → 右侧资料面板切换、航线高亮、柔和放大；
  * 品牌 / 线路类型 / 资料状态三个筛选器作用于当前面板。
- * 所有内容都在 HTML 中服务端渲染，这里只负责显示与隐藏，没有数据请求。
+ * 首页 HTML 只带默认地区（香港）的概况；各地区的机场清单、以及其他地区的概况，从 /region-rows.json 读取：
+ * 香港的清单在页面加载时，其他地区在第一次点开时（首页 HTML 的体积，见 pages/region-rows.json.ts）。
+ * 生成的结构与 RegionPanel.astro 服务端渲染的一致，文字一律用 textContent / append 写入。
  */
+
+/** /region-rows.json 的结构，字段说明见 pages/region-rows.json.ts */
+interface LazyRow {
+  s: string;
+  n: string;
+  k: number;
+  l: string;
+  g: [string, string?][];
+  c: number | null;
+  a: number | null;
+  w: boolean;
+  t: [string, string, boolean][];
+}
+interface LazyHead {
+  d: number;
+  u: number;
+  x: number;
+  rc: [string, number, number][];
+  sr: number;
+  sn: [number, number, string] | null;
+  tp: number;
+  slug: string;
+  total: number;
+}
+type RegionData = Record<string, { h: LazyHead; r: LazyRow[] }>;
+
 const root = document.querySelector<HTMLElement>('[data-map-explorer]');
 
 if (root) {
@@ -26,7 +54,124 @@ if (root) {
 
   const filters = () => Object.fromEntries(selects.map((s) => [s.dataset.filter!, s.value])) as Record<string, string>;
 
+  // ---- 按需加载的地区数据
+  let regionData: Promise<RegionData> | null = null;
+  const loadRegions = (): Promise<RegionData> => {
+    if (!regionData) {
+      regionData = fetch('/region-rows.json', { credentials: 'omit' }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<RegionData>;
+      });
+      regionData.catch(() => {
+        regionData = null; // 失败后允许下次重试
+      });
+    }
+    return regionData;
+  };
+  const mk = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, ...kids: (Node | string)[]): HTMLElementTagNameMap[K] => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    e.append(...kids);
+    return e;
+  };
+  const span = (cls: string, ...kids: (Node | string)[]): HTMLSpanElement => mk('span', cls, ...kids);
+  const num = (n: number | string): HTMLElement => mk('b', 'num', String(n));
+
+  /** 概况（与 RegionPanel.astro 的 cover-line / facts / count / empty 一致），插在清单前后 */
+  const buildHead = (panel: HTMLElement, list: HTMLElement, h: LazyHead): void => {
+    const cover = mk('p', 'cover-line', span('is-doc', num(h.d), '家机场提供'), ' ', span('is-unv', num(h.u), '家资料补充中'), ' ', span('is-none', num(h.x), '家未列出'));
+    const routesDd = mk('dd');
+    if (h.rc.length) {
+      const row = span('chip-row');
+      for (const [label, ok, pending] of h.rc) {
+        const chip = span('chip', `${label} `, num(ok));
+        if (pending > 0) chip.append(' ', span('text-mute', `＋${pending}`));
+        row.append(chip);
+      }
+      routesDd.append(row);
+    } else routesDd.append(span('', '资料中没有可用的线路类型记录。'));
+    const recDd = mk('dd');
+    recDd.append(h.sr > 0 ? span('', '本站实测 ', num(h.sr), ' 条') : span('', '该地区实测持续更新中'));
+    if (h.sn) recDd.append(span('', '；节点在线快照 ', num(`${h.sn[0]}/${h.sn[1]}`), `（${h.sn[2]}）`));
+    if (h.tp > 0) recDd.append(span('', '；其他测速参考 ', num(h.tp), ' 行'));
+    const link = mk('a', '', '查看记录');
+    link.href = `/regions/${h.slug}/#records`;
+    recDd.append('。', link);
+    const facts = mk('dl', 'region-panel__facts', mk('div', '', mk('dt', '', '线路类型'), routesDd), mk('div', '', mk('dt', '', '测试记录'), recDd));
+    const count = mk('p', 'region-count', '共 ', span('num', String(h.total)), ' 家有记录');
+    count.dataset.regionCount = '';
+    count.setAttribute('aria-live', 'polite');
+    const empty = mk('p', 'region-empty', '没有符合当前筛选条件的机场。可以放宽品牌、线路类型或资料状态的筛选。');
+    empty.dataset.regionEmpty = '';
+    empty.hidden = true;
+    list.before(cover, facts, count);
+    list.after(empty);
+    delete panel.dataset.shell;
+  };
+
+  /** 清单的一行（与 RegionPanel.astro 的行结构一致） */
+  const buildRow = (d: LazyRow): HTMLLIElement => {
+    const li = mk('li');
+    li.dataset.brand = d.s;
+    li.dataset.level = d.l;
+    li.dataset.routes = d.t.map((x) => x[0]).join(' ');
+    const a = mk('a', '', d.n);
+    a.href = `/airports/${d.s}/`;
+    const main = span('rb__main', a);
+    for (const [label, title] of d.g) {
+      const chip = span('chip chip--gray', label);
+      if (title) chip.title = title;
+      main.append(' ', chip);
+    }
+    const node =
+      d.c !== null ? span('', '节点 ', num(d.c), ' 个') : d.a !== null ? span('', `该地区未写数量（全站${d.w ? '不少于 ' : '约 '}`, num(d.a), ' 个）') : span('', '节点数未公布');
+    const meta = span('rb__meta', span('', node), ' ');
+    for (const [, label, ok] of d.t) meta.append(span(ok ? 'chip' : 'chip chip--gray', label));
+    li.append(span('rb__rank num', String(d.k).padStart(2, '0')), ' ', main, ' ', meta);
+    return li;
+  };
+
+  async function fillPanel(panel: HTMLElement): Promise<void> {
+    const list = panel.querySelector<HTMLElement>('.region-brands[data-rows="lazy"]');
+    if (!list) return;
+    list.dataset.rows = 'loading';
+    list.setAttribute('aria-busy', 'true');
+    const count = panel.querySelector<HTMLElement>('[data-region-count]');
+    const fail = panel.querySelector<HTMLElement>('[data-region-fail]');
+    if (count) count.textContent = '正在加载机场清单…';
+    if (fail) fail.hidden = true;
+    try {
+      const all = await loadRegions();
+      // 先让这次点击的画面（面板切换、地图放大）画出来，再生成清单：数据已缓存时也不在同一帧里做，交互响应更快
+      await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      const data = all[panel.dataset.regionPanel ?? ''];
+      if (!data) throw new Error('no data');
+      if (panel.dataset.shell) buildHead(panel, list, data.h);
+      list.append(...data.r.map(buildRow));
+      delete list.dataset.rows;
+      list.removeAttribute('aria-busy');
+      applyFilters(panel);
+      if (panel.dataset.regionPanel === current) announce(panel);
+    } catch {
+      list.dataset.rows = 'lazy';
+      list.removeAttribute('aria-busy');
+      if (count) count.textContent = '';
+      if (fail) fail.hidden = false;
+    }
+  }
+
+  /** 读屏软件的播报：概况加载完以后才有数字 */
+  function announce(panel: HTMLElement): void {
+    const title = panel.querySelector('h3')?.textContent?.replace(/[A-Za-z ]+$/, '').trim() ?? panel.dataset.regionPanel;
+    const nums = panel.querySelectorAll('.cover-line .num');
+    if (!live) return;
+    // 概况还没加载时先播报地区名，加载完再补上数字
+    live.textContent = nums.length >= 2 ? `已选择${title}：${nums[0]!.textContent} 家机场提供，${nums[1]!.textContent} 家资料补充中。` : `已选择${title}，正在加载机场清单。`;
+  }
+
   function applyFilters(panel: HTMLElement): void {
+    // 清单还没加载完时不计数，免得先闪一下“没有符合条件的机场”
+    if (panel.querySelector('.region-brands[data-rows]')) return;
     const f = filters();
     const items = Array.from(panel.querySelectorAll<HTMLElement>('.region-brands > li'));
     let shown = 0;
@@ -87,13 +232,14 @@ if (root) {
       } else if (!on) {
         p.hidden = true;
       }
-      if (on) applyFilters(p);
+      if (on) {
+        applyFilters(p);
+        void fillPanel(p);
+      }
     }
     if (opts.zoom) zoomTo(code);
     const active = panels.find((p) => p.dataset.regionPanel === code);
-    const title = active?.querySelector('h3')?.textContent?.replace(/[A-Za-z ]+$/, '') ?? code;
-    const nums = active?.querySelectorAll('.cover-line .num');
-    if (live && nums && nums.length >= 2) live.textContent = `已选择${title}：${nums[0]!.textContent} 家机场提供，${nums[1]!.textContent} 家资料补充中。`;
+    if (active) announce(active);
   }
 
   // 启用交互：解除筛选器禁用，并让圆点和切换条改为就地选择
@@ -150,6 +296,15 @@ if (root) {
     zoomTo(null);
     resetBtn.hidden = true;
   });
+
+  // 鼠标移到地图或键盘进入地图区域时，提前加载其他地区的清单（只加载一次，失败也不影响当前面板）
+  const prefetch = (): void => {
+    root.removeEventListener('pointerover', prefetch);
+    root.removeEventListener('focusin', prefetch);
+    loadRegions().catch(() => undefined);
+  };
+  root.addEventListener('pointerover', prefetch);
+  root.addEventListener('focusin', prefetch);
 
   // 首次进入：默认地区只高亮，不放大
   select(current, { zoom: false });

@@ -42,6 +42,7 @@ const REQUIRED: { no: number; slug: string; kind: 'articles' | 'guides'; title: 
 /** 站长在总指令之后追加的选题（同样执行全部检查） */
 const EXTRA: typeof REQUIRED = [
   { no: 16, slug: 'choose-airport-by-use-case', kind: 'articles', title: '按使用场景选机场：追剧、AI、多设备和备用各看什么？' },
+  { no: 17, slug: 'airport-vpn-basics', kind: 'articles', title: '新手入门：机场、梯子、VPN 和科学上网分别是什么？' },
 ];
 
 const all = pages();

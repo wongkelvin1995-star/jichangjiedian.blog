@@ -303,12 +303,19 @@ test('搜索页：?q= 参数、分组结果、标题随查询变化', async () =
 test('套餐对比：筛选、临时排序与恢复默认', async () => {
   const { page, problems } = await env.open({ viewport: { width: 1440, height: 900 } });
   await page.goto(`${O}/plans/`, { waitUntil: 'networkidle' });
-  const total = await page.locator('[data-plan-table] tbody tr').count();
+  // 表格里只放当前要显示的行；报价总数写在表格的 data-rows-total 上，全部数据在 /plans-rows.json
+  const total = Number(await page.locator('[data-plan-table]').getAttribute('data-rows-total'));
   a().ok(total > 40, `报价行数应多于一页：${total}`);
+  a().ok(await page.locator('[data-plan-filters] [name="budget"]').isEnabled(), '数据加载后筛选应可用');
   const visible = (): Promise<number> =>
     page.locator('[data-plan-table] tbody tr').evaluateAll((trs) => trs.filter((tr) => getComputedStyle(tr).display !== 'none').length);
   a().eq(await visible(), 40, '默认只显示前 40 条');
   await page.fill('[data-plan-filters] [name="budget"]', '20');
+  // 输入框停顿 150ms 后才筛选（避免每敲一个键都重排表格），等计数文字出现再检查
+  await page.waitForFunction(() => {
+    const m = /符合条件 (\d+) \/ (\d+)/.exec(document.querySelector('[data-plan-count]')?.textContent ?? '');
+    return !!m && Number(m[1]) < Number(m[2]);
+  });
   const underBudget = await visible();
   a().ok(underBudget < 40 || underBudget === 0 || underBudget <= 40, '预算筛选后数量变化');
   const monthlies = await page.locator('[data-plan-table] tbody tr').evaluateAll((trs) =>
@@ -317,6 +324,13 @@ test('套餐对比：筛选、临时排序与恢复默认', async () => {
   a().ok(monthlies.every((m) => m !== '' && Number(m) <= 20), '预算筛选后不应出现价格缺失或超预算的报价（缺失值不当作 0）');
   await page.click('[data-plan-reset]');
   a().eq(await visible(), 40, '恢复默认后回到第一页');
+  await page.click('[data-plan-more]');
+  a().eq(await visible(), 80, '“显示更多”后再多 40 条');
+  await page.selectOption('[data-plan-filters] [name="sort"]', 'pergb');
+  await page.waitForFunction(() => (document.querySelector('[data-plan-count]')?.textContent ?? '').includes('临时排序'));
+  const perGB = await page.locator('[data-plan-table] tbody tr').evaluateAll((trs) => trs.map((tr) => (tr as HTMLElement).dataset));
+  const exact = perGB.filter((d) => d.comp === 'exact' && d.pergb !== '').map((d) => Number(d.pergb));
+  a().ok(exact.every((v, i) => i === 0 || v >= exact[i - 1]!), '按每 GB 排序后，可精确比较的报价应从低到高');
   await clean(page, problems, '套餐页');
 });
 

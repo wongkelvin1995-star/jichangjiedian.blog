@@ -8,6 +8,7 @@ import { getRouteType, ROUTE_TYPES } from '../data/routes';
 import { AVAILABILITY_SNAPSHOTS, TEST_RECORDS } from '../data/test-records';
 import type { AvailabilitySnapshot, Brand, EvidenceGrade, MapPoint, RegionClaim, RegionPage, RouteTypeId, TestRecord } from '../data/types';
 import { bestGrade } from './format';
+import { panelGapDate } from './panel';
 
 export interface RouteChip {
   id: RouteTypeId;
@@ -27,6 +28,8 @@ export interface RegionBrandRow {
   nodeCountGrade: EvidenceGrade | null;
   nodeNames: string[];
   routeChips: RouteChip[];
+  /** 品牌有后台面板快照、但最新面板里没有这个地区的节点时，为快照日期（YYYY-MM-DD）；否则 null */
+  panelGap: string | null;
 }
 
 export interface RegionSummary {
@@ -63,6 +66,7 @@ function rowFor(brand: Brand, code: string): RegionBrandRow | null {
     nodeCountGrade: top?.grade ?? null,
     nodeNames: [...new Set(cov.claims.flatMap((c) => c.nodeNames ?? []))],
     routeChips: routeChipsOf(brand),
+    panelGap: panelGapDate(brand.slug, code),
   };
 }
 

@@ -16,8 +16,10 @@ import type { ReachabilityRow } from './lingdongyun-sg-2026-10';
 
 export const LDY_PEAK_PAGE_PATH = '/airports/lingdongyun/peak-2026-10-28/';
 export const LDY_PEAK_PAGE_TITLE = '灵动云晚高峰三地实测：香港、新加坡、美国节点速度与网站连通性';
+/** 只用于 <title>（2026-11-01 关键词方案：有本站实测才用“测评”）；H1 与其他页面的链接文字仍用 LDY_PEAK_PAGE_TITLE */
+export const LDY_PEAK_SEO_TITLE = '灵动云机场测评：晚高峰香港、新加坡、美国节点实测';
 export const LDY_PEAK_PAGE_PUBLISHED = '2026-10-28';
-export const LDY_PEAK_PAGE_MODIFIED = '2026-10-31';
+export const LDY_PEAK_PAGE_MODIFIED = '2026-11-01';
 
 export const LDY_HK_EVIDENCE: EvidenceFile[] = [
   {

@@ -1,24 +1,30 @@
 ---
+/**
+ * 首页地图右侧的地区资料面板。
+ *  - 默认地区：标题、概况、线路统计、测试记录都在 HTML 里；机场清单从 /region-rows.json 加载。
+ *  - 其他地区（hidden）：HTML 里只有标题和专题页链接，概况与清单都在用户点开时由 map-explorer.ts 按同样的结构生成。
+ * 原因是首页 HTML 的体积（Bing 站长工具对超过 125KB 的页面提示“可能无法完整缓存”），见 pages/region-rows.json.ts。
+ */
 import { COVERAGE_LABEL } from '../data/regions';
 import { fmtDate } from '../lib/format';
 import type { RegionSummary } from '../lib/queries';
+import { REGION_PANEL_WARN as WARN, regionPanelRows } from '../lib/region-panel';
 
 interface Props {
   summary: RegionSummary;
   hidden?: boolean;
+  /** true：机场清单不写进 HTML（见上方说明） */
+  lazy?: boolean;
 }
-const { summary: s, hidden = false } = Astro.props;
+const { summary: s, hidden = false, lazy = false } = Astro.props;
 const code = s.point.countryCode;
-const rows = [...s.documented, ...s.unverified].sort((a, b) => a.brand.displayRank - b.brand.displayRank);
-const WARN: Record<string, string> = {
-  'demo-site': '演示站',
-  'identity-pending': '对应关系待核验',
-  insufficient: '资料不足',
-};
+const rows = regionPanelRows(s);
 const snap = s.snapshots[0];
+// 隐藏的面板只输出外壳；概况由脚本生成
+const shell = hidden && lazy;
 ---
 
-<section class="region-panel" id={`panel-${code}`} data-region-panel={code} hidden={hidden} aria-labelledby={`panel-${code}-title`}>
+<section class="region-panel" id={`panel-${code}`} data-region-panel={code} data-shell={shell ? 'true' : undefined} hidden={hidden} aria-labelledby={`panel-${code}-title`}>
   <div class="region-panel__head">
     <h3 id={`panel-${code}-title`}>
       {s.point.name}节点<span class="region-panel__en">{s.point.nameEn}</span>
@@ -26,74 +32,84 @@ const snap = s.snapshots[0];
     <a class="chip chip--electric" href={`/regions/${s.point.regionSlug}/`}>{s.page.name}地区专题页</a>
   </div>
 
-  <p class="cover-line">
-    <span class="is-doc"><b class="num">{s.documented.length}</b>家机场提供</span>
-    <span class="is-unv"><b class="num">{s.unverified.length}</b>家资料补充中</span>
-    <span class="is-none"><b class="num">{s.none.length}</b>家未列出</span>
-  </p>
+  {
+    !shell && (
+      <>
+        <p class="cover-line">
+          <span class="is-doc"><b class="num">{s.documented.length}</b>家机场提供</span>
+          <span class="is-unv"><b class="num">{s.unverified.length}</b>家资料补充中</span>
+          <span class="is-none"><b class="num">{s.none.length}</b>家未列出</span>
+        </p>
 
-  <dl class="region-panel__facts">
-    <div>
-      <dt>线路类型</dt>
-      <dd>
-        {
-          s.routeCounts.length > 0 ? (
-            <span class="chip-row">
-              {s.routeCounts.map((r) => (
-                <span class="chip">
-                  {r.label} <b class="num">{r.confirmed}</b>
-                  {r.pending > 0 && <span class="text-mute">＋{r.pending}</span>}
-                </span>
-              ))}
-            </span>
-          ) : (
-            <span>资料中没有可用的线路类型记录。</span>
-          )
-        }
-      </dd>
-    </div>
-    <div>
-      <dt>测试记录</dt>
-      <dd>
-        {
-          s.siteRecords.length > 0 ? (
-            <span>本站实测 <b class="num">{s.siteRecords.length}</b> 条</span>
-          ) : (
-            <span>该地区实测持续更新中</span>
-          )
-        }
-        {
-          snap && (
-            <span>
-              ；节点在线快照 <b class="num">{snap.online}/{snap.total}</b>（{fmtDate(snap.snapshot.checkedFrom)}）
-            </span>
-          )
-        }
-        {s.thirdPartyRecords.length > 0 && <span>；其他测速参考 <b class="num">{s.thirdPartyRecords.length}</b> 行</span>}
-        。<a href={`/regions/${s.point.regionSlug}/#records`}>查看记录</a>
-      </dd>
-    </div>
-  </dl>
+        <dl class="region-panel__facts">
+          <div>
+            <dt>线路类型</dt>
+            <dd>
+              {
+                s.routeCounts.length > 0 ? (
+                  <span class="chip-row">
+                    {s.routeCounts.map((r) => (
+                      <span class="chip">
+                        {r.label} <b class="num">{r.confirmed}</b>
+                        {r.pending > 0 && <span class="text-mute">＋{r.pending}</span>}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span>资料中没有可用的线路类型记录。</span>
+                )
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>测试记录</dt>
+            <dd>
+              {
+                s.siteRecords.length > 0 ? (
+                  <span>本站实测 <b class="num">{s.siteRecords.length}</b> 条</span>
+                ) : (
+                  <span>该地区实测持续更新中</span>
+                )
+              }
+              {
+                snap && (
+                  <span>
+                    ；节点在线快照 <b class="num">{snap.online}/{snap.total}</b>（{fmtDate(snap.snapshot.checkedFrom)}）
+                  </span>
+                )
+              }
+              {s.thirdPartyRecords.length > 0 && <span>；其他测速参考 <b class="num">{s.thirdPartyRecords.length}</b> 行</span>}
+              。<a href={`/regions/${s.point.regionSlug}/#records`}>查看记录</a>
+            </dd>
+          </div>
+        </dl>
 
-  <p class="region-count" data-region-count aria-live="polite">共 <span class="num">{rows.length}</span> 家有记录</p>
+        <p class="region-count" data-region-count aria-live="polite">共 <span class="num">{rows.length}</span> 家有记录</p>
+      </>
+    )
+  }
 
-  <ol class="region-brands">
+  <ol class="region-brands" data-rows={lazy ? 'lazy' : undefined}>
     {
-      rows.map((r) => (
-        <li data-brand={r.brand.slug} data-level={r.level} data-routes={r.routeChips.map((c) => c.id).join(' ')}>
-          <span class="rb__rank num">{String(r.brand.displayRank).padStart(2, '0')}</span>
-          <span class="rb__main">
-            <a href={`/airports/${r.brand.slug}/`}>{r.brand.shortName}</a>
-            {r.level === 'unverified' && <span class="chip chip--gray">{COVERAGE_LABEL.unverified}</span>}
-            {WARN[r.brand.verificationStatus] && <span class="chip chip--gray">{WARN[r.brand.verificationStatus]}</span>}
-          </span>
-          <span class="rb__meta">
-            <span>{r.nodeCount !== null ? <span>节点 <b class="num">{r.nodeCount}</b> 个</span> : r.brand.nodeCount.value !== null ? <span>该地区未写数量（全站{/下限|不少于/.test(r.brand.nodeCount.note ?? '') ? '不少于 ' : '约 '}<b class="num">{r.brand.nodeCount.value}</b> 个）</span> : '节点数未公布'}</span>
-            {r.routeChips.map((c) => <span class:list={['chip', { 'chip--gray': !c.confirmed }]}>{c.label}</span>)}
-          </span>
-        </li>
-      ))
+      !lazy &&
+        rows.map((r) => (
+          <li data-brand={r.brand.slug} data-level={r.level} data-routes={r.routeChips.map((c) => c.id).join(' ')}>
+            <span class="rb__rank num">{String(r.brand.displayRank).padStart(2, '0')}</span>
+            <span class="rb__main">
+              <a href={`/airports/${r.brand.slug}/`}>{r.brand.shortName}</a>
+              {r.level === 'unverified' && <span class="chip chip--gray">{COVERAGE_LABEL.unverified}</span>}
+              {WARN[r.brand.verificationStatus] && <span class="chip chip--gray">{WARN[r.brand.verificationStatus]}</span>}
+              {r.panelGap && <span class="chip chip--gray" title={`站长 ${r.panelGap} 的后台面板里没有这个地区的节点，数量来自服务商说明`}>面板里没有</span>}
+            </span>
+            <span class="rb__meta">
+              <span>{r.nodeCount !== null ? <span>节点 <b class="num">{r.nodeCount}</b> 个</span> : r.brand.nodeCount.value !== null ? <span>该地区未写数量（全站{/下限|不少于/.test(r.brand.nodeCount.note ?? '') ? '不少于 ' : '约 '}<b class="num">{r.brand.nodeCount.value}</b> 个）</span> : '节点数未公布'}</span>
+              {r.routeChips.map((c) => <span class:list={['chip', { 'chip--gray': !c.confirmed }]}>{c.label}</span>)}
+            </span>
+          </li>
+        ))
     }
   </ol>
-  <p class="region-empty" data-region-empty hidden>没有符合当前筛选条件的机场。可以放宽品牌、线路类型或资料状态的筛选。</p>
+  {!shell && <p class="region-empty" data-region-empty hidden>没有符合当前筛选条件的机场。可以放宽品牌、线路类型或资料状态的筛选。</p>}
+  {lazy && <p class="region-lazy-fail" data-region-fail hidden>清单没能加载出来。可以打开<a href={`/regions/${s.point.regionSlug}/`}>{s.page.name}地区专题页</a>查看全部 {rows.length} 家。</p>}
+  {lazy && !hidden && <noscript><p class="region-empty">机场清单需要浏览器脚本才能显示；也可以打开<a href={`/regions/${s.point.regionSlug}/`}>{s.page.name}地区专题页</a>查看全部 {rows.length} 家。</p></noscript>}
 </section>

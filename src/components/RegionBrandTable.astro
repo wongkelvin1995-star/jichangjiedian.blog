@@ -2,6 +2,7 @@
 /** 地区页的机场清单表：该地区节点数、节点说明、线路、最低价与注册入口。 */
 import { SHEET_LOWEST } from '../data/owner-sheet-prices';
 import type { RegionBrandRow } from '../lib/queries';
+import { fmtDate } from '../lib/format';
 
 interface Props {
   rows: RegionBrandRow[];
@@ -49,7 +50,9 @@ const lower = (r: RegionBrandRow) => /下限|不少于/.test(r.brand.nodeCount.n
                 )}
               </td>
               <td class="text-sm">
-                {names.length > 0 ? (
+                {r.panelGap ? (
+                  <span class="cell-sub cell-sub--warn">数量来自服务商说明；站长 {fmtDate(r.panelGap)}的后台面板里没有这个地区的节点</span>
+                ) : names.length > 0 ? (
                   <span>
                     {names.join('、')}
                     {hidden > 0 && <span class="text-mute">　等共 {r.nodeNames.length} 个</span>}

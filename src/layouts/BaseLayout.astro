@@ -11,6 +11,7 @@ import '../styles/space.css';
 import Seo from '../components/Seo.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import GlobeNav from '../components/GlobeNav.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import { breadcrumbLd, organizationLd, websiteLd } from '../lib/seo';
 import type { Crumb, JsonLd } from '../lib/seo';
@@ -73,6 +74,7 @@ ld.push(...jsonLd);
     </main>
     <SideRail path={path} />
     <Footer />
+    <GlobeNav {path} />
     <a class="to-top" href="#main" aria-label="返回页面顶部" hidden>↑<span class="to-top__text">顶部</span></a>
     <script>
       import '../scripts/site';

@@ -1,6 +1,11 @@
 ---
+import FlameIcon from './FlameIcon.astro';
+import { getBrand } from '../data/brands';
+import { AFFILIATE_REL } from '../data/labels';
 import { NAV_ITEMS, SITE_NAME, SOCIAL_LINKS } from '../lib/site';
 const social = SOCIAL_LINKS.filter((l) => l.href);
+// 2026-11-01 站长要求：页头 GitHub 图标右边放“注册灵动云”（推广链接，带火焰框）；手机上放在第二行导航最前面
+const ldy = getBrand('lingdongyun');
 interface Props {
   path: string;
 }
@@ -44,7 +49,7 @@ const isCurrent = (href: string): boolean => {
         <ul class="site-social" aria-label="社群">
           {social.map((l) => (
             <li>
-              <a class="site-social__link" href={l.href!} target="_blank" rel="noopener noreferrer" title={l.label} aria-label={`${l.label}（在新窗口打开）`}>
+              <a class={`site-social__link site-social__link--${l.key}`} href={l.href!} target="_blank" rel="noopener noreferrer" title={l.label} aria-label={`${l.label}（在新窗口打开）`}>
                 {l.key === 'telegram' ? (
                   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 4 3 11l6 2.2M21 4l-3 16-9-6.8M21 4 9 13.2V19l3.2-3.4" /></svg>
                 ) : (
@@ -58,18 +63,30 @@ const isCurrent = (href: string): boolean => {
     }
     </div>
 
-    <nav class="site-nav" aria-label="主导航">
-      <ul class="site-nav__list">
-        {
-          NAV_ITEMS.map((it) => (
-            <li>
-              <a class="site-nav__link" href={it.href} title={it.hint} aria-current={isCurrent(it.href) ? 'page' : undefined}>
-                {it.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+    <div class="site-bar">
+      {
+        ldy && (
+          <a class="site-cta" href={ldy.affiliateUrl} target="_blank" rel={AFFILIATE_REL} data-affiliate="true">
+            <FlameIcon class="site-cta__flame" />
+            <span class="site-cta__text">注册{ldy.shortName}</span>
+            <span class="btn__tag">推广</span>
+            <span class="visually-hidden">（推广链接，在新窗口打开）</span>
+          </a>
+        )
+      }
+      <nav class="site-nav" aria-label="主导航">
+        <ul class="site-nav__list">
+          {
+            NAV_ITEMS.map((it) => (
+              <li>
+                <a class="site-nav__link" href={it.href} title={it.hint} aria-current={isCurrent(it.href) ? 'page' : undefined}>
+                  {it.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
   </div>
 </header>

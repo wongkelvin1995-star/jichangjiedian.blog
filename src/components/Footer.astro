@@ -6,7 +6,9 @@ import { COMPLIANCE_NOTE, DATA_UPDATED, FOOTER_LINKS, SITE_NAME } from '../lib/s
 
 const posts = await loadPosts();
 const all = posts.filter((p) => p.kind === 'articles');
-const articles = [...all.filter((p) => p.href.includes('choose-airport-by-use-case')), ...all.filter((p) => !p.href.includes('choose-airport-by-use-case'))].slice(0, 8);
+// 新手入门与按场景选机场两篇放在最前（新手最常从这两篇进入）
+const pinned = ['airport-vpn-basics', 'choose-airport-by-use-case'];
+const articles = [...pinned.flatMap((id) => all.filter((p) => p.href.includes(id))), ...all.filter((p) => !pinned.some((id) => p.href.includes(id)))].slice(0, 8);
 const guides = posts.filter((p) => p.kind === 'guides').slice(0, 3);
 const topBrands = BRANDS.slice(0, 12);
 const shortTitle = (t: string) => t.split(/[：:｜|？?]/)[0]!;

@@ -16,6 +16,7 @@ import {
   LDY_PEAK_PAGE_PATH,
   LDY_PEAK_PAGE_PUBLISHED,
   LDY_PEAK_PAGE_TITLE,
+  LDY_PEAK_SEO_TITLE,
   LDY_US_EVIDENCE,
   LDY_US_PEAK,
   LDY_US_REACHABILITY,
@@ -46,7 +47,7 @@ const reachChip = { ok: 'chip chip--ok', slow: 'chip chip--sunset', veryslow: 'c
 const sgEvidence = LDY_EVIDENCE.filter((e) => e.evidenceId.includes('peak'));
 
 const path = LDY_PEAK_PAGE_PATH;
-const title = `${LDY_PEAK_PAGE_TITLE}｜机场节点`;
+const title = `${LDY_PEAK_SEO_TITLE}｜机场节点`;
 const description = `2026-10-28 晚高峰，同一个测速页先后测了灵动云的香港、新加坡、美国节点：下载 ${hk.downloadMbps} / ${sg.downloadMbps} / ${us.downloadMbps} Mbps，空载延迟 ${hk.idleLatencyMs} / ${sg.idleLatencyMs} / ${us.idleLatencyMs} ms，附网站连通性、YouTube 观察与原始截图。`;
 const crumbs = [
   { name: '首页', href: '/' },

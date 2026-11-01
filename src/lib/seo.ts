@@ -75,10 +75,15 @@ export const collectionLd = (name: string, description: string, path: string, it
   description,
   url: absoluteUrl(path),
   inLanguage: SITE_LANG,
-  mainEntity: {
-    '@type': 'ItemList',
-    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, url: absoluteUrl(it.href) })),
-  },
+  // 没有条目时不输出空的 ItemList（空列表对搜索引擎没有意义，结构化数据检查会提示）
+  ...(items.length > 0
+    ? {
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, url: absoluteUrl(it.href) })),
+        },
+      }
+    : {}),
 });
 
 /** FAQPage：问答必须与页面可见内容一字不差 */

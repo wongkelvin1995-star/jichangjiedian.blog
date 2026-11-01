@@ -1,7 +1,8 @@
 ---
 /**
  * 侧边栏：机场节点与机场推荐。宽屏时固定在页面右侧空白处，窄屏时放在页面底部。
- * 上半部分是站长指定的 5 家推荐（灵动云、暮光加速、隐形人、梯子云、FlyV），价格与节点都从站内资料读取；
+ * 上半部分是站长挑选的 7 家（灵动云、暮光加速、飞猫云、微风网络、隐形人、梯子云、FlyV），价格与节点都从站内资料读取；
+ * 文字只写官网资料里有的规格；“稳定”“都能用”这类本站没有测过的说法不写（只有灵动云有本站实测）。
  * 下半部分是其余机场的快速入口。
  */
 import { BRANDS, mustGetBrand } from '../data/brands';
@@ -40,7 +41,7 @@ const fvAdv = offer(fv, 'adv', 'monthly');
 const picks = [
   {
     b: mg,
-    tag: '稳定之选',
+    tag: '站长推荐',
     text: `${nodes(mg)}，月付 ${yuan(low(mg.slug)?.price)} 起含 ${low(mg.slug)?.monthlyGB}GB；年付轻量版 ${yuan(mgYear?.priceCNY)}/年走全 IPLC 专线，不限设备。`,
   },
   {
@@ -66,7 +67,7 @@ const picks = [
   {
     b: fv,
     tag: '流媒体 · AI',
-    text: `入门 ${yuan(low(fv.slug)?.price)}/月 ${low(fv.slug)?.monthlyGB}GB，进阶 ${yuan(fvAdv?.priceCNY)}/月起 BGP + IEPL / IPLC 专线；Netflix、ChatGPT、Claude 都能用。`,
+    text: `入门 ${yuan(low(fv.slug)?.price)}/月 ${low(fv.slug)?.monthlyGB}GB，进阶 ${yuan(fvAdv?.priceCNY)}/月起 BGP + IEPL / IPLC 专线；官网写支持 Netflix、ChatGPT、Claude（本站未实测）。`,
   },
 ];
 const pickSlugs = new Set(['lingdongyun', ...picks.map((p) => p.b.slug)]);
@@ -76,7 +77,7 @@ const cur = (slug: string) => (path === `/airports/${slug}/` ? 'page' : undefine
 
 <aside class="rail" aria-labelledby="rail-title">
   <h2 id="rail-title" class="rail__title">机场节点与机场推荐</h2>
-  <p class="rail__intro">按价格、节点覆盖和站长使用体验挑出的 7 家，点名字看完整套餐与节点。</p>
+  <p class="rail__intro">站长挑选的 7 家，价格、节点和线路取自各家官网资料，目前只有灵动云有本站实测。点名字看完整套餐与节点。</p>
 
   <div class="rail__featured flame-frame flame-frame--tight">
     <Flames size="xs" />

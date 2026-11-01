@@ -9,11 +9,21 @@ import Flames from './Flames.astro';
 import FlameIcon from './FlameIcon.astro';
 import { mustGetBrand } from '../data/brands';
 import { brandPitch } from '../lib/brand-pitch';
-import { LDY_PEAK_PAGE_PATH } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { LDY_HK_REACHABILITY, LDY_HK_YOUTUBE, LDY_PEAK_PAGE_PATH } from '../data/reports/lingdongyun-peak-2026-10-28';
 import { fmtCNY } from '../lib/format';
+import { listShort, panelCoverage } from '../lib/panel';
 
 const b = mustGetBrand('lingdongyun');
 const p = brandPitch(b);
+// 节点数和地区以站长最新一次后台面板为准；服务商说明里另列、面板里没有的地区单独说明（见 lib/panel.ts）
+const cov = panelCoverage(b)!;
+const nodeTotal = cov.snapshot.totalNodes;
+const regionNames = cov.regions.map((r) => r.label).join('、');
+const regionCounts = cov.regions.map((r) => `${r.label} ${r.total}`).join('、');
+// 10-28 晚高峰香港节点：Google、YouTube、ChatGPT 三项的连接延迟（原图转录），取最大值向上取整到 10ms
+const hkTop = LDY_HK_REACHABILITY.filter((r) => ['Google', 'YouTube', 'ChatGPT'].includes(r.site) && r.ms !== null);
+const hkMax = Math.ceil(Math.max(...hkTop.map((r) => r.ms!)) / 10) * 10;
+const hkBuffer = Math.round(LDY_HK_YOUTUBE.youtubeBufferSeconds ?? 0);
 const tiers = b.plans
   .filter((pl) => pl.category === 'monthly-tier' || pl.category === 'annual-small')
   .map((pl) => {
@@ -31,15 +41,15 @@ const perMonth = (price: number | null) => (price === null ? null : Math.round((
       <div class="featured__grid">
         <div class="featured__text">
           <p class="featured-flag"><FlameIcon />本站主推</p>
-          <h2 id="featured-title">灵动云：{p.nodes} 个节点、{p.regions.length} 个地区，{p.routes.join(' + ')} 线路</h2>
+          <h2 id="featured-title">灵动云：{nodeTotal} 个节点覆盖{regionNames}，{p.routes.join(' + ')} 线路</h2>
           <p class="featured__lead">
-            香港、台湾、日本、新加坡、美国、韩国到欧洲都有节点，不限设备数量，月付 ¥20 起。站长自己在用：10 月 28 日晚高峰实测，香港节点打开 Google、YouTube、ChatGPT 的连接延迟都在 90ms 以内，YouTube 播放流畅。
+            站长 {cov.dateText}的后台面板：{nodeTotal} 个节点全部在线，{regionCounts}{cov.claimOnly.length > 0 && <>；官网套餐说明另写了{listShort(cov.claimOnly)}地区，面板里暂时没有</>}。不限设备数量，月付 ¥20 起。站长自己在用：10 月 28 日晚高峰实测，香港节点连 Google、YouTube、ChatGPT 的延迟都在 {hkMax}ms 以内，YouTube 720p 播放缓冲 {hkBuffer} 秒。
           </p>
           <ul class="featured__points">
-            <li><strong>{p.nodes}</strong> 个节点</li>
-            <li><strong>{p.regions.length}</strong> 个地区</li>
+            <li><strong>{nodeTotal}</strong> 个节点</li>
+            <li><strong>{cov.regions.length}</strong> 个地区</li>
             <li><strong>不限</strong> 设备</li>
-            <li><strong>{p.stable.length}</strong> 项常用服务稳定</li>
+            <li><strong>{p.stable.length}</strong> 项常用服务资料标注稳定</li>
           </ul>
           <p class="featured__cta">
             <AffiliateLink url={b.affiliateUrl} brandName="灵动云" variant="primary" label="注册灵动云" />

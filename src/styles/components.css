@@ -1130,7 +1130,7 @@ ul.chip-row {
 .rail__all { display: block; margin-top: var(--s3); text-align: center; font-size: var(--fs-sm); font-weight: 600; }
 @media (max-width: 1279px) { .rail { margin-inline: var(--gutter); } }
 @media (min-width: 1720px) {
-  .rail { position: fixed; top: 6rem; right: max(16px, calc((100vw - var(--container)) / 2 - 252px)); width: 220px; max-height: calc(100vh - 7.5rem); overflow-y: auto; margin: 0; z-index: 5; box-shadow: 0 8px 24px -16px var(--shadow-pop); }
+  .rail { position: fixed; top: 6rem; right: max(16px, calc((100vw - var(--container)) / 2 - 252px)); width: 220px; max-height: calc(100vh - 6rem - 150px); overflow-y: auto; margin: 0; z-index: 5; box-shadow: 0 8px 24px -16px var(--shadow-pop); }
   .rail__list { grid-template-columns: 1fr; }
 }
 .rail__intro { margin: 0 0 var(--s3); font-size: var(--fs-xs); color: var(--text-soft); line-height: 1.6; }
@@ -1153,15 +1153,116 @@ ul.chip-row {
 .coupon__code { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 0.95em; font-weight: 700; letter-spacing: 0.04em; color: var(--text); background: rgba(var(--sunset-rgb), 0.14); border: 1px dashed rgba(var(--sunset-rgb), 0.6); border-radius: var(--r-sm); padding: 0.1em 0.5em; }
 .coupon__note { font-size: var(--fs-xs); color: var(--text-mute); }
 .coupon__except { flex-basis: 100%; font-size: var(--fs-xs); color: var(--sunset); }
+/* 小字链接也留够 24px 高的点按区域（WCAG 2.5.8） */
+.coupon__all { font-size: var(--fs-xs); display: inline-block; padding-block: 0.2rem; }
+.shot__foot a { display: inline-block; padding-block: 0.2rem; }
 .coupon--compact { font-size: var(--fs-xs); }
 .bcard__coupon { margin: 0; }
 .featured__coupon { margin: var(--s3) 0 0; }
 
 /* ---------------------------------------------------------------- 返回顶部 */
-.to-top { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 40; display: inline-flex; align-items: center; justify-content: center; gap: 0.2rem; min-width: 44px; min-height: 44px; padding: 0 0.7rem; border-radius: 999px; background: var(--ink-raised); border: 1px solid var(--electric); color: var(--text); font-weight: 700; text-decoration: none; }
+.to-top { position: fixed; right: calc(max(14px, env(safe-area-inset-right)) + 8px); bottom: calc(max(16px, env(safe-area-inset-bottom)) + 76px); z-index: 40; display: inline-flex; align-items: center; justify-content: center; gap: 0.2rem; min-width: 44px; min-height: 44px; padding: 0 0.7rem; border-radius: 999px; background: var(--ink-raised); border: 1px solid var(--electric); color: var(--text); font-weight: 700; text-decoration: none; }
 .to-top[hidden] { display: none; }
 .to-top__text { font-size: var(--fs-xs); }
 @media (max-width: 720px) { .to-top__text { display: none; } }
+
+/* ---------------------------------------------------------------- 右下角“地球仪”悬浮导航（返回顶部按钮叠在它上面） */
+.globe-dock { position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 41; transform: translate(var(--gx, 0px), var(--gy, 0px)); }
+/* 可以拖动（site.ts 的 initGlobeNav）：拖动时放大一点，松手后贴边的过渡 */
+.globe-dock.is-snapping { transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.globe-dock.is-dragging .globe-fab { cursor: grabbing; transform: scale(1.08); box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.9), 0 0 0 6px rgba(var(--cyan-rgb), 0.22), 0 0 34px -4px rgba(var(--cyan-rgb), 1); }
+@media (prefers-reduced-motion: reduce) { .globe-dock.is-snapping { transition: none; } }
+.globe-fab {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--cyan-rgb), 0.8);
+  background: radial-gradient(circle at 32% 26%, #2f63c4 0%, #173677 52%, #0b1735 100%);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: none; /* 按住按钮拖动时不滚动页面 */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.85), 0 0 0 4px rgba(var(--cyan-rgb), 0.12), 0 0 24px -6px rgba(var(--cyan-rgb), 0.85);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.globe-fab:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.85), 0 0 0 5px rgba(var(--cyan-rgb), 0.2), 0 0 30px -4px rgba(var(--cyan-rgb), 1); }
+.globe-fab:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+.globe-fab__icon { width: 28px; height: 28px; fill: none; stroke: var(--cyan); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.globe-fab__sea { fill: rgba(var(--cyan-rgb), 0.18); }
+.globe-fab__stand { stroke: #f5b36c; stroke-width: 1.8; }
+.globe-fab__label { font-size: 0.75rem; font-weight: 800; line-height: 1; letter-spacing: 0.12em; padding-left: 0.12em; }
+.globe-fab__orbit { position: absolute; inset: -7px; border-radius: 50%; border: 1px dashed rgba(var(--cyan-rgb), 0.5); pointer-events: none; }
+.globe-fab__orbit::after { content: ''; position: absolute; top: 50%; right: -4px; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #f5b36c; box-shadow: 0 0 8px 2px rgba(245, 179, 108, 0.75); }
+/* 只在打开页面后转两圈、鼠标停留时再转；不做无限循环——手机上持续动画会拖慢点按响应（INP 实验室测试从约 230ms 升到 320ms） */
+@media (prefers-reduced-motion: no-preference) {
+  .globe-fab__orbit { animation: globe-orbit 3.2s cubic-bezier(0.45, 0.05, 0.35, 1) 0.6s 2; }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .globe-fab:hover .globe-fab__orbit,
+  .globe-fab:focus-visible .globe-fab__orbit { animation: globe-orbit 2.4s linear infinite; }
+}
+@keyframes globe-orbit { to { transform: rotate(360deg); } }
+/* 不支持 Popover 的旧浏览器不显示悬浮按钮（顶部导航照常可用） */
+@supports not selector(:popover-open) { .globe-dock { display: none; } }
+
+.globe-nav {
+  position: fixed;
+  inset: auto;
+  /* 默认在右下角按钮上方；按钮被拖到别处后，site.ts 打开面板前会改这些变量 */
+  left: var(--gn-left, auto);
+  right: var(--gn-right, max(14px, env(safe-area-inset-right)));
+  top: var(--gn-top, auto);
+  bottom: var(--gn-bottom, calc(max(16px, env(safe-area-inset-bottom)) + 76px));
+  margin: 0;
+  width: min(22rem, calc(100vw - 28px));
+  max-height: var(--gn-maxh, min(72vh, calc(100dvh - 120px)));
+  overflow-y: auto;
+  padding: var(--s4);
+  border: 1px solid rgba(var(--cyan-rgb), 0.5);
+  border-radius: 16px;
+  background: var(--ink-deep);
+  color: var(--text);
+  box-shadow: 0 26px 60px -20px rgba(0, 0, 0, 0.9), 0 0 32px -12px rgba(var(--cyan-rgb), 0.65);
+  display: none;
+}
+.globe-nav:popover-open { display: block; }
+.globe-nav::backdrop { background: rgba(3, 8, 22, 0.35); }
+@media (prefers-reduced-motion: no-preference) {
+  .globe-nav { opacity: 0; transform: translateY(10px) scale(0.98); transform-origin: var(--gn-origin, bottom right); transition: opacity 0.18s ease, transform 0.18s ease, overlay 0.18s allow-discrete, display 0.18s allow-discrete; }
+  .globe-nav:popover-open { opacity: 1; transform: none; }
+  @starting-style {
+    .globe-nav:popover-open { opacity: 0; transform: translateY(10px) scale(0.98); }
+  }
+}
+.globe-nav__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.globe-nav__title { margin: 0; font-size: var(--fs-base); font-weight: 800; }
+.globe-nav__tip { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--text-soft); line-height: 1.5; }
+.globe-nav__close { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+.globe-nav__close:hover { border-color: var(--cyan); }
+.globe-nav__group { margin: var(--s3) 0 var(--s2); font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); }
+.globe-nav__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.globe-nav__list a { display: flex; align-items: center; min-height: 44px; padding: 6px 10px; border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(var(--electric-rgb), 0.07); color: var(--text); font-size: var(--fs-sm); font-weight: 600; text-decoration: none; }
+.globe-nav__list a:hover { border-color: var(--electric); background: rgba(var(--electric-rgb), 0.16); color: var(--text); }
+.globe-nav__list a[aria-current='page'] { border-color: var(--sunset); }
+.globe-nav__list--quick a { display: grid; gap: 2px; align-content: center; justify-items: start; }
+.globe-nav__list--quick small { display: none; font-size: var(--fs-xs); font-weight: 400; color: var(--text-soft); }
+.globe-nav__social { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+/* 宽屏：左“常用页面”（带一句说明），右“栏目”和“社群” */
+@media (min-width: 720px) {
+  .globe-nav { width: min(37rem, calc(100vw - 28px)); }
+  .globe-nav__body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s4); }
+  .globe-nav__list--quick { grid-template-columns: minmax(0, 1fr); }
+  .globe-nav__list--quick small { display: block; }
+}
 
 /* ---------------------------------------------------------------- 套餐详解（品牌页） */
 .pd-shared { display: grid; gap: var(--s2); margin: 0; }
@@ -1181,3 +1282,15 @@ ul.chip-row {
 .pd-card__nocoupon { margin: 0; font-size: var(--fs-sm); color: var(--text-soft); line-height: 1.7; }
 .pd-card__nocoupon strong { color: var(--sunset); }
 .pd-card__gist strong { color: var(--text); }
+
+/* 首页“按需求找”：性价比机场、机场测评、机场VPN 三张卡（2026-11-01） */
+.needs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); align-items: stretch; }
+.needs .guide-card { display: flex; flex-direction: column; }
+.needs .guide-card__actions { margin-top: auto; }
+@media (max-width: 60rem) { .needs { grid-template-columns: minmax(0, 1fr); } }
+
+/* 便宜机场页：最上面的“本站推荐”行（不参与排序）与分组标题行（2026-11-01） */
+.rank-table .rank-group th { padding: 0.45rem var(--s3); font-size: var(--fs-xs); font-weight: 700; color: var(--text-mute); text-align: left; background: rgba(var(--electric-rgb), 0.06); }
+.rank-table .rank-group--pin th { color: #ffc27a; background: rgba(255, 140, 40, 0.1); }
+.rank-table tr.is-pinned > * { background: rgba(255, 140, 40, 0.1); }
+.chip--pin { margin-left: 0.35rem; padding: 0 0.45rem; border-radius: 999px; border: 1px solid rgba(255, 170, 80, 0.6); background: rgba(255, 140, 40, 0.16); color: #ffd29a; font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; }

@@ -12,8 +12,11 @@ import { fmtDate } from '../lib/format';
 import { DATA_UPDATED } from '../lib/site';
 
 const path = '/test-records/';
-const title = '测试档案：本站测试记录与其他测速参考，附证据状态｜机场节点';
-const description = `机场节点站的全部测试记录：本站测试 ${TEST_COUNTS.siteRecords} 条、节点在线快照 ${TEST_COUNTS.snapshots} 次、其他测速参考 ${TEST_COUNTS.thirdPartyRows} 行。每条标注时间、来源等级和原图是否已挂载。`;
+// 2026-11-01 关键词方案：标题与 H1 以“机场测速记录”开头；导航、面包屑与其他页面的链接文字仍叫“测试档案”
+const verifiedCount = SITE_TEST_RECORDS.filter((r) => r.isVerified).length;
+const unverifiedCount = SITE_TEST_RECORDS.length - verifiedCount;
+const title = '机场测速记录：本站晚高峰实测与第三方测速参考，附原图核验状态｜机场节点';
+const description = `机场测速记录汇总：本站实测 ${TEST_COUNTS.siteRecords} 条（${verifiedCount} 条有原图、已核验，${TEST_COUNTS.statEligible} 条进入分时段统计）、节点在线快照 ${TEST_COUNTS.snapshots} 次、其他测速参考 ${TEST_COUNTS.thirdPartyRows} 行。每条标注时间、来源等级和原图是否已挂载。`;
 const crumbs = [
   { name: '首页', href: '/' },
   { name: '测试档案', href: path },
@@ -32,7 +35,7 @@ const toc = [
 <BaseLayout {title} {description} {path} breadcrumbs={crumbs} modified={DATA_UPDATED}>
   <header class="page-head">
     <div class="container">
-      <h1>测试档案：每一条测试记录的原始表格</h1>
+      <h1>机场测速记录：本站实测与其他测速参考的原始表格</h1>
       <p class="page-head__lead">
         本站自己的测试、服务商面板的节点在线快照和第三方页面的历史摘录，在这里分开存放。每条都带着时间、来源等级和证据状态，缺失的值显示为“—”或“未测得”，不写成 0。
       </p>
@@ -53,7 +56,7 @@ const toc = [
     <div class="stack-lg">
       <p class="notice" data-severity="warn">
         <span class="notice__title">先读这一条</span>
-        本站目前只有 {getBrand('lingdongyun')?.shortName} 一家有本站测试记录，且原始截图已不保留，所以这些记录标记为“未核验”，也没有进入任何分时段统计。其他测速参考来自别人的评测页，不是本站测试，也不代表现在的表现。分时段的整体情况见<a href="/time-tests/">分时段节点测试</a>。
+        本站目前只有 {getBrand('lingdongyun')?.shortName} 一家有本站测试记录：{TEST_COUNTS.siteRecords} 条里 {verifiedCount} 条有原始截图、已核验，其中 {TEST_COUNTS.statEligible} 条进入了分时段统计；另外 {unverifiedCount} 条较早的记录原始截图已不保留，标记为“未核验”，不进入统计。其他测速参考来自别人的评测页，不是本站测试，也不代表现在的表现。分时段的整体情况见<a href="/time-tests/">分时段节点测试</a>。
       </p>
 
       <section id="site" aria-labelledby="site-title">

@@ -1,0 +1,95 @@
+---
+/**
+ * 右下角“地球仪”悬浮导航（2026-11-01 站长建议）。
+ * 用浏览器原生 Popover（popovertarget）打开面板：点外面或按 Esc 自动关闭；不支持 Popover 的旧浏览器不显示按钮，顶部导航照常可用。
+ * 按住按钮可以拖到别处、松手贴边（src/scripts/site.ts 的 initGlobeNav；位置不保存，换页回到右下角）。
+ * 面板里是普通 <a> 链接，写在 HTML 里，搜索引擎能读到。
+ */
+import { NAV_ITEMS, SOCIAL_LINKS } from '../lib/site';
+interface Props {
+  path: string;
+}
+const { path } = Astro.props;
+
+const QUICK: readonly { label: string; href: string; hint: string }[] = [
+  { label: '机场优惠码', href: '/coupons/', hint: '各家优惠码与不能用码的套餐' },
+  { label: '便宜机场', href: '/plans/cheapest/', hint: '按月付价格和每 GB 成本排序' },
+  { label: 'IEPL、IPLC 专线机场', href: '/routes/iepl-iplc/', hint: '资料写了哪种专线' },
+  { label: '能用 ChatGPT 的机场', href: '/ai/', hint: '资料标注与连通性实测' },
+  { label: '机场测速记录', href: '/test-records/', hint: '本站实测与原图核验状态' },
+];
+const social = SOCIAL_LINKS.filter((l) => l.href);
+const isCurrent = (href: string): boolean => !href.startsWith('/#') && path === href;
+---
+
+<nav class="globe-dock" aria-label="悬浮导航">
+  <button class="globe-fab" type="button" popovertarget="globe-nav" title="打开全站导航（按住可以拖到别处）">
+    <span class="globe-fab__orbit" aria-hidden="true"></span>
+    <svg class="globe-fab__icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <circle class="globe-fab__sea" cx="16" cy="13" r="8.5"></circle>
+      <ellipse cx="16" cy="13" rx="3.6" ry="8.5"></ellipse>
+      <path d="M7.5 13h17M8.6 8.8h14.8M8.6 17.2h14.8"></path>
+      <path class="globe-fab__stand" d="M5.5 13a10.5 10.5 0 0 0 21 0M16 23.5v3.6M11 28.6h10"></path>
+    </svg>
+    <span class="globe-fab__label">导航</span>
+  </button>
+
+  <div class="globe-nav" id="globe-nav" popover>
+    <div class="globe-nav__head">
+      <div>
+        <p class="globe-nav__title">全站导航</p>
+        <p class="globe-nav__tip">按住“导航”圆形按钮，可以把它拖到屏幕其他位置</p>
+      </div>
+      <button class="globe-nav__close" type="button" popovertarget="globe-nav" popovertargetaction="hide" aria-label="关闭导航">×</button>
+    </div>
+
+    <div class="globe-nav__body">
+      <div class="globe-nav__col">
+        <p class="globe-nav__group">常用页面</p>
+        <ul class="globe-nav__list globe-nav__list--quick">
+          {
+            QUICK.map((it) => (
+              <li>
+                <a href={it.href} aria-current={isCurrent(it.href) ? 'page' : undefined}>
+                  <span>{it.label}</span>
+                  <small>{it.hint}</small>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="globe-nav__col">
+        <p class="globe-nav__group">栏目</p>
+        <ul class="globe-nav__list">
+          {
+            NAV_ITEMS.map((it) => (
+              <li>
+                <a href={it.href} aria-current={isCurrent(it.href) ? 'page' : undefined}>{it.label}</a>
+              </li>
+            ))
+          }
+        </ul>
+
+        {
+          social.length > 0 && (
+            <>
+              <p class="globe-nav__group">社群</p>
+              <ul class="globe-nav__social">
+                {social.map((l) => (
+                  <li>
+                    <a class={`social-pill social-pill--${l.key}`} href={l.href!} target="_blank" rel="noopener noreferrer">
+                      {l.key === 'telegram' ? 'Telegram 交流群' : 'GitHub'}
+                      <span class="visually-hidden">（在新窗口打开）</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</nav>

@@ -21,7 +21,9 @@ import { regionSlugForCode } from '../../data/regions';
 import { loadPosts, postsForBrand } from '../../lib/content';
 import { fmtCNY, fmtDate } from '../../lib/format';
 import { brandPitch, faqLd } from '../../lib/brand-pitch';
+import { panelGapDate } from '../../lib/panel';
 import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
+import { couponFor, noCouponPlans, NO_COUPON_TEXT } from '../../data/coupons';
 import { OWNER_MARK_SOURCE, ownerMarksFor } from '../../data/owner-marks';
 import { planDetailsFor } from '../../data/plan-details';
 
@@ -45,14 +47,23 @@ const posts = postsForBrand(await loadPosts(), brand.slug);
 const severityRank = { high: 0, warn: 1, info: 2 } as const;
 const notices = [...brand.notices].filter((n) => n.type !== 'data-gap').sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
 
-// 名称以英文或数字结尾时，与后面的汉字之间留一个空格（“微风网络 Breezenet 资料整理”）
-const titleName = /[A-Za-z0-9]$/.test(brand.brandName) ? `${brand.brandName} ` : brand.brandName;
 const pitch = brandPitch(brand);
 const hasNodeNames = brand.regions.some((r) => r.nodeNames && r.nodeNames.length > 0);
 const featured = brand.slug === 'lingdongyun';
 const planDetails = planDetailsFor(brand.slug);
 const aliasList = brand.aliases.filter((a) => /[\u4e00-\u9fa5]/.test(a) && a !== brand.shortName && a !== brand.brandName && !a.endsWith('机场'));
-const title = `${titleName}机场怎么样？2026价格、节点与注册入口｜机场节点`;
+// 标题用中文简称（不夹英文名，保证“X机场”连写），带上各家独有的节点数与月付起价；有优惠码时写明。
+// 简称全是英文或数字时，与后面的汉字之间留一个空格（“Firefly 机场”）；含汉字的简称直接连写（“飞V机场”）
+const shortT = /^[\x20-\x7E]+$/.test(brand.shortName) ? `${brand.shortName} ` : brand.shortName;
+const couponCode = couponFor(brand.slug);
+const couponExcept = noCouponPlans(brand.slug);
+const hasCoupon = couponCode !== null;
+const yuanT = (n: number) => `¥${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}`;
+const titleFacts = [pitch.nodes ? `${pitch.nodes}个节点` : null, pitch.low ? `月付${yuanT(pitch.low.price)}起` : null].filter(Boolean).join('、');
+const title = `${shortT}机场怎么样？${titleFacts}${hasCoupon ? `${titleFacts ? '与' : ''}优惠码` : ''}｜机场节点`;
+// H1：英文名放进括号，紧跟中文简称
+const alias = brand.brandName.startsWith(brand.shortName) ? brand.brandName.slice(brand.shortName.length).trim().replace(/^（|）$/g, '') : '';
+const h1Name = alias ? `${brand.shortName}（${alias}）` : shortT;
 const description = pitch.description;
 const crumbs = [
   { name: '首页', href: '/' },
@@ -66,7 +77,7 @@ const crumbs = [
     <div class="container brand-head">
       <div>
         {featured && <p class="featured-flag"><FlameIcon />本站主推</p>}
-        <h1>{brand.brandName}机场怎么样：价格、节点与注册入口</h1>
+        <h1>{h1Name}机场怎么样：价格、节点{hasCoupon ? '、优惠码' : ''}与注册入口</h1>
         <p class="page-head__lead">{pitch.verdict}</p>
         {aliasList.length > 0 && <p class="chip-row mt-4"><span class="chip chip--gray">又名：{aliasList.join('、')}</span></p>}
         
@@ -76,7 +87,7 @@ const crumbs = [
         <dl class="mini-facts mini-facts--one">
           {pitch.low && <div><dt>最低月付</dt><dd><strong class="brand-cta__price num">{fmtCNY(pitch.low.price)}</strong> / 月 · {pitch.low.gb}GB</dd></div>}
           {pitch.nodes && <div><dt>节点数量</dt><dd class="num">{pitch.nodes} 个</dd></div>}
-          {pitch.regions.length > 0 && <div><dt>节点地区</dt><dd>{pitch.regions.slice(0, 6).join('、')}{pitch.regions.length > 6 && ' 等'}</dd></div>}
+          {pitch.regions.length > 0 && <div><dt>节点地区</dt><dd>{pitch.regions.slice(0, 6).join('、')}{pitch.regions.length > 6 && ' 等'}{pitch.regionsNote && <span class="cell-sub">{pitch.regionsNote}</span>}</dd></div>}
           {pitch.routes.length > 0 && <div><dt>线路</dt><dd>{pitch.routes.join(' / ')}</dd></div>}
           {pitch.device && <div><dt>设备</dt><dd>{pitch.device}</dd></div>}
         </dl>
@@ -99,6 +110,8 @@ const crumbs = [
         {(notices.length > 0 || brand.identity.notes.length > 0) && <li><a href="#notices">购买提示</a></li>}
         {hasTests && <li><a href="#tests">实测</a></li>}
         <li><a href="#faq">常见问题</a></li>
+        {couponCode && <li><a href="#coupon">优惠码</a></li>}
+        <li><a href="#signup">官网与注册</a></li>
       </ul>
     </nav>
     <div class="stack-lg">
@@ -144,7 +157,7 @@ const crumbs = [
                       <tr>
                         <th scope="row" class="col-nowrap">{regionSlugForCode(r.countryCode) ? <a href={`/regions/${regionSlugForCode(r.countryCode)}/`}>{r.label}</a> : r.label}</th>
                         <td class="col-num num">{r.nodeCount ?? '多个'}</td>
-                        {hasNodeNames && <td class="text-sm">{r.nodeNames && r.nodeNames.length > 0 ? r.nodeNames.slice(0, 8).join('、') + (r.nodeNames.length > 8 ? ` 等共 ${r.nodeNames.length} 个` : '') : <span class="text-soft">以客户端列表为准</span>}</td>}
+                        {hasNodeNames && <td class="text-sm">{r.nodeNames && r.nodeNames.length > 0 ? r.nodeNames.slice(0, 8).join('、') + (r.nodeNames.length > 8 ? ` 等共 ${r.nodeNames.length} 个` : '') : panelGapDate(brand.slug, r.countryCode) ? <span class="cell-sub cell-sub--warn">只见于服务商说明；站长 {fmtDate(panelGapDate(brand.slug, r.countryCode)!)}的后台面板里没有这个地区的节点</span> : <span class="text-soft">以客户端列表为准</span>}</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -159,7 +172,7 @@ const crumbs = [
         <section id="facts" aria-labelledby="facts-title">
           <h2 id="facts-title" class="mb-3">{brand.shortName}线路、协议与常用服务</h2>
           <dl class="facts">
-            <dt>节点总数</dt><dd><ClaimValue plain claim={brand.nodeCount} unit=" 个" /></dd>
+            <dt>节点总数</dt><dd><ClaimValue plain claim={brand.nodeCount} unit={/下限|不少于|50\+|60\+/.test(brand.nodeCount.note ?? '') ? '+ 个' : ' 个'} /></dd>
             <dt>协议</dt><dd><ClaimValue plain claim={brand.protocols} /></dd>
             <dt>线路类型</dt><dd>{pitch.routes.length > 0 ? <span class="chip-row">{pitch.routes.map((x) => <span class="chip">{x}</span>)}</span> : <span class="text-mute">以官网说明为准</span>}</dd>
             <dt>客户端</dt><dd><ClaimValue plain claim={brand.clients} chips={false} /></dd>
@@ -260,6 +273,27 @@ const crumbs = [
               </details>
             ))}
           </div>
+        </section>
+
+        {
+          couponCode && (
+            <section id="coupon" aria-labelledby="coupon-title">
+              <h2 id="coupon-title" class="mb-3">{brand.shortName}机场优惠码</h2>
+              <p>
+                {brand.shortName}的优惠码是 <code class="coupon__code">{couponCode}</code>，在注册或付款页的“优惠码”或“折扣码”一栏填写。代码来自站长 2026-10-31 整理的清单；折扣多少、有效期到什么时候，资料里没有写，以官网结算页显示为准。填写后金额没有变化，说明代码已失效或不适用于这个套餐。
+              </p>
+              <p class="mt-3 text-sm">
+                {couponExcept.length > 0 ? `按站长 2026-10-31 的说明，${couponExcept.map((p) => p.label).join('、')}${NO_COUPON_TEXT}。` : '资料里没有记录哪些套餐不能用优惠码，以结算页为准。'}
+              </p>
+            </section>
+          )
+        }
+
+        <section id="signup" aria-labelledby="signup-title">
+          <h2 id="signup-title" class="mb-3">{brand.shortName}官网与注册入口</h2>
+          <p>
+            下面的“注册{brand.shortName}”按钮是站长提供的推广链接，会在新窗口打开{brand.shortName}官网。先注册账号，再选套餐付款，价格和套餐以官网当天显示为准。本站不单独写出官网网址，以免网址更换后失效。{brand.identity.notes.length > 0 && '名称与资料来源的说明见本页“关于名称”。'}
+          </p>
           {featured ? (
             <div class="flame-frame flame-frame--tight flame-cta mt-5">
               <Flames size="sm" />

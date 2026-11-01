@@ -10,6 +10,7 @@ import { BRANDS } from '../data/brands';
 import { SHEET_LOWEST } from '../data/owner-sheet-prices';
 import { ownerMarksFor } from '../data/owner-marks';
 import { routeChipsOf } from '../lib/queries';
+import { panelCoverage } from '../lib/panel';
 import { fmtCNY, fmtGB } from '../lib/format';
 import type { Brand } from '../data/types';
 
@@ -41,13 +42,15 @@ const cheapestPlan = (b: Brand) => {
 const list = (limit ? BRANDS.slice(0, limit) : BRANDS).map((b) => {
   const s = SHEET_LOWEST[b.slug];
   const price = s ? { price: s.price, gb: s.monthlyGB as number | null } : cheapestPlan(b);
-  const regions = regionNames(b);
+  // 有后台面板快照的品牌（灵动云）：节点数来自面板，地区也只列面板里的，服务商说明另列的地区不算进来
+  const cov = panelCoverage(b);
+  const regions = cov ? cov.regions.map((r) => r.label) : regionNames(b);
   return {
     b,
     price,
     nodes: nodeText(b),
     regions: regions.slice(0, 5),
-    moreRegions: regions.length - 5 + (hasOther(b) ? 1 : 0),
+    moreRegions: cov ? 0 : regions.length - 5 + (hasOther(b) ? 1 : 0),
     routes: routeChipsOf(b).filter((r) => r.confirmed).map((r) => r.label),
     stable: ownerMarksFor(b.slug).slice(0, 3).map((m) => m.service),
     stableTotal: ownerMarksFor(b.slug).length,

@@ -1,0 +1,195 @@
+---
+/**
+ * 便宜机场与性价比机场：只按价格和每 GB 成本排序，不是质量排名。
+ * 数据全部来自 OFFER_ROWS 里“可精确比较”的报价；冲突、待核验、咨询报价不参与。
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { OFFER_STATS } from '../../data/plan-calc';
+import type { OfferRow } from '../../data/plan-calc';
+import { lowestMonthlyByBrand, lowestPerGBByBrand } from '../../lib/price-rank';
+import { collectionLd } from '../../lib/seo';
+import { fmtCNY, fmtDate, periodLabel } from '../../lib/format';
+import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
+
+const path = '/plans/cheapest/';
+// 排序规则在 src/lib/price-rank.ts，首页“性价比机场”卡片用同一套
+const monthly = lowestMonthlyByBrand();
+const perGB = lowestPerGBByBrand();
+
+const cheapest = monthly[0]!;
+const best = perGB[0]!;
+
+// 2026-11-01 站长要求灵动云第一、暮光加速第二：两家放在表格最上面并标“本站推荐”，不混进排序；
+// “名次”写它们按价格的实际位置，下面的排序部分仍然从低到高（只是不重复列这两家）。
+const PINNED: readonly string[] = ['lingdongyun', 'muguangjiasu'];
+type Ranked = { r: OfferRow; rank: number };
+const split = (rows: OfferRow[]): { pinned: Ranked[]; rest: Ranked[] } => {
+  const ranked = rows.map((r, i) => ({ r, rank: i + 1 }));
+  return {
+    pinned: PINNED.map((slug) => ranked.find((x) => x.r.brandSlug === slug)).filter((x): x is Ranked => !!x),
+    rest: ranked.filter((x) => !PINNED.includes(x.r.brandSlug)),
+  };
+};
+const m = split(monthly);
+const g = split(perGB);
+const pinnedNames = m.pinned.map((x) => x.r.shortName).join('、');
+const traffic = (r: OfferRow) => (r.monthlyGB !== null ? `每月 ${r.monthlyGB}GB` : r.totalGBInPeriod !== null ? `总量 ${r.totalGBInPeriod}GB` : '—');
+const perGBText = (r: OfferRow) => `¥${r.perGBCNY}`;
+
+// 2026-11-01 站长要求接住“性价比机场”：标题由“便宜机场推荐”改为“便宜机场与性价比机场”（本页只比价格，也不该写“推荐”）
+const title = `便宜机场与性价比机场：月付最低${fmtCNY(cheapest.priceCNY)}起，按每GB成本排序｜机场节点`;
+const description = `${BRAND_COUNT}家机场按价格排序：月付最低${fmtCNY(cheapest.priceCNY)}起（${cheapest.shortName}），每GB成本最低约${perGBText(best)}（${best.shortName}${periodLabel(best.period)}）。只比价格和流量，不是质量排名。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '套餐对比', href: '/plans/' },
+  { name: '便宜机场', href: path },
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('便宜机场与性价比机场', description, path, monthly.map((r) => ({ name: `${r.shortName}机场`, href: `/airports/${r.brandSlug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>便宜机场与性价比机场：按价格和每 GB 成本排序</h1>
+      <p class="page-head__lead">
+        这一页只回答“哪家便宜”：把 {BRAND_COUNT} 家机场的月付最低价和每 GB 成本各排一次。便宜不代表好用，线路、地区和晚高峰表现要另看品牌页和实测。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>可精确比较的报价 {OFFER_STATS.exact} 条</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">只比价格，不是质量排名</span>
+        价格是官网或来源页面的标价，没有叠加优惠码；冲突、待核验和咨询报价不参与排序。下单前以服务商结算页为准。
+      </p>
+
+      <h2 class="mt-6">月付价格从低到高</h2>
+      <p class="text-soft">每家只列月付最低的一档，价格相同时流量多的排前面。最上面两行是本站推荐的{pinnedNames}，不参与排序；“名次”一栏是每家按月付价格的实际位置。</p>
+      <div class="table-scroll mt-3">
+        <table class="data-table rank-table">
+          <caption>{monthly.length} 家：本站推荐 {m.pinned.length} 家在最上面，其余按月付价格从低到高。</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="col-num">名次</th>
+              <th scope="col">机场</th>
+              <th scope="col" class="col-num">月付</th>
+              <th scope="col">流量</th>
+              <th scope="col" class="col-num">每 GB</th>
+              <th scope="col">套餐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="rank-group rank-group--pin"><th scope="rowgroup" colspan="6">本站推荐（不参与排序）</th></tr>
+            {
+              m.pinned.map(({ r, rank }) => (
+                <tr class="is-pinned">
+                  <td class="col-num">{rank}</td>
+                  <th scope="row">
+                    <a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a> <span class="chip chip--pin">本站推荐</span>
+                  </th>
+                  <td class="col-num">{fmtCNY(r.priceCNY)}</td>
+                  <td>{traffic(r)}</td>
+                  <td class="col-num">{r.perGBCNY !== null ? perGBText(r) : '—'}</td>
+                  <td>{r.planName}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+          <tbody>
+            <tr class="rank-group"><th scope="rowgroup" colspan="6">其余 {m.rest.length} 家，按月付价格从低到高</th></tr>
+            {
+              m.rest.map(({ r, rank }) => (
+                <tr>
+                  <td class="col-num">{rank}</td>
+                  <th scope="row">
+                    <a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a>
+                  </th>
+                  <td class="col-num">{fmtCNY(r.priceCNY)}</td>
+                  <td>{traffic(r)}</td>
+                  <td class="col-num">{r.perGBCNY !== null ? perGBText(r) : '—'}</td>
+                  <td>{r.planName}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="mt-6">每 GB 成本从低到高（性价比）</h2>
+      <p class="text-soft">每家取每 GB 成本最低的一条报价，付款周期不限；年付和流量包要一次付清，单价低但先付的钱多。最上面两行同样是本站推荐，“名次”是按每 GB 成本的实际位置。</p>
+      <div class="table-scroll mt-3">
+        <table class="data-table rank-table">
+          <caption>{perGB.length} 家：本站推荐 {g.pinned.length} 家在最上面，其余按每 GB 成本从低到高。</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="col-num">名次</th>
+              <th scope="col">机场</th>
+              <th scope="col" class="col-num">每 GB</th>
+              <th scope="col" class="col-num">价格</th>
+              <th scope="col">付款周期</th>
+              <th scope="col">流量</th>
+              <th scope="col">套餐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="rank-group rank-group--pin"><th scope="rowgroup" colspan="7">本站推荐（不参与排序）</th></tr>
+            {
+              g.pinned.map(({ r, rank }) => (
+                <tr class="is-pinned">
+                  <td class="col-num">{rank}</td>
+                  <th scope="row">
+                    <a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a> <span class="chip chip--pin">本站推荐</span>
+                  </th>
+                  <td class="col-num">{perGBText(r)}</td>
+                  <td class="col-num">{fmtCNY(r.priceCNY)}</td>
+                  <td>{periodLabel(r.period)}</td>
+                  <td>{traffic(r)}</td>
+                  <td>{r.planName}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+          <tbody>
+            <tr class="rank-group"><th scope="rowgroup" colspan="7">其余 {g.rest.length} 家，按每 GB 成本从低到高</th></tr>
+            {
+              g.rest.map(({ r, rank }) => (
+                <tr>
+                  <td class="col-num">{rank}</td>
+                  <th scope="row">
+                    <a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a>
+                  </th>
+                  <td class="col-num">{perGBText(r)}</td>
+                  <td class="col-num">{fmtCNY(r.priceCNY)}</td>
+                  <td>{periodLabel(r.period)}</td>
+                  <td>{traffic(r)}</td>
+                  <td>{r.planName}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose mt-6">
+        <h2>怎么读这两张表</h2>
+        <ul>
+          <li>月付价格低不等于每 GB 成本低：{cheapest.shortName}月付 {fmtCNY(cheapest.priceCNY)} 只有 {cheapest.monthlyGB}GB，每 GB 约 {cheapest.perGBCNY !== null ? perGBText(cheapest) : '—'}；{best.shortName}的“{best.planName}”每 GB 约 {perGBText(best)}，但要{periodLabel(best.period)}一次付清。</li>
+          <li>流量用得少，先买月付最低档试一个月；确定能用、用量又大，再看年付或流量包。</li>
+          <li>想按预算、流量、地区和线路一起筛，用<a href="/plans/">套餐对比</a>；每个套餐的来源和日期在各品牌页。</li>
+          <li>下单前看看<a href="/coupons/">机场优惠码汇总</a>，有些套餐不能用优惠码。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

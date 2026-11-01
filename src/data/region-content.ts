@@ -10,7 +10,7 @@
 import type { TestRecord } from './types';
 import { LDY_HK_PEAK, LDY_HK_REACHABILITY, LDY_HK_YOUTUBE, LDY_PEAK_PAGE_PATH, LDY_US_PEAK, LDY_US_REACHABILITY } from './reports/lingdongyun-peak-2026-10-28';
 import { LDY_PEAK, LDY_PEAK_REACHABILITY, LDY_REPORT_PATH, LDY_SPEEDTEST, LDY_YOUTUBE } from './reports/lingdongyun-sg-2026-10';
-import { LDY_AVAILABILITY_1031 } from './reports/lingdongyun-sg-2026-10-31';
+import { LDY_AVAILABILITY_1031, LDY_SG1031_SPEED } from './reports/lingdongyun-sg-2026-10-31';
 import { TIME_WINDOWS } from './time-windows';
 
 export interface RegionFaq {
@@ -196,7 +196,7 @@ export const REGION_CONTENT: Record<string, (c: RegionContentCtx) => RegionConte
   singapore: (c) => ({
     title: `新加坡节点推荐：${c.documented}家机场与两次晚高峰实测解读｜机场节点`,
     h1: '新加坡节点：东南亚出口，两次晚高峰实测说明了什么',
-    description: `新加坡是东南亚服务和流媒体常用的出口。本页列出 ${c.documented} 家提供新加坡节点的机场，并解读本站对灵动云新加坡节点的全部实测：晚高峰下载 ${sgPeak.downloadMbps} Mbps、空载延迟 ${sgPeak.idleLatencyMs} ms，以及一次无日期测速和一次 YouTube 720p 观察。`,
+    description: `新加坡是东南亚服务和流媒体常用的出口。本页列出 ${c.documented} 家提供新加坡节点的机场，并解读本站对灵动云新加坡节点的全部实测：10-28 晚高峰下载 ${sgPeak.downloadMbps} Mbps、空载延迟 ${sgPeak.idleLatencyMs} ms，10-31 晚间下载 ${LDY_SG1031_SPEED.downloadMbps} Mbps、延迟 ${LDY_SG1031_SPEED.idleLatencyMs} ms，以及一次无日期测速和两次 YouTube 观察。`,
     intent: '这一页回答：新加坡节点适合哪些服务，本站两次新加坡测速各能说明什么、哪些数字不能直接比，怎么判断它在你这里的晚高峰稳不稳。',
     lead: `新加坡是本站实测记录最多的地区：${c.siteRecords.length} 条本站记录都来自灵动云新加坡节点，分别是一次没有可见日期的网页测速、一次 2026-10-24 深夜的 YouTube 720p 观察、一次 2026-10-28 晚高峰复测，以及 2026-10-31 的一次网页测速（截图时钟 21:30，下载 13.31 Mbps、延迟 135 ms）和一次 20:41 的 YouTube 观察（缓冲 66.14 秒、掉帧 0/1112）。它们时间不同、方法不同，本页逐条解读，而不是把它们拼成一条“趋势”。${c.documented} 家机场都有新加坡节点记录，${c.withCount} 家写明了数量。`,
     focus: {
@@ -231,7 +231,7 @@ export const REGION_CONTENT: Record<string, (c: RegionContentCtx) => RegionConte
       items: [
         { label: '东南亚服务、区域电商和游戏服', text: '出口在新加坡的节点是这类服务最自然的入口，这是新加坡相对日本、香港的独有用途。' },
         { label: 'YouTube、社交媒体', text: `720p 观察缓冲 ${sgYt.youtubeBufferSeconds} 秒、零掉帧，晚高峰连通性里 YouTube ${reach(LDY_PEAK_REACHABILITY, 'YouTube').ms} ms。和<a href="/regions/japan/">日本节点</a>相比没有本质差别，看哪个在你这里更稳。` },
-        { label: 'ChatGPT 等 AI 服务', text: `晚高峰连通性 ChatGPT ${reach(LDY_PEAK_REACHABILITY, 'ChatGPT').ms} ms 可连接，但 Claude 超时。能不能登录和使用取决于服务商的地区策略，本站不记录解锁。需要美国 IP 的服务见<a href="/regions/united-states/">美国节点</a>。` },
+        { label: 'ChatGPT 等 AI 服务', text: `晚高峰连通性 ChatGPT ${reach(LDY_PEAK_REACHABILITY, 'ChatGPT').ms} ms 可连接，但 Claude 超时。能不能登录和使用取决于服务商的地区策略，本站不记录解锁。需要美国 IP 的服务见<a href="/regions/united-states/">美国节点</a>；各家资料里的 AI 服务标注见<a href="/ai/">能用 ChatGPT 的机场</a>。` },
         { label: '视频会议、大文件上传', text: `注意上传时延迟升到 ${sgPeak.loadedUploadLatencyMs} ms；会议前先测一次上传。` },
       ],
     },
@@ -332,7 +332,7 @@ export const REGION_CONTENT: Record<string, (c: RegionContentCtx) => RegionConte
     scenarios: {
       heading: '什么情况该选美国节点',
       items: [
-        { label: 'ChatGPT、Claude、Gemini 等 AI 服务', text: `需要美国 IP 时的常规选择。对话是小流量场景，${us.idleLatencyMs} ms 级别的延迟可以接受；但能否登录和使用取决于服务商策略，本站不记录解锁。` },
+        { label: 'ChatGPT、Claude、Gemini 等 AI 服务', text: `需要美国 IP 时的常规选择。对话是小流量场景，${us.idleLatencyMs} ms 级别的延迟可以接受；但能否登录和使用取决于服务商策略，本站不记录解锁。各家资料里的 AI 服务标注和 OpenAI 支持地区见<a href="/ai/">能用 ChatGPT 的机场</a>。` },
         { label: '美区流媒体、美区商店', text: '只有出口在美国的节点能用；这一晚的下载 7 Mbps 级别够 720p，高清要再测。' },
         { label: '游戏', text: '美服延迟受距离限制，往返约 100 ms 起步；亚服请用香港或台湾节点。' },
         { label: '只是看 YouTube', text: `没有必要绕到美国。同一晚新加坡节点空载延迟 ${sgPeak.idleLatencyMs} ms、下载 ${sgPeak.downloadMbps} Mbps，见<a href="/regions/singapore/">新加坡节点</a>。` },
@@ -359,7 +359,7 @@ export const REGION_CONTENT: Record<string, (c: RegionContentCtx) => RegionConte
     focus: {
       heading: '为什么提供者少，这对你意味着什么',
       paragraphs: [
-        '韩国节点的需求集中在两类用户：玩韩服游戏、看韩国本地流媒体和直播。这类需求比香港日常上网、美国 AI 服务窄得多，多数机场只放 2–3 个节点做补充，有的根本不列。资料里灵动云的韩国节点就是一个例子：套餐说明写“韩国×2”，但 2026-10-21 的节点状态截图里没有出现韩国节点，两份资料并不一致，本页按原文记录，不替品牌裁决。',
+        '韩国节点的需求集中在两类用户：玩韩服游戏、看韩国本地流媒体和直播。这类需求比香港日常上网、美国 AI 服务窄得多，多数机场只放 2–3 个节点做补充，有的根本不列。资料里灵动云的韩国节点就是一个例子：套餐说明写“韩国×2”，但站长 2026-10-21 和 2026-10-31 两次后台面板里都没有韩国节点，两份资料并不一致；本页按套餐说明原文列出，并在表格里注明面板里没有。',
         `${THEORY}从上海到首尔直线约 870 km，理论往返下限约 ${floorMs(870)} ms；从北京约 950 km、约 ${floorMs(950)} ms；从广州约 2070 km、约 ${floorMs(2070)} ms。华东、华北用户到首尔的距离其实比到香港更近，但节点少意味着晚高峰时每个节点承载的用户更多，拥挤比距离更可能成为瓶颈。`,
         '节点少还有一个实际影响：客户端里韩国节点往往只有一两个备选，一个不好用时没有多少换的余地。这和<a href="/regions/japan/">日本节点</a>形成对比，日本几乎每家机场都有十个左右可以轮换。',
       ],

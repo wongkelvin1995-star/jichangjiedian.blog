@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { BRANDS } from '../data/brands';
-import { TEST_COUNTS } from '../data/test-records';
+import { SITE_TEST_RECORDS, TEST_COUNTS } from '../data/test-records';
 import { datasetStats } from '../lib/queries';
 import { loadPosts } from '../lib/content';
 import { fmtDate } from '../lib/format';
@@ -12,6 +12,7 @@ const path = '/about/';
 const title = '关于本站：机场节点是什么，怎么整理资料，不做什么｜机场节点';
 const description = `机场节点是一个独立的中文资料站，整理${BRANDS.length}家机场的套餐、线路与节点地区资料，研究分时段的速度、延迟与稳定性。这里说明资料如何整理、哪些做不到、如何联系更正。`;
 const stats = datasetStats();
+const siteVerified = SITE_TEST_RECORDS.filter((r) => r.isVerified).length;
 const posts = await loadPosts();
 const crumbs = [
   { name: '首页', href: '/' },
@@ -44,7 +45,7 @@ const crumbs = [
       </ul>
 
       <h2>本站自己的测试</h2>
-      <p>目前本站自己的测试记录只有 {TEST_COUNTS.siteBrands} 家（灵动云）：一次新加坡节点网页测速、一次 YouTube 播放观察和一次节点在线快照。这三项来自不同的时间，相互不是同一次连续测试；而且原始截图已不保留，因此都标记为“未核验”，不进入分时段统计。其余机场的测试数据来自第三方页面的历史摘录（{TEST_COUNTS.thirdPartyBrands} 家，共 {TEST_COUNTS.thirdPartyRows} 行），只作参考。</p>
+      <p>目前本站自己的测试记录只有 {TEST_COUNTS.siteBrands} 家（灵动云）：{TEST_COUNTS.siteRecords} 条测试记录和 {TEST_COUNTS.snapshots} 次节点在线快照。这些记录来自不同的时间，相互不是同一次连续测试。其中 {siteVerified} 条有原始截图、已核验，{TEST_COUNTS.statEligible} 条进入分时段统计；较早的 {TEST_COUNTS.siteRecords - siteVerified} 条原始截图已不保留，标记为“未核验”。其余机场的测试数据来自第三方页面的历史摘录（{TEST_COUNTS.thirdPartyBrands} 家，共 {TEST_COUNTS.thirdPartyRows} 行），只作参考。</p>
       <p>什么样的记录才算数，写在<a href="/testing-methodology/">测试方法</a>里；所有记录都能在<a href="/test-records/">测试档案</a>查到，并下载为不含个人信息的 CSV。</p>
 
       <h2>目前做不到的事</h2>

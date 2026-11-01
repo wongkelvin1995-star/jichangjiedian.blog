@@ -1,0 +1,137 @@
+---
+/**
+ * IEPL / IPLC 专线机场列表：按资料里写的线路类型分三组（两种都写 / 只写 IPLC / 只写 IEPL）。
+ * 线路类型全部是服务商或第三方页面的说法，本站无法从外部核验；数量都从品牌数据算出，不写死。
+ * 2026-11-01 关键词方案新增页面（承接“IEPL机场”“IPLC机场”“专线机场”）。
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GradeBadge from '../../components/GradeBadge.astro';
+import { BRANDS } from '../../data/brands';
+import { brandPitch } from '../../lib/brand-pitch';
+import { routeChipsOf } from '../../lib/queries';
+import { collectionLd } from '../../lib/seo';
+import { fmtCNY, fmtDate } from '../../lib/format';
+import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
+
+const path = '/routes/iepl-iplc/';
+// 只按“已确认”的线路标签计数（与首页、地区页、品牌页的规则相同）；资料自相矛盾的单独列一组，不计入数字
+const rows = BRANDS.map((b) => {
+  const chips = routeChipsOf(b);
+  const ok = chips.filter((c) => c.confirmed);
+  const special = (c: { id: string }) => c.id === 'iplc' || c.id === 'iepl';
+  return { b, chips, iplc: ok.some((c) => c.id === 'iplc'), iepl: ok.some((c) => c.id === 'iepl'), unsure: chips.some((c) => !c.confirmed && special(c)), pitch: brandPitch(b) };
+});
+const both = rows.filter((r) => r.iplc && r.iepl);
+const onlyIplc = rows.filter((r) => r.iplc && !r.iepl);
+const onlyIepl = rows.filter((r) => r.iepl && !r.iplc);
+const unsure = rows.filter((r) => r.unsure && !r.iplc && !r.iepl);
+const neither = rows.filter((r) => !r.iplc && !r.iepl && !r.unsure);
+const iplcCount = both.length + onlyIplc.length;
+const ieplCount = both.length + onlyIepl.length;
+const anyCount = both.length + onlyIplc.length + onlyIepl.length;
+const groups = [
+  { id: 'both', title: `IPLC 和 IEPL 都写的机场（${both.length} 家）`, rows: both },
+  { id: 'iplc', title: `只写 IPLC 的机场（${onlyIplc.length} 家）`, rows: onlyIplc },
+  { id: 'iepl', title: `只写 IEPL 的机场（${onlyIepl.length} 家）`, rows: onlyIepl },
+  { id: 'conflict', title: `线路资料前后不一致的机场（${unsure.length} 家，不计入上面的数字）`, rows: unsure },
+].filter((g) => g.rows.length > 0);
+
+const title = `IEPL、IPLC专线机场列表：${iplcCount}家写IPLC、${ieplCount}家写IEPL｜机场节点`;
+const description = `${BRAND_COUNT}家机场的线路资料：${iplcCount}家写了IPLC、${ieplCount}家写了IEPL，其中${both.length}家两种都写。线路名称是服务商或第三方资料的说法，本站未逐家核验；附节点地区、最低月付和资料等级。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '线路知识', href: '/routes/' },
+  { name: '专线机场列表', href: path },
+];
+const mixed = rows.filter((r) => r.chips.some((c) => c.id === 'bgp' || c.id === 'relay' || c.id === 'direct')).length;
+const regionsText = (regions: string[]) => (regions.length ? `${regions.slice(0, 5).join('、')}${regions.length > 5 ? ` 等 ${regions.length} 地` : ''}` : '资料没有写');
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('IEPL、IPLC 专线机场列表', description, path, [...both, ...onlyIplc, ...onlyIepl].map((r) => ({ name: `${r.b.shortName}机场`, href: `/airports/${r.b.slug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>IEPL、IPLC 专线机场列表：{BRAND_COUNT} 家机场的线路资料</h1>
+      <p class="page-head__lead">
+        把 {BRAND_COUNT} 家机场资料里写的线路类型放在一起：哪些写 IPLC、哪些写 IEPL、哪些两种都写。线路名称来自服务商官网或第三方页面，本站无法从外部核验具体链路；速度和稳定性要看带时间的实测。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>写 IPLC {iplcCount} 家</span>
+        <span>写 IEPL {ieplCount} 家</span>
+        <span>两种都写 {both.length} 家</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">资料所写，未逐家核验</span>
+        {anyCount === BRAND_COUNT ? `本站收录的 ${BRAND_COUNT} 家，资料里都写了 IPLC 或 IEPL` : `本站收录的 ${BRAND_COUNT} 家里，${anyCount} 家的资料写了 IPLC 或 IEPL`}{mixed > 0 && `，其中 ${mixed} 家同时写了 BGP、中转或直连`}{unsure.length > 0 && `；另有 ${unsure.length} 家（${unsure.map((r) => r.b.shortName).join('、')}）的资料前后说法不一致，单独列在最后，不计入数字`}。这些都是服务商或第三方页面的说法，用户一侧没有办法直接验证；资料没写清是品牌整体、某个套餐还是某些节点的，本站不替它补全。本站目前只有灵动云有晚高峰实测。
+      </p>
+
+      {
+        groups.map((g) => (
+          <>
+            <h2 class="mt-6" id={g.id}>{g.title}</h2>
+            <div class="table-scroll mt-3">
+              <table class="data-table">
+                <caption>按本站编辑顺序排列。“资料等级”是线路这一项资料的来源等级。</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">机场</th>
+                    <th scope="col">资料写的线路</th>
+                    <th scope="col">节点地区</th>
+                    <th scope="col" class="col-num">最低月付</th>
+                    <th scope="col">资料等级</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.rows.map(({ b, chips, pitch }) => (
+                    <tr>
+                      <th scope="row">
+                        <a href={`/airports/${b.slug}/`}>{b.shortName}</a>
+                      </th>
+                      <td>{chips.map((c) => c.label).join(' / ')}</td>
+                      <td>{regionsText(pitch.regions)}</td>
+                      <td class="col-num">{pitch.low ? `${fmtCNY(pitch.low.price)} / ${pitch.low.gb}GB` : '—'}</td>
+                      <td>
+                        {b.routeTypes.grade && <GradeBadge grade={b.routeTypes.grade} />}
+                        {chips.some((c) => !c.confirmed) && <span class="cell-sub">待核验</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ))
+      }
+      {neither.length > 0 && <p class="mt-4 text-sm text-soft">资料里没有写 IPLC 或 IEPL 的：{neither.map((r) => r.b.shortName).join('、')}。</p>}
+
+      <div class="prose mt-6">
+        <h2>IPLC 和 IEPL 有什么不同</h2>
+        <p>
+          两者都是“专线”的说法，区别主要在承载方式和接口形态，从用户一侧很难分辨。BGP 则是一种路由协议，机场介绍里的“BGP 线路”通常指入口用了多线 BGP 接入，所以同一家同时写专线和 BGP 并不矛盾。更详细的比较见<a href="/articles/iepl-iplc-bgp-differences/">IEPL、IPLC 与 BGP 的区别</a>。
+        </p>
+        <h2>怎么用这张表</h2>
+        <ul>
+          <li>线路标签只是起点：先看节点地区有没有你要的，再比价格，最后看有日期的测速。</li>
+          <li>写了专线，晚高峰表现也要看实测：买之前尽量找 20:00–23:00 的测试，买之后自己在这个时段测几次。</li>
+          <li>线路资料的原文、来源和日期在各家品牌页的“线路、协议与常用服务”一节。</li>
+        </ul>
+        <h2>本页的局限</h2>
+        <p>
+          本页只汇总资料里的说法，不评价哪家专线更好，也不代表本站测过这些线路。服务商随时可能调整线路和节点，以官网当天的说明为准。
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

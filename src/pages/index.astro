@@ -7,12 +7,25 @@ import FeaturedLdy from '../components/FeaturedLdy.astro';
 import TimeWindowTable from '../components/TimeWindowTable.astro';
 import { loadPosts } from '../lib/content';
 import { datasetStats } from '../lib/queries';
-import { fmtDate } from '../lib/format';
 import { faqLd } from '../lib/brand-pitch';
 import { DATA_UPDATED, HOME_DESCRIPTION, HOME_H1, HOME_SLOGAN, HOME_SUBTITLE, HOME_TITLE } from '../lib/site';
+import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
+import { lowestMonthlyByBrand, lowestPerGBByBrand } from '../lib/price-rank';
+import { LDY_PEAK_PAGE_PATH } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { mustGetBrand } from '../data/brands';
+import { COUPON_NOTE } from '../data/coupons';
+import { listShort, panelCoverage } from '../lib/panel';
 
 const stats = datasetStats();
-const HOME_FAQ = [{"q": "机场节点是什么？", "a": "“机场”是对代理服务商的俗称，“节点”就是它在香港、日本、新加坡、美国等地的服务器。买了机场套餐后，把订阅链接导入客户端，选一个节点连上，就能正常访问 Google、YouTube、ChatGPT 等网站。"}, {"q": "2026年机场推荐哪家？", "a": `本站主推灵动云：60 个节点、覆盖 10 个地区，IPLC / IEPL 专线 + BGP 线路，不限设备，月付 ¥20 起。如果预算更低或需要特定地区，可以在上面的 ${stats.brands} 家机场卡片里按价格和节点对比。`}, {"q": "机场多少钱一个月？", "a": `本站收录的 ${stats.brands} 家机场，入门月付大多在 ¥19–30 之间，含 100–200GB 流量；常看视频、多设备共用选 ¥40–70 的 300–600GB 套餐更划算。只是偶尔用可以买年付小套餐或一次性流量包。`}, {"q": "新手第一次买机场要注意什么？", "a": "先买月付试一个月，重点看晚上 8–11 点的速度；确认节点地区覆盖你要用的服务（AI 选美国、看剧选日本/新加坡、游戏选香港）；只从官网注册，不要相信来路不明的 Telegram 账号和仿冒网站。"}, {"q": "香港、日本、新加坡、美国节点怎么选？", "a": "香港离大陆最近、延迟最低，适合日常和游戏；日本、新加坡适合 Netflix、YouTube 等流媒体；美国节点用来访问 ChatGPT、Claude 等 AI 服务。详细对比见“节点地区”和“线路知识”。"}, {"q": "IPLC、IEPL 专线和普通线路有什么区别？", "a": "IPLC / IEPL 是走专线的跨境线路，不经过公网拥堵段，晚高峰更稳、延迟更低，价格也更高；BGP / 中转线路性价比高，但高峰时段可能波动。"}];
+// “性价比机场”卡片的数字与 /plans/cheapest/ 同一套规则（src/lib/price-rank.ts）
+const cheapest = lowestMonthlyByBrand()[0]!;
+const best = lowestPerGBByBrand()[0]!;
+// 灵动云的节点数与地区以站长最新一次后台面板为准（lib/panel.ts），服务商说明另列的地区单独说明
+const ldyCov = panelCoverage(mustGetBrand('lingdongyun'))!;
+const ldyAnswer = `本站主推灵动云：站长 ${ldyCov.dateText}的后台面板有 ${ldyCov.snapshot.totalNodes} 个节点，分布在${ldyCov.regions.map((r) => r.label).join('、')}${ldyCov.claimOnly.length ? `（官网套餐说明另写了${listShort(ldyCov.claimOnly)}地区，面板里暂时没有）` : ''}；IPLC / IEPL 专线 + BGP 线路，不限设备，月付 ¥20 起，也是本站唯一做过晚高峰实测的机场。如果预算更低或需要特定地区，可以在上面的 ${stats.brands} 家机场卡片里按价格和节点对比。`;
+const VPN_ANSWER = '两者都能访问境外网站。机场是把订阅链接导入第三方客户端，节点按地区命名、可以自己挑，多数按每月流量计费；商业 VPN 多是安装官方应用一键连接，多按时长计费、不限流量。本站只收录机场，详细对比见新手入门文章。';
+const valueAnswer = `看每 GB 成本，不要只看月付价格：按本站收录的标价，月付最低是${cheapest.shortName} ${fmtCNY(cheapest.priceCNY)}/${cheapest.monthlyGB}GB（每 GB 约 ¥${cheapest.perGBCNY}），每 GB 成本最低是${best.shortName}${periodLabel(best.period)}「${best.planName}」约 ¥${best.perGBCNY}（要一次付清 ${fmtCNY(best.priceCNY)}）。年付和流量包要一次付清，第一次买建议先月付试一个月；排序只比价格，不代表速度和稳定性。`;
+const HOME_FAQ = [{"q": "机场节点是什么？", "a": "“机场”是对代理服务商的俗称，“节点”就是它在香港、日本、新加坡、美国等地的服务器。买了机场套餐后，把订阅链接导入客户端，选一个节点连上，就能正常访问 Google、YouTube、ChatGPT 等网站。"}, {"q": "2026年机场推荐哪家？", "a": ldyAnswer}, {"q": "机场多少钱一个月？", "a": `本站收录的 ${stats.brands} 家机场，入门月付大多在 ¥19–30 之间，含 100–200GB 流量；常看视频、多设备共用选 ¥40–70 的 300–600GB 套餐更划算。只是偶尔用可以买年付小套餐或一次性流量包。`}, {"q": "新手第一次买机场要注意什么？", "a": "先买月付试一个月，重点看晚上 8–11 点的速度；确认节点地区覆盖你要用的服务（AI 选美国、看剧选日本/新加坡、游戏选香港）；只从官网注册，不要相信来路不明的 Telegram 账号和仿冒网站。"}, {"q": "香港、日本、新加坡、美国节点怎么选？", "a": "香港离大陆最近、延迟最低，适合日常和游戏；日本、新加坡适合 Netflix、YouTube 等流媒体；美国节点用来访问 ChatGPT、Claude 等 AI 服务。详细对比见“节点地区”和“线路知识”。"}, {"q": "IPLC、IEPL 专线和普通线路有什么区别？", "a": "IPLC / IEPL 是走专线的跨境线路，不经过公网拥堵段，晚高峰更稳、延迟更低，价格也更高；BGP / 中转线路性价比高，但高峰时段可能波动。"}, {"q": "机场和 VPN 有什么区别？", "a": VPN_ANSWER}, {"q": "性价比高的机场怎么看？", "a": valueAnswer}];
 const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 6);
 
 ---
@@ -39,14 +52,14 @@ const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 
         <div>
           <h2 id="airports-title">{stats.brands}家机场推荐：价格、节点与注册</h2>
           <p class="section__lead">
-            每张卡片列出这家机场的<strong>最低月付价格</strong>、节点数量与覆盖地区、线路类型和常用服务情况，点“注册”直接去官网开通，点“套餐与节点”看全部套餐和每个地区的节点。
+            每张卡片列出这家机场的<strong>最低月付价格</strong>、节点数量与覆盖地区、线路类型和常用服务情况，点“注册”直接去官网开通，点“套餐与节点”看全部套餐和每个地区的节点。第一次接触机场，先看<a href="/articles/airport-vpn-basics/">新手入门：机场、梯子、VPN 和科学上网分别是什么</a>。
           </p>
         </div>
         <a class="btn btn--ghost" href="/airports/">查看完整目录</a>
       </div>
       <BrandCards />
       <p class="disclosure mt-4">
-        按站长编辑顺序排列。价格为各家最便宜的月付套餐，资料整理于 {fmtDate(DATA_UPDATED)}，下单前以官网当天价格为准；“注册”按钮是推广链接。
+        按站长编辑顺序排列。价格为各家最便宜的月付套餐，资料整理于 {fmtDate(DATA_UPDATED)}，下单前以官网当天价格为准；“注册”按钮是推广链接。{COUPON_NOTE}
       </p>
     </div>
   </section>
@@ -55,13 +68,41 @@ const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 
     <div class="container">
       <div class="section__head">
         <div>
-          <h2 id="region-list-title">按地区找机场：香港、日本、新加坡、美国节点哪家多</h2>
+          <h2 id="region-list-title">机场节点推荐：按地区看香港、日本、新加坡、美国节点哪家多</h2>
           <p class="section__lead">
             想要香港节点低延迟、日本节点看流媒体，或者美国节点用 ChatGPT？先选地区，看看有哪些机场提供这个地区的节点，点进去能看到每家的节点数量和线路。
           </p>
         </div>
       </div>
       <RegionTable />
+    </div>
+  </section>
+
+  <section class="section" id="needs" aria-labelledby="needs-title">
+    <div class="container">
+      <div class="section__head">
+        <div>
+          <h2 id="needs-title">按需求找：性价比机场、机场测评与机场VPN</h2>
+          <p class="section__lead">这三个问题各有一页把资料整理好，数字都来自本站收录的套餐和本站实测，每页写明来源和局限。</p>
+        </div>
+      </div>
+      <div class="needs">
+        <article class="guide-card">
+          <h3 class="guide-card__title">性价比机场：按每 GB 成本排</h3>
+          <p>只看月付价格容易买贵：{cheapest.shortName}月付 {fmtCNY(cheapest.priceCNY)} 只有 {cheapest.monthlyGB}GB，每 GB 约 ¥{cheapest.perGBCNY}；按每 GB 算最低的是{best.shortName}{periodLabel(best.period)}「{best.planName}」，约 ¥{best.perGBCNY}，但要一次付清 {fmtCNY(best.priceCNY)}。排序只比价格，不代表速度和稳定性。</p>
+          <p class="guide-card__actions"><a class="btn btn--ghost btn--small" href="/plans/cheapest/">看便宜机场与性价比机场排序</a></p>
+        </article>
+        <article class="guide-card">
+          <h3 class="guide-card__title">机场测评：只写本站实测过的</h3>
+          <p>本站目前只实测过灵动云：2026-10-28 晚高峰香港、新加坡、美国三个节点的网页测速和网站连通性，附原始截图。其他机场只有服务商资料和第三方测速参考，本站不给它们写测评。</p>
+          <p class="guide-card__actions"><a class="btn btn--ghost btn--small" href={LDY_PEAK_PAGE_PATH}>灵动云机场测评</a><a class="btn btn--ghost btn--small" href="/test-records/">机场测速记录</a></p>
+        </article>
+        <article class="guide-card">
+          <h3 class="guide-card__title">机场VPN：机场和 VPN 有什么不同</h3>
+          <p>两者都能访问境外网站。机场是把订阅链接导入第三方客户端，节点按地区自己挑，多数按每月流量计费；商业 VPN 多是安装官方应用一键连接，多按时长计费。本站只收录机场。</p>
+          <p class="guide-card__actions"><a class="btn btn--ghost btn--small" href="/articles/airport-vpn-basics/">机场、梯子、VPN 分别是什么</a></p>
+        </article>
+      </div>
     </div>
   </section>
 
@@ -173,7 +214,7 @@ const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 
         <details class="fold">
           <summary>2026年机场推荐哪家？</summary>
           <div class="fold__body">
-            <p>本站主推灵动云：60 个节点、覆盖 10 个地区，IPLC / IEPL 专线 + BGP 线路，不限设备，月付 ¥20 起。如果预算更低或需要特定地区，可以在上面的 {stats.brands} 家机场卡片里按价格和节点对比。</p>
+            <p>{ldyAnswer}</p>
           </div>
         </details>
         <details class="fold">
@@ -198,6 +239,18 @@ const posts = (await loadPosts()).filter((p) => p.kind === 'articles').slice(0, 
           <summary>IPLC、IEPL 专线和普通线路有什么区别？</summary>
           <div class="fold__body">
             <p>IPLC / IEPL 是走专线的跨境线路，不经过公网拥堵段，晚高峰更稳、延迟更低，价格也更高；BGP / 中转线路性价比高，但高峰时段可能波动。</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>机场和 VPN 有什么区别？</summary>
+          <div class="fold__body">
+            <p>{VPN_ANSWER}</p>
+          </div>
+        </details>
+        <details class="fold">
+          <summary>性价比高的机场怎么看？</summary>
+          <div class="fold__body">
+            <p>{valueAnswer}</p>
           </div>
         </details>
       </div>

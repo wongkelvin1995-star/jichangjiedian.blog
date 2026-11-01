@@ -145,6 +145,19 @@ main {
 .site-nav::-webkit-scrollbar {
   display: none;
 }
+/* 还能横向滑动时，在边上淡出一截作为提示（class 由 site.ts 的 initNavHint 切换） */
+.site-nav.has-more {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+}
+.site-nav.has-prev {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 2.75rem);
+  mask-image: linear-gradient(to right, transparent, #000 2.75rem);
+}
+.site-nav.has-prev.has-more {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 2.75rem, #000 calc(100% - 2.75rem), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 2.75rem, #000 calc(100% - 2.75rem), transparent);
+}
 .site-nav__list {
   display: flex;
   gap: var(--s1);
@@ -172,14 +185,38 @@ main {
   font-weight: 700;
 }
 
-@media (min-width: 1240px) {
+/*
+ * 页头三种排法（2026-11-01 加了“注册灵动云”按钮 .site-cta）：
+ *  - 手机（< 600px）：第一行 品牌 | 搜索 + 社群；第二行 注册按钮 + 可横向滑动的导航（.site-bar 是一行 flex）；
+ *  - 600–1439px：第一行 品牌 | 搜索 + 社群 + 注册按钮；第二行 导航（.site-bar 用 display: contents，子元素直接进网格）；
+ *  - ≥ 1440px：一行排下 品牌 | 导航 | 搜索 + 社群 | 注册按钮（页头比正文宽一些，最多 1440px）。
+ */
+.site-bar { grid-area: nav; display: flex; align-items: center; gap: var(--s2); min-width: 0; }
+.site-bar .site-cta { flex: none; }
+.site-bar .site-nav { flex: 1 1 auto; min-width: 0; margin-inline: 0 calc(var(--gutter) * -1); padding-inline: 0 var(--gutter); }
+@media (min-width: 600px) {
   .site-header__inner {
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: 'brand nav search';
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas:
+      'brand search cta'
+      'nav nav nav';
+  }
+  .site-bar { display: contents; }
+  .site-cta { grid-area: cta; }
+  .site-bar .site-nav { margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+}
+@media (min-width: 1440px) {
+  .site-header .site-tools .site-search { flex-basis: 12rem; }
+  .site-header .site-tools .site-search:focus-within { flex-basis: 13rem; }
+  .site-header__inner {
+    max-width: 1480px;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: 'brand nav search cta';
     gap: var(--s4);
     padding-block: 0;
   }
-  .site-nav {
+  .site-nav,
+  .site-bar .site-nav {
     margin-inline: 0;
     padding-inline: 0;
     overflow: visible;
@@ -258,6 +295,11 @@ main {
   color: var(--text-soft);
   font-size: var(--fs-md);
 }
+.page-head__links {
+  margin-top: var(--s3);
+  color: var(--text-soft);
+  font-size: var(--fs-sm);
+}
 .page-head__meta {
   margin-top: var(--s4);
   display: flex;
@@ -330,6 +372,19 @@ main {
 }
 .site-search__panel[hidden] {
   display: none;
+}
+/* 窄屏：搜索框在第一行中间，右对齐的面板会伸出屏幕左边（390px 宽时约切掉 73px）。
+   改为相对整个页头定位，左右各留出页面边距，宽度跟随屏幕。 */
+@media (max-width: 719px) {
+  .site-search {
+    position: static;
+  }
+  .site-search__panel {
+    left: var(--gutter);
+    right: var(--gutter);
+    top: calc(100% + 6px);
+    width: auto;
+  }
 }
 .search-group {
   padding: var(--s1) 0;

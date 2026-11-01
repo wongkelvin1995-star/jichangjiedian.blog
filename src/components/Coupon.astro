@@ -1,5 +1,8 @@
 ---
-/** 优惠码标签：只展示站长提供的代码，不写折扣幅度（资料里没有）。没有代码的品牌不渲染。 */
+/**
+ * 优惠码标签：只展示站长提供的代码，不写折扣幅度（资料里没有）。没有代码的品牌不渲染。
+ * 紧凑版（卡片、侧栏）一页会出现几十次，不重复写说明文字；用到紧凑版的列表在列表下方写一次 COUPON_NOTE。
+ */
 import { COUPON_NOTE, couponFor, noCouponPlans, NO_COUPON_TEXT } from '../data/coupons';
 interface Props { slug: string; compact?: boolean }
 const { slug, compact = false } = Astro.props;
@@ -9,10 +12,11 @@ const except = noCouponPlans(slug);
 
 {
   code && (
-    <span class:list={['coupon', { 'coupon--compact': compact }]} title={COUPON_NOTE}>
+    <span class:list={['coupon', { 'coupon--compact': compact }]} title={compact ? undefined : COUPON_NOTE}>
       <span class="coupon__label">优惠码</span>
       <code class="coupon__code">{code}</code>
       {!compact && <span class="coupon__note">注册或付款时填写，折扣以官网为准</span>}
+      {!compact && <a class="coupon__all" href="/coupons/">全部机场优惠码</a>}
       {except.length > 0 && (
         <span class="coupon__except" title={`${NO_COUPON_TEXT}：${except.map((p) => p.label).join('、')}`}>
           {compact ? `${except.map((p) => p.short).join('、')}不可用` : `${NO_COUPON_TEXT}：${except.map((p) => p.label).join('、')}`}

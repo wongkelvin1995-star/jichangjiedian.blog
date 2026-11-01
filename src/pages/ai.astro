@@ -1,0 +1,203 @@
+---
+/**
+ * 能用 ChatGPT 的机场：服务商资料里的 AI 服务标注 + 本站对灵动云三个节点的网站连通性实测。
+ * 2026-11-01 关键词方案新增页面（承接“ChatGPT机场”“AI机场”）。
+ *  - “资料写了支持 ChatGPT”来自各家 ai 字段（服务商或第三方页面的说法，D 级不计入）；
+ *  - 站长核对表的“稳定”标注同样是服务商资料（owner-marks.ts），本站未逐项实测；
+ *  - 实测只有灵动云 2026-10-28 晚高峰香港、新加坡、美国三个节点的网站连通性（原图转录），不等于能登录或正常对话；
+ *  - OpenAI 支持地区：help.openai.com《ChatGPT 支持的国家和地区》，2026-11-01 查看（名单里有美国、日本、新加坡、台湾，没有中国大陆、香港、澳门）。
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { BRANDS } from '../data/brands';
+import { coverageFor, countryName } from '../data/regions';
+import { OWNER_MARK_READ_AT, ownerMarksFor } from '../data/owner-marks';
+import { LDY_HK_REACHABILITY, LDY_PEAK_PAGE_PATH, LDY_PEAK_PAGE_TITLE, LDY_US_REACHABILITY } from '../data/reports/lingdongyun-peak-2026-10-28';
+import { LDY_PEAK_REACHABILITY, LDY_REPORT_PATH, LDY_REPORT_TITLE } from '../data/reports/lingdongyun-sg-2026-10';
+import type { ReachabilityRow } from '../data/reports/lingdongyun-sg-2026-10';
+import { brandPitch } from '../lib/brand-pitch';
+import { collectionLd } from '../lib/seo';
+import { fmtCNY, fmtDate } from '../lib/format';
+import { BRAND_COUNT, DATA_UPDATED } from '../lib/site';
+
+const path = '/ai/';
+const OPENAI_COUNTRIES_URL = 'https://help.openai.com/zh-hans-cn/articles/7947663-chatgpt-supported-countries';
+const OPENAI_CHECKED = '2026-11-01';
+/** OpenAI 名单里有的地区（本站地区代码）；香港、中国大陆、澳门不在名单里 */
+const SUPPORTED = ['US', 'JP', 'SG', 'TW'] as const;
+const supportedNames = SUPPORTED.map((c) => countryName(c)).join('、');
+
+const claimsChatGPT = (v: string[] | null) => !!v && v.some((x) => /chatgpt|openai/i.test(x));
+const claimed = BRANDS.filter((b) => b.ai.grade !== 'D' && claimsChatGPT(b.ai.value));
+const notClaimed = BRANDS.filter((b) => !claimed.includes(b));
+const markCount = BRANDS.filter((b) => ownerMarksFor(b.slug).some((m) => m.service === 'ChatGPT')).length;
+
+const nodesIn = (slug: string) => {
+  const b = BRANDS.find((x) => x.slug === slug)!;
+  return SUPPORTED.flatMap((code) => {
+    const cov = coverageFor(b, code);
+    if (cov.level !== 'documented') return [];
+    const counts = cov.claims.map((c) => c.nodeCount).filter((n): n is number => typeof n === 'number');
+    return [`${countryName(code)}${counts.length ? ` ${Math.max(...counts)}` : ''}`];
+  });
+};
+
+const tested = [
+  { node: '香港', when: '2026-10-28 21:43', rows: LDY_HK_REACHABILITY, supported: false },
+  { node: '新加坡', when: '2026-10-28 约 21:26', rows: LDY_PEAK_REACHABILITY, supported: true },
+  { node: '美国', when: '2026-10-28 晚（截图没有时钟）', rows: LDY_US_REACHABILITY, supported: true },
+];
+const cell = (rows: ReachabilityRow[], site: string) => {
+  const r = rows.find((x) => x.site === site);
+  if (!r) return '—';
+  return r.ms !== null ? `${r.label} ${r.ms} ms` : r.label;
+};
+const status = (rows: ReachabilityRow[], site: string) => rows.find((x) => x.site === site)?.status ?? null;
+const sgOk = status(LDY_PEAK_REACHABILITY, 'ChatGPT') === 'ok';
+const hkOk = status(LDY_HK_REACHABILITY, 'ChatGPT') === 'ok';
+const usLabel = LDY_US_REACHABILITY.find((x) => x.site === 'ChatGPT')?.label ?? '—';
+const claudeAllTimeout = tested.every((t) => status(t.rows, 'Claude') === 'timeout');
+
+const title = `能用ChatGPT的机场：${claimed.length}家资料标注，附灵动云三地连通性实测｜机场节点`;
+const description = `${BRAND_COUNT}家机场里${claimed.length}家在资料里写了支持ChatGPT（服务商说法）。本站测过灵动云香港、新加坡、美国节点的网站连通性，并说明OpenAI支持地区：香港不在名单里，一般选${supportedNames}节点。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '能用 ChatGPT 的机场', href: path },
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('能用 ChatGPT 的机场', description, path, claimed.map((b) => ({ name: `${b.shortName}机场`, href: `/airports/${b.slug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>能用 ChatGPT 的机场：资料标注与本站连通性实测</h1>
+      <p class="page-head__lead">
+        {BRAND_COUNT} 家机场里，{claimed.length} 家在自己的资料里写了支持 ChatGPT；站长核对表里 {markCount} 家都把 ChatGPT 标为稳定。这两项都是服务商的说法。本站只测过灵动云：2026-10-28 晚高峰{hkOk && sgOk ? '香港、新加坡节点能连上 ChatGPT 网站' : '三个节点的结果见下表'}，美国节点那次显示“{usLabel}”{claudeAllTimeout ? '；三个节点连 Claude 都超时' : ''}。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>资料写了 ChatGPT {claimed.length} 家</span>
+        <span>本站实测 1 家 3 个节点</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">资料标注和连通性都不等于“能用”</span>
+        连通性测试只说明网站能不能连上、延迟多少，不等于能登录、能正常对话。ChatGPT 还要看 OpenAI 是否对节点所在地区提供服务，以及账号本身的情况。站长核对表的“稳定”标注读取自各服务商提供的资料（{OWNER_MARK_READ_AT}），本站未逐项实测。
+      </p>
+
+      <div class="prose mt-6">
+        <h2>先看节点地区：OpenAI 支持哪些地区</h2>
+        <p>
+          OpenAI 公布的 ChatGPT 支持国家和地区名单里有{supportedNames}，没有中国大陆、香港和澳门（{fmtDate(OPENAI_CHECKED)}查看
+          <a href={OPENAI_COUNTRIES_URL} target="_blank" rel="noopener noreferrer">OpenAI 帮助中心：ChatGPT 支持的国家和地区</a>）。所以用 ChatGPT 一般选{supportedNames}的节点；香港节点即使能连上网站，也可能被拒绝服务。名单会变化，以 OpenAI 官方页面为准。
+        </p>
+      </div>
+
+      <h2 class="mt-6">本站实测：灵动云三个节点连 AI 网站</h2>
+      <div class="table-scroll mt-3">
+        <table class="data-table">
+          <caption>网站连通性测试的原图转录，每个节点一次；只说明那一刻能不能连上和延迟。</caption>
+          <thead>
+            <tr>
+              <th scope="col">节点</th>
+              <th scope="col">时间</th>
+              <th scope="col">ChatGPT</th>
+              <th scope="col">Claude</th>
+              <th scope="col">Gemini</th>
+              <th scope="col">在 OpenAI 名单里</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              tested.map((t) => (
+                <tr>
+                  <th scope="row">{t.node}</th>
+                  <td>{t.when}</td>
+                  <td>{cell(t.rows, 'ChatGPT')}</td>
+                  <td>{cell(t.rows, 'Claude')}</td>
+                  <td>{cell(t.rows, 'Gemini')}</td>
+                  <td>{t.supported ? '在' : '不在'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-sm text-soft">
+        2026-10-31 新加坡节点的另一张连通性截图里，ChatGPT 158 ms、Claude 174 ms（截图没有时钟），可见 Claude 超时不是每次都出现。原图和测试条件见<a href={LDY_PEAK_PAGE_PATH}>《{LDY_PEAK_PAGE_TITLE}》</a>和<a href={LDY_REPORT_PATH}>《{LDY_REPORT_TITLE}》</a>。
+      </p>
+
+      <h2 class="mt-6">资料写了支持 ChatGPT 的机场（{claimed.length} 家）</h2>
+      <div class="table-scroll mt-3">
+        <table class="data-table">
+          <caption>按本站编辑顺序排列。“支持地区的节点”只列 OpenAI 名单里有的地区，数字是资料写的节点数。</caption>
+          <thead>
+            <tr>
+              <th scope="col">机场</th>
+              <th scope="col">资料写的 AI 服务</th>
+              <th scope="col">支持地区的节点</th>
+              <th scope="col" class="col-num">最低月付</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              claimed.map((b) => {
+                const low = brandPitch(b).low;
+                const nodes = nodesIn(b.slug);
+                return (
+                  <tr>
+                    <th scope="row">
+                      <a href={`/airports/${b.slug}/`}>{b.shortName}</a>
+                    </th>
+                    <td>{(b.ai.value ?? []).join('、')}</td>
+                    <td>{nodes.length ? nodes.join('、') : '资料没有写'}</td>
+                    <td class="col-num">{low ? `${fmtCNY(low.price)} / ${low.gb}GB` : '—'}</td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+
+      {
+        notClaimed.length > 0 && (
+          <>
+            <h2 class="mt-6">资料没写 AI 服务的机场（{notClaimed.length} 家）</h2>
+            <ul class="bullets mt-3">
+              {notClaimed.map((b) => (
+                <li>
+                  <a href={`/airports/${b.slug}/`}>{b.shortName}</a>
+                  {b.ai.note && !/^同上/.test(b.ai.note) ? `：${b.ai.note}` : '：资料里没有可用的 AI 服务记录。'}
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+
+      <div class="prose mt-6">
+        <h2>选 AI 机场要看什么</h2>
+        <ul>
+          <li>先看节点地区：要有 OpenAI 名单里的地区节点，例如{supportedNames}。</li>
+          <li>“支持 ChatGPT”是服务商的说法。第一次买先月付，自己测一次连通性，再实际登录用一次。</li>
+          <li>同一家机场的不同节点结果可能不一样，本站测的灵动云三个节点就各不相同。</li>
+          <li>Claude、Gemini 有各自的支持地区名单，不一定和 ChatGPT 相同，要分别看官方说明。</li>
+        </ul>
+        <h2>本页的局限</h2>
+        <p>
+          本站只测过灵动云三个节点，每个节点一次，测的是网站连通性，不是登录和对话。其他机场的 AI 服务都来自服务商或第三方资料，本站没有逐家测试。OpenAI 的支持地区和各家节点都可能调整，以官方页面和实际使用为准。
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -146,7 +146,7 @@ server { listen 443 ssl http2; server_name www.jichangjiedian.blog; return 301 h
 4. **检查 URL 检查（URL Inspection）结果**：逐个检查首页、`/airports/`、灵动云测速报告等重点页面，看“已发现 / 已抓取 / 已编入索引”的状态与 Bing 报告的问题。
 5. **查看 Site Explorer 的抓取与索引状态**。
 6. **查看 SEO Site Scan** 的报告，修复其中真实的问题。
-7. **确认没有误设 noindex**：本站故意设置 noindex 的只有：404 页、站内搜索结果页，以及 32 个“资料卡”品牌页（资料还不够独立成页，见 `docs/SEO_AUDIT.md`）。其余页面不应带 noindex。`npm run validate:seo` 会检查 sitemap 与 noindex 是否一致。
+7. **确认没有误设 noindex**：本站故意设置 noindex 的只有：404 页和站内搜索结果页（34 个品牌页从 2026-11-01 起全部可索引）。其余页面不应带 noindex。`npm run validate:seo` 会检查 sitemap 与 noindex 是否一致。
 8. **启用 IndexNow**（见下一节）。
 9. **检查实际 Bing 搜索曝光**：在 Bing Webmaster Tools 的 Search Performance 看展示、点击和查询词。
 10. **按搜索查询与页面数据迭代内容**：根据真实查询词补充或改写文章、完善资料卡。
@@ -199,7 +199,7 @@ npm run indexnow -- --urls /articles/idle-vs-loaded-latency/ --submit
 
 ### 把资料卡升级为可索引的品牌页
 
-品牌页默认是“资料卡”（`detailPage: 'draft'`，noindex，不进 sitemap）。当某个品牌有了足够多**本站独有**的内容（原始测试、实测截图、整理过的套餐核对），把它的 `detailPage` 改为 `'open'`，页面会自动进入 sitemap，并可以用 IndexNow 提交。目前只有灵动云和飞猫云是 `'open'`；身份还没确认的品牌（神行云、云界云、无忧、环球云等）不允许设为 `'open'`，`npm run validate:brands` 会拒绝。
+品牌页有两种状态：`detailPage: 'open'`（可索引，进 sitemap，可以用 IndexNow 提交）和 `'draft'`（“资料卡”，noindex，不进 sitemap）。目前 34 家都是 `'open'`。新加入的品牌如果资料还很少、或身份还没确认，先设为 `'draft'`，等有了本站独有的内容（原始测试、实测截图、整理过的套餐核对）再改为 `'open'`；`npm run validate:brands` 会检查身份未确认的品牌。
 
 ### 检查外部链接（需要联网，请在你自己的电脑上运行）
 

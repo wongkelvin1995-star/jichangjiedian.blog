@@ -198,9 +198,11 @@ if (r.check(!!home, '找不到首页')) {
   r.check(home!.root.querySelector('title')?.text.trim() === HOME_TITLE, `首页 title 应为“${HOME_TITLE}”`);
   r.check(metaContent(home!, 'meta[name="description"]') === HOME_DESCRIPTION, '首页 description 与总指令不一致');
   r.check(home!.root.querySelector('h1')?.text.trim() === HOME_H1, `首页 H1 应为“${HOME_H1}”`);
-  r.check(HOME_TITLE === '机场节点｜2026机场推荐：34家机场价格、节点与注册入口', '首页 title 常量与总指令不一致');
+  // 2026-11-01 站长确认关键词优化方案：首页主词“机场推荐”放到标题最前，站名放在末尾；
+  // 同日站长要求再接住“机场节点推荐”“性价比机场”“机场测评”“机场VPN”（title 放前两个，description 带后两个）
+  r.check(HOME_TITLE === '2026机场推荐与机场节点推荐：34家性价比对比，附晚高峰实测｜机场节点', '首页 title 常量与总指令不一致');
   r.check(
-    HOME_DESCRIPTION === '机场节点整理2026年34家机场推荐：每家机场的最低价格、节点数量与地区（香港、台湾、日本、新加坡、美国等）、IPLC/IEPL线路、常用服务情况和注册入口，并附灵动云晚高峰实测。',
+    HOME_DESCRIPTION === '2026年34家机场推荐与机场节点推荐：每家最低价格、节点数量与地区（香港、台湾、日本、新加坡、美国等）、IPLC/IEPL线路和注册入口，按每GB成本比性价比；附灵动云晚高峰测评，并讲清机场和VPN的区别。',
     '首页 description 常量与总指令不一致',
   );
   r.check(HOME_H1 === '机场节点与机场推荐指南 2026：看懂不同时间段的速度、延迟与稳定性', '首页 H1 常量与总指令不一致');

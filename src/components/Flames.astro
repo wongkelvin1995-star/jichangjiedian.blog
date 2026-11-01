@@ -1,21 +1,15 @@
 ---
 /**
- * 装饰用的 3D 火焰带：前排大火焰 + 后排（景深更远、更暗）的小火焰，底部有一层热浪光晕，另有几粒向上飘的火星。
- * 放在带火焰边框的容器上沿（容器需要 position: relative，见 flame.css 里的 .flame-frame / .bcard--hot）。
+ * 火焰框上沿往上飘的火星（装饰）。火焰本身是框的伪元素贴图（见 flame.css 的 .flame-frame / .bcard--hot），
+ * 这里只放几粒火星。容器需要 position: relative。
  * size="lg" 主推区；"sm" 机场卡片与品牌页价格卡；"xs" 侧栏。
- * 前排槽位用 <i>、后排用 <b>（只为了让 CSS 的 nth-of-type 分开计数），火星用 <span>。
- * 全部是 SVG 形状和 CSS transform/opacity 动画，不接收鼠标事件，读屏软件忽略；系统开启“减少动态效果”时火焰静止。
+ * 只有 CSS transform/opacity 动画，不接收鼠标事件，读屏软件忽略；系统开启“减少动态效果”时火星不出现。
  */
-import FlameIcon from './FlameIcon.astro';
-
 interface Props { size?: 'lg' | 'sm' | 'xs' }
 const { size = 'lg' } = Astro.props;
-const count = { lg: [15, 8, 7], sm: [7, 4, 4], xs: [5, 3, 3] }[size]!;
-const [front, back, embers] = count as [number, number, number];
+const embers = { lg: 7, sm: 4, xs: 3 }[size]!;
 ---
 
 <div class={`flames flames--${size}`} aria-hidden="true">
-  {Array.from({ length: back }, () => <b class="flame-slot flame-slot--back"><FlameIcon class="flame--back" /></b>)}
-  {Array.from({ length: front }, () => <i class="flame-slot"><FlameIcon /></i>)}
   {Array.from({ length: embers }, () => <span class="ember"></span>)}
 </div>

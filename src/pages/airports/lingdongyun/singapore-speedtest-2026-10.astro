@@ -18,6 +18,7 @@ import {
   LDY_SPEEDTEST,
   LDY_YOUTUBE,
 } from '../../../data/reports/lingdongyun-sg-2026-10';
+import { LDY_AVAILABILITY_1031, LDY_SG1031_EVIDENCE, LDY_SG1031_SPEED, LDY_SG1031_YOUTUBE } from '../../../data/reports/lingdongyun-sg-2026-10-31';
 import { loadPosts } from '../../../lib/content';
 import { articleLd } from '../../../lib/seo';
 import { fmtDate, fmtDateTime } from '../../../lib/format';
@@ -36,13 +37,18 @@ const pkSlow = preach.filter((r) => r.status === 'slow' || r.status === 'veryslo
 const pkTimeout = preach.filter((r) => r.status === 'timeout').length;
 const earlierMs = new Map(reach.map((r) => [r.site, r]));
 const pct = (a: number, b: number) => Math.round(((a - b) / b) * 1000) / 10;
+// 2026-10-31 晚间第二次复测（测速、YouTube、后台面板），与 10-28 晚高峰并列展示，不挑较好的那次
+const s2 = LDY_SG1031_SPEED;
+const yt2 = LDY_SG1031_YOUTUBE;
+const av2 = LDY_AVAILABILITY_1031;
+const sgNow = av2.byRegion.find((r) => r.countryCode === 'SG');
 const nOk = reach.filter((r) => r.status === 'ok').length;
 const nSlow = reach.filter((r) => r.status === 'slow').length;
 const nTimeout = reach.filter((r) => r.status === 'timeout').length;
 
 const path = LDY_REPORT_PATH;
 const title = `${LDY_REPORT_TITLE}｜机场节点`;
-const description = `灵动云新加坡节点 2026-10-28 晚高峰实测：下载 ${pk.downloadMbps} Mbps、上传 ${pk.uploadMbps} Mbps、空载延迟 ${pk.idleLatencyMs} ms，附 15 个网站连通性；并对比此前一次测速、YouTube 720p 观察与 ${av.totalNodes} 个节点在线记录。`;
+const description = `灵动云新加坡节点两次晚间实测：10-28 晚高峰下载 ${pk.downloadMbps} Mbps、空载延迟 ${pk.idleLatencyMs} ms；10-31 晚间下载 ${s2.downloadMbps} Mbps、延迟 ${s2.idleLatencyMs} ms。附网站连通性、YouTube 播放观察和节点在线记录，并对比此前一次测速。`;
 
 const posts = await loadPosts();
 const has = (id: string) => posts.some((p) => p.id === id);
@@ -74,7 +80,7 @@ void timelineGrade;
     <div class="container">
       <h1>{LDY_REPORT_TITLE}</h1>
       <p class="page-head__lead">
-        2026-10-28 晚上 9 点多，站长在晚高峰对灵动云新加坡节点做了一次测速和网站连通性检查，附原始截图。本文把这次晚高峰结果放在最前面，再和此前的一次测速、一次 YouTube 播放观察和一次节点在线记录对照，说明它们能证明什么、不能证明什么。
+        站长在 2026-10-28 晚高峰和 2026-10-31 晚间各对灵动云新加坡节点测了一次速，都附原始截图。两次的下载速度差不多，延迟却差了一倍（{pk.idleLatencyMs} ms 和 {s2.idleLatencyMs} ms）。本文把两次结果并列放在最前面，再和此前的一次测速、YouTube 播放观察和节点在线记录对照，说明它们能证明什么、不能证明什么。
       </p>
       <p class="chip-row mt-4">
         <span class="chip chip--ok">晚高峰实测（附原图）</span>
@@ -92,6 +98,7 @@ void timelineGrade;
       <ul>
         <li><a href="#summary">先看结论</a></li>
         <li><a href="#peak">晚高峰复测</a></li>
+        <li><a href="#retest-1031">10-31 复测</a></li>
         <li><a href="#timeline">三份证据的时间</a></li>
         <li><a href="#speed">测速数据</a></li>
         <li><a href="#youtube">YouTube 播放</a></li>
@@ -117,6 +124,17 @@ void timelineGrade;
             <div class="stat"><span class="stat__num num">{pkOk}/{preach.length}</span><span class="stat__label">网站可连接</span></div>
           </div>
         </div>
+        <h3 class="mb-2">第二次晚间复测（{fmtDateTime(s2.testDateTime)}，已核验）</h3>
+        <div class="panel mb-4">
+          <div class="stat-row">
+            <div class="stat"><span class="stat__num num">{s2.downloadMbps}<small>Mbps</small></span><span class="stat__label">下载</span></div>
+            <div class="stat"><span class="stat__num num">{s2.uploadMbps}<small>Mbps</small></span><span class="stat__label">上传</span></div>
+            <div class="stat"><span class="stat__num num">{s2.idleLatencyMs}<small>ms</small></span><span class="stat__label">延迟</span></div>
+            <div class="stat"><span class="stat__num num">{s2.jitterMs}<small>ms</small></span><span class="stat__label">抖动</span></div>
+            <div class="stat"><span class="stat__num num">{s2.loadedDownloadLatencyMs}<small>ms</small></span><span class="stat__label">下载时延迟</span></div>
+            <div class="stat"><span class="stat__num num">{sgNow ? `${sgNow.online}/${sgNow.total}` : '—'}</span><span class="stat__label">新加坡节点在线（{fmtDate(av2.checkedFrom)}）</span></div>
+          </div>
+        </div>
         <h3 class="mb-2">此前的记录</h3>
         <div class="panel">
           <div class="stat-row">
@@ -134,6 +152,9 @@ void timelineGrade;
           </p>
           <p>
             2026-10-28 的晚高峰复测有原始截图和时间，是本站第一条进入分时段统计的记录：下载 {pk.downloadMbps} Mbps 比此前那次低，但空载延迟（{pk.idleLatencyMs} ms）和抖动（{pk.jitterMs} ms）都明显更好，上传也高得多；代价是上传占满时延迟升到 {pk.loadedUploadLatencyMs} ms。较早的三项观察原始截图已不保留，仍标为“未核验”。所有结果都是单次观察，只能说明那几个时刻的状态，不能说明长期是否稳定。
+          </p>
+          <p>
+            2026-10-31 晚上又测了一次：下载 {s2.downloadMbps} Mbps 和 10-28 差不多，但延迟升到 {s2.idleLatencyMs} ms（10-28 是 {pk.idleLatencyMs} ms），上传只有 {s2.uploadMbps} Mbps（10-28 是 {pk.uploadMbps} Mbps）。同一个地区、相近的时段，两次结果差这么多，正说明单次测速不能代表这个节点的常态。两次都写在这里，不只挑较好的那次。
           </p>
         </div>
       </section>
@@ -329,6 +350,39 @@ void timelineGrade;
         </div>
       </section>
 
+      <section id="retest-1031" aria-labelledby="retest-1031-title">
+        <h2 id="retest-1031-title" class="mb-3">第二次晚间复测：2026-10-31</h2>
+        <p class="text-sm text-soft mb-3">{s2.testDateText}。{s2.testServer}；出口 IP 探针显示在新加坡（AS9664，完整 IP 按站内规则不发布）。测试者为站长，所在地{s2.originCity}，宽带{s2.originISP}。</p>
+        <div class="table-scroll">
+          <table class="data-table data-table--stack">
+            <caption>两次都是单次网页测速。差值按“10-31 − 10-28”计算。</caption>
+            <thead>
+              <tr><th scope="col">指标</th><th scope="col" class="col-num">10-28 晚高峰</th><th scope="col" class="col-num">10-31 晚间</th><th scope="col">变化</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row" data-label="指标">下载</th><td class="col-num num" data-label="10-28 晚高峰">{pk.downloadMbps} Mbps</td><td class="col-num num" data-label="10-31 晚间">{s2.downloadMbps} Mbps</td><td class="text-sm" data-label="变化">基本相同</td></tr>
+              <tr><th scope="row" data-label="指标">上传</th><td class="col-num num" data-label="10-28 晚高峰">{pk.uploadMbps} Mbps</td><td class="col-num num" data-label="10-31 晚间">{s2.uploadMbps} Mbps</td><td class="text-sm" data-label="变化">低 {Math.abs(pct(s2.uploadMbps!, pk.uploadMbps!))}%</td></tr>
+              <tr><th scope="row" data-label="指标">延迟</th><td class="col-num num" data-label="10-28 晚高峰">{pk.idleLatencyMs} ms</td><td class="col-num num" data-label="10-31 晚间">{s2.idleLatencyMs} ms</td><td class="text-sm" data-label="变化">高 {Math.round((s2.idleLatencyMs! - pk.idleLatencyMs!) * 10) / 10} ms</td></tr>
+              <tr><th scope="row" data-label="指标">下载时延迟</th><td class="col-num num" data-label="10-28 晚高峰">{pk.loadedDownloadLatencyMs} ms</td><td class="col-num num" data-label="10-31 晚间">{s2.loadedDownloadLatencyMs} ms</td><td class="text-sm" data-label="变化">高 {Math.round((s2.loadedDownloadLatencyMs! - pk.loadedDownloadLatencyMs!) * 10) / 10} ms</td></tr>
+              <tr><th scope="row" data-label="指标">上传时延迟</th><td class="col-num num" data-label="10-28 晚高峰">{pk.loadedUploadLatencyMs} ms</td><td class="col-num num" data-label="10-31 晚间">{s2.loadedUploadLatencyMs} ms</td><td class="text-sm" data-label="变化">低 {Math.round((pk.loadedUploadLatencyMs! - s2.loadedUploadLatencyMs!) * 10) / 10} ms</td></tr>
+              <tr><th scope="row" data-label="指标">抖动</th><td class="col-num num" data-label="10-28 晚高峰">{pk.jitterMs} ms</td><td class="col-num num" data-label="10-31 晚间">{s2.jitterMs} ms</td><td class="text-sm" data-label="变化">基本相同</td></tr>
+              <tr><th scope="row" data-label="指标">丢包率</th><td class="col-num" data-label="10-28 晚高峰">未测得</td><td class="col-num" data-label="10-31 晚间">未测得</td><td class="text-sm" data-label="变化">浏览器测不了丢包（需要 UDP）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="prose prose--wide mt-4">
+          <p>
+            下载速度两次几乎一样，延迟却从 {pk.idleLatencyMs} ms 升到 {s2.idleLatencyMs} ms，上传从 {pk.uploadMbps} Mbps 降到 {s2.uploadMbps} Mbps。两次的测试地点都没有可核验的记录，可能连的也不是同一个新加坡节点（截图没有显示节点编号），所以这里不判断是哪一边出了问题，只说明：同一个地区在相近的晚间时段，延迟可以差一倍，看一次测速下结论并不可靠。测速页给这次的“在线视频、在线游戏、视频会议”都打了“差”，评分规则不公开，本站不采用。
+          </p>
+          <p>
+            同一晚 {yt2.testDateTime.slice(11, 16)} 的 YouTube 观察：当前分辨率 {yt2.youtubeQuality}，缓冲 {yt2.youtubeBufferSeconds} 秒，掉帧 {yt2.extraMetrics?.droppedFrames?.value}，播放器估算连接速度约 {Math.round(Number(yt2.extraMetrics?.connectionSpeedKbps?.value ?? 0) / 100) / 10} Mbps。当前分辨率低于播放器认为的最优分辨率，说明那一刻播放器选了较低的画质；没有掉帧、缓冲充足。
+          </p>
+          <p>
+            站长同一晚 {av2.checkedFrom.slice(11, 16)} 的后台面板：{av2.onlineNodes}/{av2.totalNodes} 个节点在线，其中新加坡 {sgNow ? `${sgNow.online}/${sgNow.total}` : '—'}（10-21 的截图是 {av.byRegion.find((r) => r.countryCode === 'SG')?.total ?? '—'} 个）。面板原图含账号信息，按站长要求不公开，这里只转录数字。
+          </p>
+        </div>
+      </section>
+
       <section id="nodes" aria-labelledby="nodes-title">
         <h2 id="nodes-title" class="mb-3">节点在线记录</h2>
         <div class="table-scroll">
@@ -354,11 +408,11 @@ void timelineGrade;
         <h2 id="method-title" class="mb-3">方法与环境</h2>
         <ul class="bullets">
           <li><strong>测速工具：</strong>网页测速工具，整理图没有注明工具名称。</li>
-          <li><strong>出口与方式：</strong>出口在新加坡，测速流量经代理访问外部网络；具体是新加坡 8 个节点中的哪一个，整理图没有显示。</li>
+          <li><strong>出口与方式：</strong>出口在新加坡，测速流量经代理访问外部网络；具体是哪一个新加坡节点，截图都没有显示。</li>
           <li><strong>本地环境：</strong>城市、客户端、设备，整理图都没有给出，记录为“未标注”；运营商为站长自述的中国联通（图上看不到）。</li>
-          <li><strong>次数：</strong>此前的测速和 YouTube 观察各一次；2026-10-28 晚高峰测速一次，网站连通性每个网站连 4 次取中位数。</li>
+          <li><strong>次数：</strong>此前的测速和 YouTube 观察各一次；2026-10-28 晚高峰测速一次，网站连通性每个网站连 4 次取中位数；2026-10-31 晚间测速一次、YouTube 观察一次。</li>
           <li><strong>晚高峰复测的时间：</strong>测速截图本身没有时钟，时间取自同一页面下方连通性截图里的电脑系统时钟（2026-10-28 21:26）。</li>
-          <li><strong>资料来源：</strong>较早的三份证据来自站长整理图，原始截图已不保留，标记为“未核验”；晚高峰复测有两张原图，标记为“已核验”。</li>
+          <li><strong>资料来源：</strong>较早的三份证据来自站长整理图，原始截图已不保留，标记为“未核验”；10-28 晚高峰复测有两张原图、10-31 复测有测速与 YouTube 原图，都标记为“已核验”。</li>
         </ul>
         <p class="mt-3 text-sm text-soft">本站对一条记录的要求见<a href="/testing-methodology/">测试方法</a>；这三条记录在全站的位置见<a href="/test-records/">测试档案</a>和<a href="/time-tests/">分时段节点测试</a>。</p>
       </section>
@@ -368,7 +422,7 @@ void timelineGrade;
         <div class="prose prose--wide">
           <div class="limits">
             <ul>
-              <li>晚高峰复测只有一次，不能说明这个节点每天晚上都是这样；较早那次测速截图没有可见日期，不进入任何分时段统计。</li>
+              <li>晚间复测只有两次（10-28、10-31），而且两次的延迟差了一倍，不能说明这个节点每天晚上是什么样；较早那次测速截图没有可见日期，不进入任何分时段统计。</li>
               <li>几份证据来自不同的时间，不是同一次连续测试。</li>
               <li>没有测试 4K，也没有测试新加坡以外的节点，不能由此推断“全部节点”的表现。</li>
               <li>Claude 检查超时，所以不能说它支持所有 AI 工具；整理图文字总结里提到“适合视频与 AI 对话”，本站不据此写出通用结论。</li>
@@ -383,14 +437,14 @@ void timelineGrade;
       <section id="evidence" aria-labelledby="evidence-title">
         <h2 id="evidence-title" class="mb-3">证据文件</h2>
         <p class="text-sm text-soft mb-3">点开图片可以查看测速原图。</p>
-        <EvidenceGallery files={LDY_EVIDENCE.filter((e) => e.kind !== 'plan-screenshot')} />
+        <EvidenceGallery files={[...LDY_EVIDENCE.filter((e) => e.kind !== 'plan-screenshot'), ...LDY_SG1031_EVIDENCE.filter((e) => e.evidenceId === 'ldy-sg-1031-speedtest' || e.evidenceId === 'ldy-sg-1031-youtube')]} />
       </section>
 
       <section aria-labelledby="next-title">
         <h2 id="next-title" class="mb-3">接下来补什么</h2>
         <div class="prose prose--wide">
           <p>
-            已经有了一次晚高峰记录。要回答“这个节点晚上稳不稳”，还需要同一个节点在早间、午间、晚间、晚高峰和深夜多天的重复测试，并附上原始截图。
+            已经有了两次晚间记录。要回答“这个节点晚上稳不稳”，还需要同一个节点在早间、午间、晚间、晚高峰和深夜多天的重复测试，并附上原始截图。
             {has('seven-day-node-speed-log') && <> 记录方法见<a href="/guides/seven-day-node-speed-log/">《如何记录一个节点连续7天的速度变化？》</a>。</>}
             {has('how-to-speedtest-at-peak-hours') && <> 晚高峰测试的注意事项见<a href="/articles/how-to-speedtest-at-peak-hours/">《机场晚高峰测速应该怎样进行？》</a>。</>}
           </p>

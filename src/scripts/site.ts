@@ -115,6 +115,162 @@ function initToTop(): void {
 }
 initToTop();
 
+/**
+ * 右下角“地球仪”导航（站长 2026-11-01 要求可以拖动）：
+ *  - 点一下：打开导航面板（由 popovertarget 负责，这里不管）；
+ *  - 按住拖动超过 8px：按钮跟着手指走，松手后贴到最近的左边或右边，并拦下松手时浏览器补发的那次 click；
+ *  - 位置只在当前页面有效：隐私政策写明不使用本地存储，所以换页后回到右下角；
+ *  - 拖动只改 CSS 变量 --gx / --gy（transform 位移），不让页面重新布局；面板打开时放在按钮旁边空间较大的一侧。
+ */
+function initGlobeNav(): void {
+  const dock = document.querySelector<HTMLElement>('.globe-dock');
+  const fab = dock?.querySelector<HTMLButtonElement>('.globe-fab');
+  const panel = document.getElementById('globe-nav');
+  if (!dock || !fab || !panel || typeof panel.showPopover !== 'function') return;
+  const EDGE = 14;
+  let gx = 0;
+  let gy = 0;
+  let origin = { left: 0, top: 0, w: 0, h: 0 }; // 没有位移时（右下角）的位置
+  let drag: { id: number; x: number; y: number; gx: number; gy: number; moved: boolean } | null = null;
+  let suppressClick = false;
+  let frame = 0;
+
+  const paint = (): void => {
+    frame = 0;
+    dock.style.setProperty('--gx', `${gx}px`);
+    dock.style.setProperty('--gy', `${gy}px`);
+  };
+  const measure = (): void => {
+    const r = dock.getBoundingClientRect();
+    origin = { left: r.left - gx, top: r.top - gy, w: r.width, h: r.height };
+  };
+  const settle = (snap: boolean): void => {
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    let left = origin.left + gx;
+    let top = origin.top + gy;
+    if (snap) left = left + origin.w / 2 < vw / 2 ? EDGE : vw - origin.w - EDGE;
+    left = Math.min(Math.max(left, EDGE), vw - origin.w - EDGE);
+    top = Math.min(Math.max(top, EDGE), vh - origin.h - EDGE);
+    gx = Math.round(left - origin.left);
+    gy = Math.round(top - origin.top);
+  };
+
+  fab.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dock.classList.remove('is-snapping'); // 上一次贴边动画还没结束时，先跳到终点再量位置
+    measure();
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY, gx, gy, moved: false };
+    // 按下时就捕获指针：鼠标移动很快时第一下就会离开按钮，没捕获的话后面的移动事件收不到
+    fab.setPointerCapture(e.pointerId);
+  });
+  fab.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const mx = e.clientX - drag.x;
+    const my = e.clientY - drag.y;
+    if (!drag.moved) {
+      if (Math.abs(mx) + Math.abs(my) < 8) return;
+      drag.moved = true;
+      dock.classList.add('is-dragging');
+      if (panel.matches(':popover-open')) panel.hidePopover();
+    }
+    gx = drag.gx + mx;
+    gy = drag.gy + my;
+    if (!frame) frame = requestAnimationFrame(paint);
+  });
+  const finish = (e: PointerEvent): void => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const moved = drag.moved;
+    drag = null;
+    if (!moved) return;
+    suppressClick = true;
+    window.setTimeout(() => {
+      suppressClick = false;
+    }, 400);
+    if (frame) cancelAnimationFrame(frame);
+    dock.classList.remove('is-dragging');
+    settle(true);
+    dock.classList.add('is-snapping');
+    paint();
+    window.setTimeout(() => dock.classList.remove('is-snapping'), 300);
+  };
+  fab.addEventListener('pointerup', finish);
+  fab.addEventListener('pointercancel', finish);
+  fab.addEventListener(
+    'click',
+    (e) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    },
+    true,
+  );
+
+  // 面板放在按钮旁边：按钮在左半边就左对齐，上下取空间大的一侧
+  panel.addEventListener('beforetoggle', (e) => {
+    if ((e as ToggleEvent).newState !== 'open') return;
+    const r = fab.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const onLeft = r.left + r.width / 2 < vw / 2;
+    const above = r.top > vh - r.bottom;
+    const room = above ? r.top - 16 - EDGE : vh - r.bottom - 16 - EDGE;
+    // 面板大约的高度（宽屏两栏约 480px，手机一栏约 630px）；按钮上下两边都放不下时，改为在屏幕中间打开
+    const need = Math.min(window.matchMedia('(min-width: 720px)').matches ? 490 : 640, vh - 2 * EDGE);
+    const s = panel.style;
+    s.setProperty('--gn-left', onLeft ? `${Math.round(Math.max(EDGE, r.left))}px` : 'auto');
+    s.setProperty('--gn-right', onLeft ? 'auto' : `${Math.round(Math.max(EDGE, vw - r.right))}px`);
+    if (room >= need) {
+      s.setProperty('--gn-top', above ? 'auto' : `${Math.round(r.bottom + 16)}px`);
+      s.setProperty('--gn-bottom', above ? `${Math.round(vh - r.top + 16)}px` : 'auto');
+      s.setProperty('--gn-maxh', `${Math.round(room)}px`);
+      s.setProperty('--gn-origin', `${above ? 'bottom' : 'top'} ${onLeft ? 'left' : 'right'}`);
+    } else {
+      s.setProperty('--gn-top', `${Math.round(Math.max(EDGE, (vh - need) / 2))}px`);
+      s.setProperty('--gn-bottom', 'auto');
+      s.setProperty('--gn-maxh', `${Math.round(vh - 2 * EDGE)}px`);
+      s.setProperty('--gn-origin', `center ${onLeft ? 'left' : 'right'}`);
+    }
+  });
+
+  // 转屏或改变窗口大小后，把拖过的按钮重新贴边，免得跑出屏幕
+  window.addEventListener(
+    'resize',
+    () => {
+      if (!gx && !gy) return;
+      measure();
+      settle(true);
+      paint();
+    },
+    { passive: true },
+  );
+}
+initGlobeNav();
+
+/**
+ * 手机页头的导航是一行可以横向滑动的链接，屏幕上只露出一两个。右边（滑过之后还有左边）淡出一截，
+ * 让人看得出“还能往旁边滑”；滑到头就不再淡出。只切换 class，样式在 layout.css。
+ */
+function initNavHint(): void {
+  const nav = document.querySelector<HTMLElement>('.site-nav');
+  if (!nav) return;
+  let raf = 0;
+  const update = (): void => {
+    raf = 0;
+    const max = nav.scrollWidth - nav.clientWidth;
+    nav.classList.toggle('has-more', max > 1 && nav.scrollLeft < max - 4);
+    nav.classList.toggle('has-prev', max > 1 && nav.scrollLeft > 4);
+  };
+  const schedule = (): void => {
+    if (!raf) raf = requestAnimationFrame(update);
+  };
+  nav.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  update();
+}
+initNavHint();
+
 // 搜索框：首次聚焦或输入时才加载搜索模块
 const searchForm = document.querySelector<HTMLFormElement>('[data-site-search]');
 if (searchForm) {

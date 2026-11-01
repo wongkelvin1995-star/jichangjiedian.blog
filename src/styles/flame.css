@@ -1,11 +1,13 @@
-/* ------------------------------------------------------------ 火焰边框与 3D 动态火焰（装饰） */
+/* ------------------------------------------------------------ 火焰框（装饰） */
 /*
- * 火焰只用 SVG 形状 + 这里的 CSS 动画实现：页面里没有内联样式，也没有脚本，符合严格 CSP。
- * 颜色是渐变：BaseLayout 里有一份 <svg class="flame-defs"> 渐变定义，路径用 fill: url(#…) 引用。
- * 立体感来自三样东西：容器上的透视（perspective）、后排火焰沿 Z 轴后退（更小、更暗、略向灭点聚拢）、
- * 每朵火焰在摇摆时还绕 Y 轴轻转（rotateY）。全部只动 transform / opacity（合成线程），不占主线程。
- * 所有装饰元素都带 aria-hidden 且不接收鼠标事件。系统开启“减少动态效果”时，base.css 的统一规则
- * 会把动画压成一瞬间：火焰停在静止的样子，火星保持不可见，边框光晕停在中间亮度。
+ * 2026-11-01 按站长给的参考图改版：发光的立体双线框（内外两道框线，四角有斜线连起来），四条边缠绕火焰，
+ * 框下方有一片火光映在“地面”上。只用在有“注册灵动云”按钮的框上：首页主推区、目录第 1 张卡、
+ * 灵动云品牌页价格卡与页内注册区、套餐详解里的注册区、侧栏主推块；页头的“注册灵动云”按钮用同一张图的小号版本。
+ *
+ * 火焰是程序生成的九宫格贴图 /images/space/fire-frame.webp（scripts/make-fire-frame.py，固定种子，没有用第三方图片）：
+ * 切片 200，外框线在切片的 31%（62/200）处。伪元素外扩 0.31 × --fw，外框线就正好落在元素的边缘。
+ * 两层贴图（第二层左右镜像）轮流变亮变暗，看起来火在跳；只动 opacity（合成线程），不占主线程。
+ * 滚出屏幕就暂停（site.ts 给看得见的框加 .is-live）；系统开启“减少动态效果”时，base.css 的统一规则让火焰静止。
  */
 :root {
   --fire-red: #ff4a1c;
@@ -16,207 +18,116 @@
   --fire-border: linear-gradient(100deg, var(--fire-yellow), var(--fire-red) 24%, var(--fire-orange) 50%, var(--fire-red) 76%, var(--fire-yellow));
 }
 
-/* ---- 边框：橙红渐变描边 + 呼吸的外光晕 + 上沿一层被火光映亮的暖色 */
-.flame-frame {
-  position: relative;
-  isolation: isolate;
-  margin-top: 4.25rem;
-  padding: clamp(1.25rem, 3.2vw, 2.25rem);
-  border: 3px solid transparent;
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(78, 36, 16, 0.55) 0%, rgba(11, 23, 53, 0.74) 40%, rgba(11, 23, 53, 0.8) 100%) padding-box,
-    var(--fire-border) border-box;
-}
+/* ---- 框本体：深色底 + 下方火光倒影；框线和火焰都在伪元素的贴图里 */
+.flame-frame,
 .bcard.bcard--hot {
+  --fw: 96px;
   position: relative;
   isolation: isolate;
-  border: 3px solid transparent;
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(78, 36, 16, 0.55) 0%, rgba(11, 23, 53, 0.8) 38%) padding-box,
-    var(--fire-border) border-box;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(56, 22, 8, 0.66) 0%, rgba(11, 23, 53, 0.82) 46%, rgba(11, 23, 53, 0.88) 100%) padding-box;
+  box-shadow: 0 48px 54px -40px rgba(var(--fire-glow), 0.8);
 }
-/* 紧凑版：品牌页价格卡、侧栏主推块、页内注册区 */
-.flame-frame--tight {
+.flame-frame {
   margin-top: 2.75rem;
-  padding: var(--s4);
-  border-radius: 14px;
+  padding: clamp(1.5rem, 3.4vw, 2.5rem) clamp(1.25rem, 3.2vw, 2.25rem) clamp(2.5rem, 4.6vw, 3.5rem);
 }
+.bcard.bcard--hot { --fw: 64px; }
+/* 紧凑版：品牌页价格卡、页内注册区、套餐详解注册区 */
+.flame-frame--tight {
+  --fw: 64px;
+  margin-top: 2.25rem;
+  padding: var(--s5) var(--s4) var(--s6);
+}
+.rail__featured.flame-frame { --fw: 52px; margin-top: 2rem; padding: var(--s4) var(--s3) var(--s5); }
+
+/* 框里的文字不压在火焰的内侧光晕上：贴图里外框线以内约 0.41 × --fw 的范围还有光晕（透明度从 0.9 降到 0.1），
+   文字压在上面时小字的对比度只有 2–3:1。所以左右和上方的内边距至少留出这一段（宽屏时侧栏和品牌页价格卡最窄，最容易压到）。 */
+.flame-frame.flame-frame--tight,
+.brand-cta.flame-frame,
+.rail__featured.flame-frame,
+.bcard.bcard--hot {
+  padding-inline: max(var(--s4), calc(var(--fw) * 0.44 + 2px));
+  padding-top: max(var(--s4), calc(var(--fw) * 0.44 + 2px));
+}
+
+.flame-frame::before,
 .flame-frame::after,
+.bcard--hot::before,
 .bcard--hot::after {
   content: '';
   position: absolute;
-  inset: -3px;
+  inset: calc(var(--fw) * -0.31 - 2px);
   z-index: -1;
-  border-radius: inherit;
-  box-shadow: 0 0 36px 4px rgba(var(--fire-glow), 0.5);
-  opacity: 0.5;
+  border: var(--fw) solid transparent;
+  border-image: url('/images/space/fire-frame.webp') 200 round;
   pointer-events: none;
-  animation: flame-breathe 3.2s ease-in-out infinite alternate;
+  animation: fire-flicker-a 2.6s linear infinite;
 }
-/* 主推区上沿要给火焰留位置；卡片列表里有火焰卡片时，第一行上方也留出位置 */
+/* 第二层：左右镜像的同一张贴图，和第一层交替显现，火舌的形状就会变 */
+.flame-frame::after,
+.bcard--hot::after {
+  transform: scaleX(-1);
+  opacity: 0;
+  animation-name: fire-flicker-b;
+}
+
+/* 主推区和目录卡片上方给火舌留一点位置 */
 .featured { padding: var(--s5) 0 var(--s7); }
-.bcards--hot { padding-top: 3.5rem; }
+.bcards--hot { padding-top: 2.25rem; }
 .flame-cta { display: grid; gap: var(--s3); justify-items: start; }
 .flame-cta__text { margin: 0; color: var(--text); font-weight: 500; }
-.rail__featured.flame-frame { margin-top: 2.6rem; padding: var(--s3); border-radius: 12px; }
 
-/* ---- 火焰带：站在边框上沿，带透视 */
+/* ---- 火星：沿框上沿往上飘 */
 .flames {
   position: absolute;
-  /* 左右各留几像素：火焰绕 Y 轴转动时在透视下会略微变宽，留白后不会伸出边框造成页面横向滚动 */
-  left: 6px;
-  right: 10px;
-  top: -3px;
+  left: 4%;
+  right: 4%;
+  top: 0;
   height: 0;
-  z-index: 2;
+  z-index: 1;
   pointer-events: none;
-  perspective: 340px;
-  perspective-origin: 50% 100%;
-  transform-style: preserve-3d;
-  /* 只在左右方向裁切：火焰和光斑不会伸出边框造成页面横向滚动，上方和下方留足空间给火苗与热浪 */
-  clip-path: inset(-150px 0 -70px 0);
-}
-/* 热浪：底部一层暖色光晕，和一层更亮更窄的“火芯光” */
-.flames::before,
-.flames::after {
-  content: '';
-  position: absolute;
-  left: 2%;
-  right: 2%;
-  bottom: -8px;
-  height: 4.5rem;
-  background: radial-gradient(ellipse 52% 100% at 50% 100%, rgba(var(--fire-glow), 0.6), rgba(var(--fire-glow), 0) 72%);
-  opacity: 0.5;
-  animation: flame-breathe 2.6s ease-in-out infinite alternate;
-}
-.flames::after {
-  left: 18%;
-  right: 18%;
-  height: 2.4rem;
-  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(255, 196, 92, 0.55), rgba(255, 196, 92, 0) 70%);
-  animation-duration: 1.9s;
-  animation-direction: alternate-reverse;
 }
 
-/* 槽位：负责位置、大小和景深；火焰本体负责摇摆动画，两者分开，互不覆盖 transform */
-.flame-slot {
-  position: absolute;
-  bottom: -4px;
-  left: var(--x);
-  width: var(--w);
-  height: calc(var(--w) * 1.5);
-  margin-left: calc(var(--w) / -2);
-  transform: translateZ(var(--z, 0px));
-  transform-style: preserve-3d;
-}
-.flame-slot::after {
-  /* 每朵火焰脚下的光斑 */
-  content: '';
-  position: absolute;
-  left: -30%;
-  right: -30%;
-  bottom: -6px;
-  height: 45%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 70%, rgba(255, 170, 60, 0.55), rgba(255, 110, 30, 0) 70%);
-  opacity: 0.7;
-  animation: flame-breathe 1.6s ease-in-out var(--d, 0s) infinite alternate;
-}
-.flame-slot--back {
-  --z: -72px;
-  bottom: 2px;
-}
-.flame-slot--back::after {
-  opacity: 0.35;
-}
-.flame-slot .flame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
+/* ---- 小火焰图标（“本站主推”标签、注册按钮里）：跳动 */
 .flame {
   transform-origin: 50% 100%;
   animation: flame-sway var(--t, 1.8s) ease-in-out var(--d, 0s) infinite;
 }
-/* 三种摇摆节奏轮流用，火焰之间不会一模一样 */
-.flame-slot:nth-of-type(3n + 2) .flame { animation-name: flame-sway-b; }
-.flame-slot:nth-of-type(3n) .flame { animation-name: flame-sway-c; }
-/* 还没滚进屏幕（或没有脚本）时暂停；脚本在火焰进入屏幕时给容器加上 .is-live，离开时去掉 */
-.flame-frame:not(.is-live) .flame,
-.flame-frame:not(.is-live) .ember,
-.flame-frame:not(.is-live) .flame-slot::after,
-.flame-frame:not(.is-live) .flames::before,
-.flame-frame:not(.is-live) .flames::after,
-.flame-frame:not(.is-live)::after,
-.bcard--hot:not(.is-live) .flame,
-.bcard--hot:not(.is-live) .ember,
-.bcard--hot:not(.is-live) .flame-slot::after,
-.bcard--hot:not(.is-live) .flames::before,
-.bcard--hot:not(.is-live) .flames::after,
-.bcard--hot:not(.is-live)::after {
-  animation-play-state: paused;
-}
-
-/* ---- 颜色：渐变填充（定义在 BaseLayout 的 .flame-defs 里） */
 .flame__o { fill: url('#fg-o'); }
 .flame__m { fill: url('#fg-m'); }
 .flame__i { fill: url('#fg-i'); }
 .flame__hl { fill: url('#fg-hl'); opacity: 0.7; }
-.flame--back .flame__o { fill: url('#fg-bo'); }
-.flame--back .flame__m { fill: url('#fg-bm'); }
-.flame--back .flame__i { fill: url('#fg-bi'); }
-.flame--back .flame__hl { opacity: 0.25; }
 
-/* ---- 火焰的位置、大小和节奏（自定义属性，不用内联样式）
-   前排 <i>：lg 15 / sm 7 / xs 5；后排 <b>：lg 8 / sm 4 / xs 3，落在前排的间隙里 */
-.flames--lg i.flame-slot:nth-of-type(1)  { --x: 3.4%;  --w: 40px; --t: 1.8s; --d: 0s; }
-.flames--lg i.flame-slot:nth-of-type(2)  { --x: 9.5%;  --w: 28px; --t: 1.5s; --d: -0.6s; }
-.flames--lg i.flame-slot:nth-of-type(3)  { --x: 16.3%; --w: 44px; --t: 2s;   --d: -1.2s; }
-.flames--lg i.flame-slot:nth-of-type(4)  { --x: 23%;   --w: 30px; --t: 1.6s; --d: -0.3s; }
-.flames--lg i.flame-slot:nth-of-type(5)  { --x: 29.8%; --w: 40px; --t: 1.9s; --d: -1s; }
-.flames--lg i.flame-slot:nth-of-type(6)  { --x: 36.5%; --w: 30px; --t: 1.4s; --d: -0.8s; }
-.flames--lg i.flame-slot:nth-of-type(7)  { --x: 43.3%; --w: 46px; --t: 2.1s; --d: -0.4s; }
-.flames--lg i.flame-slot:nth-of-type(8)  { --x: 50%;   --w: 52px; --t: 2.2s; --d: -1.4s; }
-.flames--lg i.flame-slot:nth-of-type(9)  { --x: 56.7%; --w: 44px; --t: 1.7s; --d: -0.2s; }
-.flames--lg i.flame-slot:nth-of-type(10) { --x: 63.5%; --w: 32px; --t: 1.5s; --d: -1.1s; }
-.flames--lg i.flame-slot:nth-of-type(11) { --x: 70.2%; --w: 42px; --t: 1.9s; --d: -0.7s; }
-.flames--lg i.flame-slot:nth-of-type(12) { --x: 77%;   --w: 28px; --t: 1.6s; --d: -1.5s; }
-.flames--lg i.flame-slot:nth-of-type(13) { --x: 83.7%; --w: 44px; --t: 2s;   --d: -0.5s; }
-.flames--lg i.flame-slot:nth-of-type(14) { --x: 90.5%; --w: 30px; --t: 1.5s; --d: -1.3s; }
-.flames--lg i.flame-slot:nth-of-type(15) { --x: 96.4%; --w: 40px; --t: 1.8s; --d: -0.9s; }
-.flames--lg b.flame-slot:nth-of-type(1) { --x: 6%;  --w: 34px; --t: 1.7s; --d: -0.4s; }
-.flames--lg b.flame-slot:nth-of-type(2) { --x: 19.5%; --w: 38px; --t: 2.1s; --d: -1.3s; }
-.flames--lg b.flame-slot:nth-of-type(3) { --x: 33%; --w: 34px; --t: 1.6s; --d: -0.9s; }
-.flames--lg b.flame-slot:nth-of-type(4) { --x: 46.5%; --w: 40px; --t: 2s;   --d: -0.2s; }
-.flames--lg b.flame-slot:nth-of-type(5) { --x: 60%; --w: 36px; --t: 1.8s; --d: -1.6s; }
-.flames--lg b.flame-slot:nth-of-type(6) { --x: 73.5%; --w: 34px; --t: 1.5s; --d: -0.6s; }
-.flames--lg b.flame-slot:nth-of-type(7) { --x: 87%; --w: 38px; --t: 2.2s; --d: -1.1s; }
-.flames--lg b.flame-slot:nth-of-type(8) { --x: 94%; --w: 30px; --t: 1.7s; --d: -0.3s; }
+/* 还没滚进屏幕（或没有脚本）时暂停；脚本在框进入屏幕时加上 .is-live，离开时去掉 */
+.flame-frame:not(.is-live)::before,
+.flame-frame:not(.is-live)::after,
+.flame-frame:not(.is-live) .flame,
+.flame-frame:not(.is-live) .ember,
+.bcard--hot:not(.is-live)::before,
+.bcard--hot:not(.is-live)::after,
+.bcard--hot:not(.is-live) .flame,
+.bcard--hot:not(.is-live) .ember {
+  animation-play-state: paused;
+}
 
-.flames--sm i.flame-slot:nth-of-type(1) { --x: 8%;  --w: 24px; --t: 1.7s; --d: 0s; }
-.flames--sm i.flame-slot:nth-of-type(2) { --x: 22%; --w: 32px; --t: 1.9s; --d: -0.7s; }
-.flames--sm i.flame-slot:nth-of-type(3) { --x: 36%; --w: 26px; --t: 1.5s; --d: -1.2s; }
-.flames--sm i.flame-slot:nth-of-type(4) { --x: 50%; --w: 38px; --t: 2.1s; --d: -0.4s; }
-.flames--sm i.flame-slot:nth-of-type(5) { --x: 64%; --w: 26px; --t: 1.6s; --d: -1s; }
-.flames--sm i.flame-slot:nth-of-type(6) { --x: 78%; --w: 32px; --t: 1.8s; --d: -0.2s; }
-.flames--sm i.flame-slot:nth-of-type(7) { --x: 92%; --w: 24px; --t: 1.5s; --d: -1.4s; }
-.flames--sm b.flame-slot:nth-of-type(1) { --x: 15%; --w: 26px; --t: 1.8s; --d: -0.5s; }
-.flames--sm b.flame-slot:nth-of-type(2) { --x: 43%; --w: 30px; --t: 2s;   --d: -1.1s; }
-.flames--sm b.flame-slot:nth-of-type(3) { --x: 57%; --w: 28px; --t: 1.6s; --d: -0.3s; }
-.flames--sm b.flame-slot:nth-of-type(4) { --x: 85%; --w: 26px; --t: 1.9s; --d: -0.9s; }
-
-.flames--xs i.flame-slot:nth-of-type(1) { --x: 10%; --w: 20px; --t: 1.6s; --d: 0s; }
-.flames--xs i.flame-slot:nth-of-type(2) { --x: 30%; --w: 26px; --t: 1.9s; --d: -0.8s; }
-.flames--xs i.flame-slot:nth-of-type(3) { --x: 50%; --w: 30px; --t: 2.1s; --d: -0.4s; }
-.flames--xs i.flame-slot:nth-of-type(4) { --x: 70%; --w: 26px; --t: 1.5s; --d: -1.2s; }
-.flames--xs i.flame-slot:nth-of-type(5) { --x: 90%; --w: 20px; --t: 1.7s; --d: -0.6s; }
-.flames--xs b.flame-slot:nth-of-type(1) { --x: 20%; --w: 22px; --t: 1.8s; --d: -0.3s; }
-.flames--xs b.flame-slot:nth-of-type(2) { --x: 60%; --w: 24px; --t: 2s;   --d: -1s; }
-.flames--xs b.flame-slot:nth-of-type(3) { --x: 80%; --w: 22px; --t: 1.6s; --d: -0.7s; }
+@keyframes fire-flicker-a {
+  0%, 100% { opacity: 1; }
+  17% { opacity: 0.84; }
+  33% { opacity: 0.97; }
+  51% { opacity: 0.78; }
+  72% { opacity: 0.95; }
+  88% { opacity: 0.82; }
+}
+@keyframes fire-flicker-b {
+  0%, 100% { opacity: 0; }
+  17% { opacity: 0.5; }
+  33% { opacity: 0.12; }
+  51% { opacity: 0.62; }
+  72% { opacity: 0.2; }
+  88% { opacity: 0.48; }
+}
 
 /* ---- 火星：从火焰上方慢慢飘起、变小、消失（静止时不可见） */
 .ember {
@@ -300,11 +211,60 @@
   100% { transform: translate(var(--drift, 0px), calc(var(--rise, 88px) * -1)) scale(0.25); opacity: 0; }
 }
 
-/* ---- 窄屏：少放几朵，不要后排，边距收紧 */
+/* ---- 窄屏：火焰框小一号，外扩不超过页边距太多 */
 @media (max-width: 40rem) {
-  .flame-frame { margin-top: 3.5rem; padding: 1.1rem; border-radius: 16px; }
-  .flame-frame--tight { margin-top: 2.5rem; padding: var(--s4); }
-  .flames--lg i.flame-slot:nth-of-type(even) { display: none; }
+  .flame-frame { --fw: 64px; margin-top: 2.25rem; padding: 1.25rem 1.1rem 1.9rem; }
+  .flame-frame--tight, .bcard.bcard--hot { --fw: 52px; }
+  .flame-frame--tight { margin-top: 2rem; padding: var(--s4) var(--s4) var(--s5); }
   .flames--lg .ember:nth-of-type(n + 5) { display: none; }
-  .flame-slot--back { display: none; }
+}
+
+/* ---- 页头“注册灵动云”按钮（2026-11-01）：深色火炭底 + 同一张火焰框贴图的小号版本 */
+.site-cta {
+  --fw: 22px;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 2.5rem;
+  padding: 0 0.9rem;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4d1b06 0%, #2b0e04 58%, #1c0a05 100%);
+  color: #fff3dc;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 12px rgba(255, 150, 50, 0.8);
+  box-shadow: 0 12px 20px -12px rgba(var(--fire-glow), 0.95);
+}
+.site-cta:hover { color: #ffffff; }
+.site-cta:focus-visible { outline: 3px solid var(--fire-yellow); outline-offset: 5px; }
+.site-cta::before,
+.site-cta::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--fw) * -0.31);
+  z-index: -1;
+  border: var(--fw) solid transparent;
+  border-image: url('/images/space/fire-frame.webp') 200 round;
+  pointer-events: none;
+}
+.site-cta::after { transform: scaleX(-1); opacity: 0; }
+.site-cta__flame { flex: none; width: 0.85rem; height: 1.3rem; margin-block: -0.3rem; animation: flame-sway 1.3s ease-in-out 0s 4; }
+.site-cta .btn__tag { text-shadow: none; }
+/* 页头一直在屏幕上：火焰只在打开页面后跳几下、鼠标停在按钮上时再跳，不做无限循环（避免拖慢手机上的点按响应） */
+@media (prefers-reduced-motion: no-preference) {
+  .site-cta::before { animation: fire-flicker-a 2.6s linear 0.3s 3; }
+  .site-cta::after { animation: fire-flicker-b 2.6s linear 0.3s 3; }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .site-cta:hover::before { animation: fire-flicker-a 2.2s linear infinite; }
+  .site-cta:hover::after { animation: fire-flicker-b 2.2s linear infinite; }
+  .site-cta:hover .site-cta__flame { animation-iteration-count: infinite; }
+}
+@media (max-width: 599px) {
+  .site-cta { --fw: 18px; height: 2.25rem; padding: 0 0.6rem; }
 }

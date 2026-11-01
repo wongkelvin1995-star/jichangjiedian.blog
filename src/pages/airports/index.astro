@@ -4,6 +4,7 @@ import AffiliateLink from '../../components/AffiliateLink.astro';
 import Coupon from '../../components/Coupon.astro';
 import { BRANDS } from '../../data/brands';
 import { AFFILIATE_NOTE } from '../../data/labels';
+import { COUPON_NOTE } from '../../data/coupons';
 import { SHEET_LOWEST } from '../../data/owner-sheet-prices';
 import { MAP_POINTS, coverageFor } from '../../data/regions';
 import { collectionLd } from '../../lib/seo';
@@ -13,7 +14,7 @@ import { BRAND_COUNT, DATA_UPDATED } from '../../lib/site';
 
 const path = '/airports/';
 const stats = datasetStats();
-const title = `${stats.brands}家机场推荐目录：最低价格、节点数量与注册入口｜机场节点`;
+const title = `${stats.brands}家机场价格表：最低月付、节点数量与线路对比｜机场节点`;
 const description = `一张表看完${stats.brands}家机场：每家最便宜的月付套餐多少钱、多少流量，有多少节点、覆盖香港日本新加坡美国等哪些地区，走 IPLC 还是 IEPL 线路，并附注册入口与详细套餐页。`;
 const crumbs = [
   { name: '首页', href: '/' },
@@ -54,7 +55,7 @@ const bucketN = (k: string) => rows.filter((r) => bucket(r.low?.price) === k).le
 >
   <header class="page-head">
     <div class="container">
-      <h1>{stats.brands}家机场推荐目录：价格、节点与注册入口</h1>
+      <h1>{stats.brands}家机场价格表：最低月付、节点与注册入口</h1>
       <p class="page-head__lead">
         每家机场最便宜的月付价格、节点数量、覆盖地区和线路放在同一张表里，可以按名称、价格或地区筛选。点机场名看全部套餐和每个地区的节点，点“注册”直接去官网。
       </p>
@@ -62,6 +63,7 @@ const bucketN = (k: string) => rows.filter((r) => bucket(r.low?.price) === k).le
         <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
         <span>{stats.plans} 个套餐 · {stats.offers} 条报价</span>
       </p>
+      <p class="page-head__links">按价格排好序的结论见<a href="/plans/cheapest/">便宜机场与性价比机场</a>；各家优惠码见<a href="/coupons/">机场优惠码汇总</a>；按线路分组见<a href="/routes/iepl-iplc/">IEPL、IPLC 专线机场列表</a>。</p>
     </div>
   </header>
 
@@ -97,7 +99,7 @@ const bucketN = (k: string) => rows.filter((r) => bucket(r.low?.price) === k).le
 
       <div class="table-scroll mt-4">
         <table class="data-table data-table--stack" data-directory-table>
-          <caption>按站长编辑顺序排列。价格为最便宜的月付套餐，下单前以官网当天价格为准。</caption>
+          <caption>按站长编辑顺序排列。价格为最便宜的月付套餐，下单前以官网当天价格为准。{COUPON_NOTE}</caption>
           <thead>
             <tr>
               <th scope="col" class="col-rank">编号</th>

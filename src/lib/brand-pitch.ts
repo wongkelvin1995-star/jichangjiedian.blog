@@ -8,6 +8,7 @@
  *  3. 一句话概括与 FAQ 按品牌类型（实测型 / 风险型 / 低价型 / 大流量型 / 地区广型 / 专线型 / 常规型）选不同句式。
  *  4. “独立分析”里的数字全部由 brand-stats 从套餐数据算出。
  */
+import { couponFor, noCouponPlans, NO_COUPON_TEXT } from '../data/coupons';
 import { OWNER_MARK_READ_AT, ownerMarksFor } from '../data/owner-marks';
 import { planDetailsFor } from '../data/plan-details';
 import { BILLING_LABEL, BILLING_MONTHS } from '../data/types';
@@ -15,6 +16,7 @@ import type { Brand } from '../data/types';
 import { crossStats } from './brand-stats';
 import type { BrandFacts, Rank } from './brand-stats';
 import { routeChipsOf } from './queries';
+import { listShort, panelCoverage } from './panel';
 
 export type Profile = 'tested' | 'risk' | 'cheap' | 'big' | 'wide' | 'premium' | 'plain';
 
@@ -33,7 +35,10 @@ export interface BrandPitch {
   priceRange: { min: number; max: number; tiers: number } | null;
   biggest: { name: string; price: number; gb: number } | null;
   nodes: string | null;
+  /** 展示用的地区名（有后台面板快照的品牌只列面板里的地区） */
   regions: string[];
+  /** 服务商说明另列、面板里没有的地区说明；没有则 null */
+  regionsNote: string | null;
   routes: string[];
   device: string | null;
   hasAnnual: boolean;
@@ -95,6 +100,9 @@ export function brandPitch(b: Brand): BrandPitch {
   const v = b.nodeCount.value;
   const nodes = v === null ? null : /下限|不少于|50\+|60\+/.test(b.nodeCount.note ?? '') ? `${v}+` : `${v}`;
   const regions = b.regions.filter((r) => r.grade !== 'D').map((r) => r.label);
+  // 有后台面板快照的品牌：节点数和“覆盖哪些地区”以面板为准，服务商说明另列的地区单独说明（lib/panel.ts）
+  const cov = panelCoverage(b);
+  const panelRegions = cov ? cov.regions.map((r) => r.label) : [];
   const routes = routeChipsOf(b).filter((r) => r.confirmed).map((r) => r.label);
   const premiumRoutes = routes.filter((r) => /IPLC|IEPL/i.test(r));
   const device = b.deviceLimit.value && b.deviceLimit.grade !== 'D' ? b.deviceLimit.value : null;
@@ -115,7 +123,7 @@ export function brandPitch(b: Brand): BrandPitch {
   if (f.low && rPer?.top) cand.push({ key: 'perGB', text: `看每 GB 单价的人：入门档「${f.low.name}」${yuan(f.low.price)}/月 ${f.low.gb}GB，约 ${yuan(f.low.perGB)}/GB，在本站 34 家里排${rankText(rPer)}（中位数 ${yuan(st.medianPerGB)}/GB）。` });
   if (f.low && rLow?.top && !(rPer?.top && f.low.price > st.medianLowest)) cand.push({ key: 'cheap', text: `预算有限、先买一个月试试的人：最低月付 ${yuan(f.low.price)}，低于 34 家最低价的中位数 ${yuan(st.medianLowest)}。` });
   if (f.biggest && rBig?.top) cand.push({ key: 'big', text: `流量用得多的人：顶档「${f.biggest.name}」每月 ${f.biggest.gb}GB（${yuan(f.biggest.price)}，约 ${yuan(f.biggest.perGB)}/GB），最大月流量在 34 家里排${rankText(rBig)}。` });
-  if (rReg?.top && regions.length) cand.push({ key: 'regions', text: `需要多个出口地区的人：资料里有 ${regions.length} 个地区（${regions.slice(0, 6).join('、')}${regions.length > 6 ? ' 等' : ''}），地区数在 34 家里排${rankText(rReg)}。` });
+  if (rReg?.top && regions.length && !(cov && cov.claimOnly.length)) cand.push({ key: 'regions', text: `需要多个出口地区的人：资料里有 ${regions.length} 个地区（${regions.slice(0, 6).join('、')}${regions.length > 6 ? ' 等' : ''}），地区数在 34 家里排${rankText(rReg)}。` });
   if (f.student) cand.push({ key: 'student', text: `学生：有「${f.student}」${f.annual && f.annual.name === f.student ? `，${yuan(f.annual.price)}/年、每月 ${f.annual.monthlyGB}GB，折合约 ${yuan(f.annual.perMonth)}/月` : ''}。` });
   if (f.annual && f.annual.name !== f.student) cand.push({ key: 'annual', text: `用量不大、想一年只付一次的人：「${f.annual.name}」${yuan(f.annual.price)}/年、每月 ${f.annual.monthlyGB}GB，折合约 ${yuan(f.annual.perMonth)}/月。` });
   if (f.packs.length) {
@@ -158,11 +166,13 @@ export function brandPitch(b: Brand): BrandPitch {
   if (f.packs.length === 1) analysis.push(`一次性流量包 1 档：「${f.packs[0]!.name}」${yuan(f.packs[0]!.price)} / ${f.packs[0]!.gb}GB ≈ ${yuan(f.packs[0]!.perGB)}/GB。`);
   else if (f.packs.length) analysis.push(`一次性流量包 ${f.packs.length} 档：${yuan(f.packs[0]!.price)}–${yuan(f.packs[f.packs.length - 1]!.price)}，每 GB ${yuan(Math.min(...f.packs.map((p) => p.perGB)))}–${yuan(Math.max(...f.packs.map((p) => p.perGB)))}。`);
   if (f.biggest) analysis.push(`最大月流量档「${f.biggest.name}」${f.biggest.gb}GB/月，34 家里排${rankText(rBig)}（中位数 ${st.medianBiggestGB}GB）。`);
-  if (regions.length) analysis.push(`有记录的地区 ${regions.length} 个，34 家里排${rankText(rReg)}（中位数 ${st.medianRegions} 个）。`);
+  if (regions.length) analysis.push(`有记录的地区 ${regions.length} 个，34 家里排${rankText(rReg)}（中位数 ${st.medianRegions} 个）${cov && cov.claimOnly.length ? `；其中站长 ${cov.dateText}后台面板里有节点的是 ${panelRegions.length} 个（${panelRegions.join('、')}），${listShort(cov.claimOnly)}只见于服务商说明` : ''}。`);
 
   // ---------------------------------------------------------------- 一句话概括：按类型选句式
   const lowStr = f.low ? `「${f.low.name}」${yuan(f.low.price)}/月 ${f.low.gb}GB（约 ${yuan(f.low.perGB)}/GB）` : '';
-  const nodeStr = nodes || regions.length ? `${nodes ? `${nodes} 个节点，` : ''}覆盖 ${regions.slice(0, 5).join('、')}${regions.length > 5 ? ` 等 ${regions.length} 个地区` : ''}` : '';
+  const nodeStr = cov
+    ? `${nodes ? `${nodes} 个节点` : '节点'}在${panelRegions.join('、')}（站长 ${cov.dateText}后台面板）${cov.claimOnly.length ? `，官网说明另列${listShort(cov.claimOnly, 3)}地区` : ''}`
+    : nodes || regions.length ? `${nodes ? `${nodes} 个节点，` : ''}覆盖 ${regions.slice(0, 5).join('、')}${regions.length > 5 ? ` 等 ${regions.length} 个地区` : ''}` : '';
   const routeStr = routes.length ? `线路资料写 ${routes.join(' / ')}` : '';
   const topRisk = riskNotices[0];
   let verdict: string;
@@ -175,7 +185,7 @@ export function brandPitch(b: Brand): BrandPitch {
       break;
     case 'cheap':
       verdict = rPer?.top
-        ? `${S}的卖点在单价：最低档${lowStr}，每 GB 成本在 34 家里排${rankText(rPer)}，最低月付 ${yuan(f.low!.price)} ${f.low!.price < st.medianLowest ? '低于' : f.low!.price === st.medianLowest ? '等于' : '高于'}中位数 ${yuan(st.medianLowest)}${nodeStr ? `；${nodeStr}` : ''}${routeStr ? `；${routeStr}` : ''}。`
+        ? `${S}的卖点在单价：最低档${lowStr}，这一档的每 GB 成本在 34 家入门档里排${rankText(rPer)}，最低月付 ${yuan(f.low!.price)} ${f.low!.price < st.medianLowest ? '低于' : f.low!.price === st.medianLowest ? '等于' : '高于'}中位数 ${yuan(st.medianLowest)}${nodeStr ? `；${nodeStr}` : ''}${routeStr ? `；${routeStr}` : ''}。`
         : `${S}的入门门槛低：最低月付 ${yuan(f.low!.price)} 在 34 家里排${rankText(rLow)}（中位数 ${yuan(st.medianLowest)}），但这一档只有 ${f.low!.gb}GB，每 GB 约 ${yuan(f.low!.perGB)} 排${rankText(rPer)}，流量多的话要看上面的档位${nodeStr ? `；${nodeStr}` : ''}${routeStr ? `；${routeStr}` : ''}。`;
       break;
     case 'big':
@@ -192,12 +202,22 @@ export function brandPitch(b: Brand): BrandPitch {
   }
 
   // ---------------------------------------------------------------- SEO description（50–160 字，每家不同）
-  const profileWord: Record<Profile, string> = { tested: '本站有晚高峰实测记录', risk: '资料有待核验项', cheap: `每 GB 成本 34 家中${rankText(rPer)}`, big: `最大月流量 34 家中${rankText(rBig)}`, wide: `地区数 34 家中${rankText(rReg)}`, premium: `${premiumRoutes.join('/')} 专线（服务商说法）`, plain: `月付 ${f.tiers ? `${f.tiers.count} 档` : ''}` };
+  // 描述先写价格和节点（搜索结果里最先看到的），再写这家的特点；排名注明是“入门档每 GB”还是“最低月付”，
+  // 与 /plans/cheapest/（每家所有套餐里每 GB 最低的一条）区分开，不让两个页面的名次看起来互相矛盾
+  const profileWord: Record<Profile, string> = {
+    tested: '本站有晚高峰实测记录',
+    risk: '部分资料待核验，购买前以官网为准',
+    cheap: rPer?.top ? `入门档每 GB 成本 34 家中${rankText(rPer)}` : `最低月付 34 家中${rankText(rLow)}`,
+    big: `最大月流量 34 家中${rankText(rBig)}`,
+    wide: `地区数 34 家中${rankText(rReg)}`,
+    premium: `${premiumRoutes.join('/')} 专线（服务商说法）`,
+    plain: f.tiers ? `月付 ${f.tiers.count} 档` : '套餐与节点资料',
+  };
   const nameT = /[A-Za-z0-9]$/.test(b.brandName) ? `${b.brandName} ` : b.brandName;
-  let description = `${nameT}机场怎么样：${profileWord[profile]}；${f.low ? `最低 ${yuan(f.low.price)}/月 ${f.low.gb}GB（约 ${yuan(f.low.perGB)}/GB）` : '套餐价格'}${nodes ? `，${nodes} 个节点` : ''}${regions.length ? `，覆盖${regions.slice(0, 4).join('、')}${regions.length > 4 ? ` 等 ${regions.length} 地` : ''}` : ''}。${det ? `本页整理 ${det.plans.length} 个套餐的流量、周期与官网权益，以及节点地区、适合谁、注意事项与常见问题。` : '本页整理套餐、节点地区、适合谁、注意事项与常见问题。'}`;
+  let description = `${nameT}机场怎么样：${f.low ? `最低 ${yuan(f.low.price)}/月 ${f.low.gb}GB（约 ${yuan(f.low.perGB)}/GB）` : '套餐价格'}${nodes ? `，${nodes} 个节点` : ''}${cov ? `（${panelRegions.join('、')}）` : regions.length ? `，覆盖${regions.slice(0, 4).join('、')}${regions.length > 4 ? ` 等 ${regions.length} 地` : ''}` : ''}；${profileWord[profile]}。${det ? `本页整理 ${det.plans.length} 个套餐的流量、周期与官网权益，以及节点地区、适合谁、注意事项与常见问题。` : '本页整理套餐、节点地区、适合谁、注意事项与常见问题。'}`;
   if (description.length > 160) description = `${description.slice(0, 157)}…`;
 
-  // ---------------------------------------------------------------- 常见问题：按条件触发，按类型排序，3–6 条
+  // ---------------------------------------------------------------- 常见问题：按条件触发，按类型排序，3–6 条（另加固定的“官网”“优惠码”两问）
   const pool: Record<string, FaqItem | null> = {};
   if (f.low) {
     const tail: Record<Profile, string> = {
@@ -258,7 +278,12 @@ export function brandPitch(b: Brand): BrandPitch {
     ? { q: `${S}是 IPLC 还是 IEPL 专线？`, a: `资料写线路为 ${routes.join(' / ')}${b.routeTypes.note ? `；${firstSentence(b.routeTypes.note, 80)}` : ''}。这是服务商或第三方页面的说法，本站无法从外部核验具体链路。` }
     : null;
   pool.nodes = nodes || regions.length
-    ? { q: `${S}有哪些节点？`, a: `${nodes ? `资料写共 ${nodes} 个节点` : '资料没有写节点总数'}${b.nodeCount.note && /下限|不少于|截图|合计/.test(b.nodeCount.note) ? `（${firstSentence(b.nodeCount.note, 70)}）` : ''}；地区包括 ${regions.join('、')}。各地区数量见本页“节点地区”表。` }
+    ? {
+        q: `${S}有哪些节点？`,
+        a: cov
+          ? `站长 ${cov.dateText}的后台面板有 ${cov.snapshot.totalNodes} 个节点：${cov.regions.map((r) => `${r.label} ${r.total}`).join('、')}${cov.claimOnly.length ? `。官网套餐说明另写了${listShort(cov.claimOnly, 6)}地区，面板里没有这些地区的节点，购买前可以问客服` : ''}。各地区数量见本页“节点地区”表。`
+          : `${nodes ? `资料写共 ${nodes} 个节点` : '资料没有写节点总数'}${b.nodeCount.note && /下限|不少于|截图|合计/.test(b.nodeCount.note) ? `（${firstSentence(b.nodeCount.note, 70)}）` : ''}；地区包括 ${regions.join('、')}。各地区数量见本页“节点地区”表。`,
+      }
     : null;
   {
     const own = (b.ai.note ?? '').split(/[。；]/).map((s) => s.trim()).find((s) => /^本站.*(观察|ms|可连接|超时)/.test(s));
@@ -270,8 +295,17 @@ export function brandPitch(b: Brand): BrandPitch {
   pool.risk = topRisk
     ? { q: `买${S}之前要注意什么？`, a: `${cautionSentence(topRisk.text, 120)}。${riskNotices.length > 1 ? `另有 ${riskNotices.length - 1} 条提示见“购买前须知”。` : ''}${f.low ? `如果要试，先买最低档「${f.low.name}」${yuan(f.low.price)} 一个月。` : ''}` }
     : null;
-  pool.register = b.slug === 'lingdongyun'
-    ? { q: `${S}怎么注册、怎么导入？`, a: `点本页“注册${S}”进入官网，用邮箱注册并选套餐；付款后在官网下载客户端或复制订阅链接导入。选节点与看测速的方法见本站选择指南。`, href: '/articles/how-to-choose-airport-nodes-2026/', linkText: '2026 机场节点选择指南' }
+  // 2026-11-01 关键词方案：每家固定加“官网”“优惠码”两问（承接“X官网”“X优惠码”），排在按条件触发的 3–6 条之后。
+  // 灵动云原有的“怎么注册、怎么导入”并入“官网”一问；本站不写官网网址（推广入口由站长提供，网址可能更换）。
+  const signupLead = `本页的“注册${S}”按钮是站长提供的推广链接，会在新窗口打开${S}官网`;
+  const official: FaqItem =
+    b.slug === 'lingdongyun'
+      ? { q: `${S}官网是哪个？怎么注册、导入？`, a: `${signupLead}；用邮箱注册并选套餐，付款后在官网下载客户端或复制订阅链接导入。本站不单独写出官网网址，以免网址更换后失效。选节点与看测速的方法见本站选择指南。`, href: '/articles/how-to-choose-airport-nodes-2026/', linkText: '2026 机场节点选择指南' }
+      : { q: `${S}官网是哪个？怎么注册？`, a: `${signupLead}；先注册账号，再选套餐付款，价格以官网当天显示为准。本站不单独写出官网网址，以免网址更换后失效。${b.identity.notes.length ? `名称与资料来源的说明见本页“关于名称”。` : ''}` };
+  const code = couponFor(b.slug);
+  const except = noCouponPlans(b.slug);
+  const couponQ: FaqItem | null = code
+    ? { q: `${S}有优惠码吗？`, a: `有：${code}，注册或付款时填写。${except.length ? `按站长 2026-10-31 的说明，${except.map((p) => p.label).join('、')}${NO_COUPON_TEXT}。` : ''}折扣幅度和有效期以官网结算页为准。` }
     : null;
 
   const order: Record<Profile, string[]> = {
@@ -284,9 +318,11 @@ export function brandPitch(b: Brand): BrandPitch {
     plain: ['price', 'nodes', 'services', 'annual', 'pack', 'device', 'clients', 'protocols', 'routes', 'multiplier', 'custom', 'conflict', 'risk', 'register'],
   };
   const faqOrder = det ? ['price', 'choose', 'pack', 'custom', 'services', 'routes', 'nodes', 'register', 'multiplier', 'device', 'annual'] : order[profile];
-  const faq = faqOrder.map((k) => pool[k]).filter((x): x is FaqItem => !!x).slice(0, 6);
+  const faq = [...faqOrder.map((k) => pool[k]).filter((x): x is FaqItem => !!x).slice(0, 6), official, ...(couponQ ? [couponQ] : [])];
 
-  return { profile, low, perGB, priceRange, biggest, nodes, regions, routes, device, hasAnnual: !!f.annual, hasPack: f.packs.length > 0, stable, fitFor, notFor, analysis, verdict, description, faq };
+  // 展示用的地区：有面板快照的品牌只列面板里的地区（服务商说明另列的见 regionsNote）
+  const regionsNote = cov && cov.claimOnly.length ? `官网说明另列${listShort(cov.claimOnly)}地区，站长 ${cov.dateText}后台面板里没有` : null;
+  return { profile, low, perGB, priceRange, biggest, nodes, regions: cov ? panelRegions : regions, regionsNote, routes, device, hasAnnual: !!f.annual, hasPack: f.packs.length > 0, stable, fitFor, notFor, analysis, verdict, description, faq };
 }
 
 export const faqLd = (faq: { q: string; a: string }[]) => ({

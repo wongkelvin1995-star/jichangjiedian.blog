@@ -191,7 +191,10 @@ for (const f of files) {
     const ok = base === 'robots.txt' || (/^[0-9a-f]{32}\.txt$/.test(base) && fs.readFileSync(f, 'utf8').trim() === base.replace('.txt', ''));
     r.check(ok, `dist/${name}：只允许 robots.txt 和 IndexNow 密钥文件`);
   }
-  if (path.extname(f) === '.json') r.check(['search-index.json', 'globe-dots.json'].includes(name), `dist/${name}：只允许公开 search-index.json 和背景地球点阵 globe-dots.json`);
+  // 允许公开的 JSON：站内搜索索引、背景地球点阵，以及首页地图各地区清单和套餐对比表的全部报价
+  // （后两个是页面上本来就公开的内容，为了控制 HTML 体积改为按需加载，见 src/pages/region-rows.json.ts、src/lib/plan-rows.ts）
+  const PUBLIC_JSON = ['search-index.json', 'globe-dots.json', 'region-rows.json', 'plans-rows.json'];
+  if (path.extname(f) === '.json') r.check(PUBLIC_JSON.includes(name), `dist/${name}：只允许公开 ${PUBLIC_JSON.join('、')}`);
   if (path.extname(f) === '.csv') r.check(name === 'data/test-records.csv', `dist/${name}：只允许公开 data/test-records.csv`);
 }
 // 图片体积：页面实际加载的图片（<img src>）必须小；只作为“查看原图”链接的证据原图可以大一些，但给出提示

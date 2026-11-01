@@ -97,7 +97,8 @@ export function buildWorldMap(): WorldMapGeometry {
   const height = Math.ceil(bounds[1][1] + PAD);
   // 台湾岛在 110m 数据里只有几像素，单独保护，避免被当成小岛丢弃
   const [twx, twy] = projection([121, 23.7]) as [number, number];
-  const landPath = compactPath(path, land, { eps: 0.4, minExtent: 2.4, keepNear: [{ x: twx, y: twy, r: 6 }] });
+  // 抽稀容差 0.7px：放大 3.4 倍时误差约 2px，肉眼看不出；路径比 0.4px 时小约 5KB（首页 HTML 体积）
+  const landPath = compactPath(path, land, { eps: 0.7, minExtent: 3, keepNear: [{ x: twx, y: twy, r: 6 }] });
 
   const grat = geoGraticule().step([30, 30]);
   const graticulePath = compactPath(path, grat(), { eps: 0.6, minExtent: 0 });

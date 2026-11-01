@@ -1,17 +1,15 @@
 ---
-import { userNote } from '../lib/user-note';
-import { isNoCouponPlan, NO_COUPON_TEXT } from '../data/coupons';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GradeBadge from '../components/GradeBadge.astro';
 import { OFFER_ROWS, OFFER_STATS, PLAN_METHOD_TEXT } from '../data/plan-calc';
-/** 首屏只排版前 40 行（与 src/scripts/plans.ts 的 PAGE 一致）：557 行一次排版会让手机首屏慢好几秒；其余行仍在 HTML 里，脚本就绪后按筛选显示 */
+import { PLAN_ROWS } from '../lib/plan-rows';
+/** HTML 只带前 40 行（与 src/scripts/plans.ts 的 PAGE 一致）；其余报价在 /plans-rows.json，脚本按筛选只放入要显示的行。原因见 lib/plan-rows.ts */
 const INITIAL_ROWS = 40;
-import { OFFER_STATUS_LABEL } from '../data/labels';
 import { MAP_POINTS } from '../data/regions';
 import { ROUTE_TYPES } from '../data/routes';
 import { CLIENT_FAMILIES, clientFamiliesOf } from '../data/client-families';
 import { BILLING_LABEL } from '../data/types';
-import { fmtCNY, fmtDate, periodLabel } from '../lib/format';
+import { fmtDate } from '../lib/format';
 import { collectionLd } from '../lib/seo';
 import { loadPosts } from '../lib/content';
 import { BRAND_COUNT, DATA_UPDATED } from '../lib/site';
@@ -28,8 +26,6 @@ const periods = [...new Set(OFFER_ROWS.map((r) => r.period))] as BillingPeriod[]
 const usedFamilies = CLIENT_FAMILIES.filter((f) => OFFER_ROWS.some((r) => clientFamiliesOf(r.clients).includes(f.id)));
 const usedRoutes = ROUTE_TYPES.filter((r) => OFFER_ROWS.some((o) => o.routeTypes.includes(r.id)));
 const posts = (await loadPosts()).filter((p) => p.id === 'traffic-multiplier-explained' || p.id === 'how-to-choose-airport-nodes-2026');
-const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
-  r.monthlyGB !== null ? `每月 ${r.monthlyGB}GB` : r.totalGBInPeriod !== null ? `总量 ${r.totalGBInPeriod}GB` : '未知';
 ---
 
 <BaseLayout
@@ -62,6 +58,7 @@ const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
         <span class="notice__title">这张表只比较价格与流量</span>
         它不是速度、稳定性或服务质量的排名；便宜不代表好用。所有价格是来源页面的标价（未叠加优惠码），实付以服务商结算页为准。
       </p>
+      <p class="mt-3">只想看排好序的结论：<a href="/plans/cheapest/">便宜机场与性价比机场</a>（按月付价格和每 GB 成本排序）；下单前看<a href="/coupons/">机场优惠码汇总</a>。</p>
 
       <form class="plan-filters mt-5" role="search" aria-label="筛选套餐" data-plan-filters>
         <label class="field">
@@ -120,12 +117,12 @@ const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
         <div class="plan-filters__actions">
           <button class="btn btn--ghost" type="reset" data-plan-reset disabled>恢复默认</button>
         </div>
-        <noscript><p class="text-sm text-soft plan-filters__nojs">筛选与排序需要启用 JavaScript。下面的表格已经列出全部报价，按品牌固定顺序排列。</p></noscript>
+        <noscript><p class="text-sm text-soft plan-filters__nojs">筛选与排序需要启用 JavaScript。下面的表格按品牌固定顺序列出前 {INITIAL_ROWS} 条报价；每家的全部套餐也可以在各机场页面查看。</p></noscript>
         <p class="text-sm text-soft plan-filters__count" role="status" aria-live="polite" data-plan-count></p>
       </form>
 
       <div class="table-scroll mt-4">
-        <table class="data-table data-table--stack" data-plan-table>
+        <table class="data-table data-table--stack" data-plan-table data-rows-total={PLAN_ROWS.length}>
           <caption>默认按品牌固定顺序，不是排名。“—”表示资料不足或存在冲突而不计算。</caption>
           <thead>
             <tr>
@@ -142,48 +139,37 @@ const trafficText = (r: (typeof OFFER_ROWS)[number]) =>
           </thead>
           <tbody>
             {
-              OFFER_ROWS.map((r, i) => (
+              PLAN_ROWS.slice(0, INITIAL_ROWS).map((r) => (
                 <tr
-                  data-i={i}
-                  hidden={i >= INITIAL_ROWS}
-                  data-comp={r.comparability}
+                  data-i={r.i}
+                  data-comp={r.comp}
                   data-period={r.period}
-                  data-monthly={r.monthlyEquivalentCNY ?? ''}
-                  data-pergb={r.perGBCNY ?? ''}
-                  data-gb={r.monthlyGBApprox ?? ''}
-                  data-regions={r.regionCodes.join(' ')}
-                  data-routes={r.routeTypes.join(' ')}
-                  data-clients={clientFamiliesOf(r.clients).join(' ')}
+                  data-monthly={r.monthly ?? ''}
+                  data-pergb={r.pergb ?? ''}
+                  data-gb={r.gb ?? ''}
+                  data-regions={r.regions}
+                  data-routes={r.routes}
+                  data-clients={r.clients}
                 >
-                  <th scope="row" class="col-nowrap" data-label="机场"><a href={`/airports/${r.brandSlug}/`}>{r.shortName}</a></th>
+                  <th scope="row" class="col-nowrap" data-label="机场"><a href={`/airports/${r.slug}/`}>{r.name}</a></th>
                   <td data-label="套餐">
-                    {r.planName}
-                    {isNoCouponPlan(r.planId) && <span class="cell-sub cell-sub--warn">{NO_COUPON_TEXT}</span>}
-                    {userNote(r.note) && <span class="cell-sub">{userNote(r.note).length > 60 ? userNote(r.note).slice(0, 58) + '…' : userNote(r.note)}</span>}
+                    {r.plan}
+                    {r.noCoupon && <span class="cell-sub cell-sub--warn">{r.noCoupon}</span>}
+                    {r.note && <span class="cell-sub">{r.note}</span>}
                   </td>
-                  <td class="col-nowrap" data-label="周期">{periodLabel(r.period)}</td>
-                  <td class="col-num num" data-label="标价">{r.priceCNY !== null ? fmtCNY(r.priceCNY) : '—'}</td>
-                  <td class="col-nowrap" data-label="流量">{trafficText(r)}</td>
-                  <td class="col-num num" data-label="月均价">{r.monthlyEquivalentCNY !== null ? fmtCNY(r.monthlyEquivalentCNY) : '—'}</td>
-                  <td class="col-num num" data-label="每 GB 参考" title={r.perGBFormula ?? undefined}>
-                    {r.perGBCNY !== null && r.comparability !== 'excluded' ? `¥${r.perGBCNY}` : '—'}
-                  </td>
+                  <td class="col-nowrap" data-label="周期">{r.periodText}</td>
+                  <td class="col-num num" data-label="标价">{r.price}</td>
+                  <td class="col-nowrap" data-label="流量">{r.traffic}</td>
+                  <td class="col-num num" data-label="月均价">{r.monthlyText}</td>
+                  <td class="col-num num" data-label="每 GB 参考" title={r.formula ?? undefined}>{r.perGBText}</td>
                   <td data-label="可比较性">
-                    {r.comparability === 'exact' && <span class="chip chip--electric">可精确比较</span>}
-                    {r.comparability === 'flagged' && <span class="chip chip--gray">品牌对应关系待核验</span>}
-                    {r.comparability === 'excluded' && (
-                      <>
-                        <span class:list={['chip', r.status === 'conflict' ? 'chip--sunset' : 'chip--gray']}>不参与排序</span>
-                        <span class="cell-sub">{r.reasons.join('；')}</span>
-                      </>
-                    )}
-                    {r.comparability !== 'exact' && r.status !== 'sourced' && r.comparability !== 'excluded' && (
-                      <span class="cell-sub">{OFFER_STATUS_LABEL[r.status]}</span>
-                    )}
+                    <span class={r.chip[0]}>{r.chip[1]}</span>
+                    {r.reasons && <span class="cell-sub">{r.reasons}</span>}
+                    {r.status && <span class="cell-sub">{r.status}</span>}
                   </td>
                   <td class="text-sm col-nowrap" data-label="来源">
                     <GradeBadge grade={r.grade} showName={false} />
-                    <span class="cell-sub">{fmtDate(r.dataDate)}</span>
+                    <span class="cell-sub">{r.date}</span>
                   </td>
                 </tr>
               ))

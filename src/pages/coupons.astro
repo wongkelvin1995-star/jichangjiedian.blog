@@ -1,0 +1,114 @@
+---
+/**
+ * 机场优惠码汇总：把 34 个品牌页里分散的优惠码集中到一页。
+ * 只列代码，不写折扣幅度与有效期（资料里没有，不猜）；不可使用优惠码的套餐来自站长 2026-10-31 的说明。
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AffiliateLink from '../components/AffiliateLink.astro';
+import { BRANDS } from '../data/brands';
+import { couponFor, noCouponPlans, NO_COUPON_TEXT } from '../data/coupons';
+import { AFFILIATE_NOTE } from '../data/labels';
+import { brandPitch } from '../lib/brand-pitch';
+import { collectionLd } from '../lib/seo';
+import { fmtCNY, fmtDate } from '../lib/format';
+import { DATA_UPDATED } from '../lib/site';
+
+const path = '/coupons/';
+const rows = BRANDS.map((b) => ({ b, code: couponFor(b.slug), except: noCouponPlans(b.slug), low: brandPitch(b).low })).filter(
+  (r): r is typeof r & { code: string } => r.code !== null,
+);
+const exceptCount = rows.reduce((n, r) => n + r.except.length, 0);
+const exceptBrands = rows.filter((r) => r.except.length > 0).map((r) => r.b.shortName);
+const title = `机场优惠码2026：${rows.length}家机场优惠码汇总（含不可用套餐）｜机场节点`;
+const description = `2026年${rows.length}家机场的优惠码汇总：每家一个代码，注册或付款时填写；${exceptBrands.join('、')}共有${exceptCount}个套餐写明不能使用优惠码。折扣幅度与有效期以官网结算页为准。`;
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '机场优惠码', href: path },
+];
+---
+
+<BaseLayout
+  {title}
+  {description}
+  {path}
+  breadcrumbs={crumbs}
+  modified={DATA_UPDATED}
+  jsonLd={[collectionLd('机场优惠码汇总', description, path, rows.map((r) => ({ name: `${r.b.shortName}优惠码`, href: `/airports/${r.b.slug}/` })))]}
+>
+  <header class="page-head">
+    <div class="container">
+      <h1>机场优惠码汇总：{rows.length} 家机场的优惠码与不可用套餐</h1>
+      <p class="page-head__lead">
+        每家机场一个优惠码，注册或付款时填写。本站只列代码，不写折扣幅度和有效期，这两项以官网结算页显示为准。标着“{NO_COUPON_TEXT}”的套餐，按站长 2026-10-31 的说明，填了代码也不会生效。
+      </p>
+      <p class="page-head__meta">
+        <span>资料整理日期：{fmtDate(DATA_UPDATED)}</span>
+        <span>{rows.length} 个优惠码</span>
+        <span>{exceptCount} 个套餐不可用</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="section section--tight">
+    <div class="container">
+      <p class="notice" data-severity="warn">
+        <span class="notice__title">含推广链接</span>
+        {AFFILIATE_NOTE}推广按钮在新窗口打开，不影响本站资料的整理方式。
+      </p>
+
+      <div class="table-scroll mt-4">
+        <table class="data-table">
+          <caption>按本站编辑顺序排列。“最低月付”是官网标价，没有叠加优惠码。</caption>
+          <thead>
+            <tr>
+              <th scope="col">机场</th>
+              <th scope="col">优惠码</th>
+              <th scope="col" class="col-num">最低月付</th>
+              <th scope="col">注册</th>
+              <th scope="col">不能使用优惠码的套餐</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              rows.map(({ b, code, except, low }) => (
+                <tr>
+                  <th scope="row">
+                    <a href={`/airports/${b.slug}/`}>{b.shortName}优惠码</a>
+                  </th>
+                  <td>
+                    <code class="coupon__code">{code}</code>
+                  </td>
+                  <td class="col-num">{low ? `${fmtCNY(low.price)} / ${low.gb}GB` : '—'}</td>
+                  <td>
+                    <AffiliateLink url={b.affiliateUrl} brandName={b.shortName} small label={`注册${b.shortName}`} />
+                  </td>
+                  <td>{except.length ? except.map((p) => p.label).join('、') : '没有记录，以结算页为准'}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose mt-6">
+        <h2>优惠码怎么用</h2>
+        <ol>
+          <li>点表格里的“注册”进入官网，先注册账号。</li>
+          <li>选好套餐，在付款页的“优惠码”或“折扣码”一栏填入对应代码。</li>
+          <li>看结算金额有没有变化。折扣多少、能不能和年付优惠叠加、什么时候失效，都以结算页显示为准。</li>
+          <li>标着“{NO_COUPON_TEXT}”的套餐，填了代码也不会生效，不必再试。</li>
+        </ol>
+
+        <h2>常见问题</h2>
+        <h3>这些优惠码从哪里来？</h3>
+        <p>来自站长 2026-10-31 整理的清单，每家一个，说明来自各服务商。代码可能被服务商随时停用；填写后金额没变，说明它已失效或不适用于这个套餐。</p>
+        <h3>为什么不写折扣是多少？</h3>
+        <p>资料里只有代码，没有折扣幅度和有效期。本站不猜数字，以免写错误导下单。实际优惠以结算页为准。</p>
+        <h3>哪个机场更便宜？</h3>
+        <p>
+          优惠码只是在标价上再打折。想先比标价，看<a href="/plans/cheapest/">便宜机场与性价比机场</a>的排序；想按预算和流量筛选，用<a href="/plans/">套餐对比</a>。
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

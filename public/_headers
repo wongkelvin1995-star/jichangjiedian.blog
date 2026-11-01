@@ -26,6 +26,8 @@
 /og/*
   Cache-Control: public, max-age=86400
 
-# 站内搜索索引：随内容更新，短缓存
+# 站内搜索索引、首页地图各地区的机场清单：随内容更新，短缓存
 /search-index.json
+  Cache-Control: public, max-age=300
+/region-rows.json
   Cache-Control: public, max-age=300
