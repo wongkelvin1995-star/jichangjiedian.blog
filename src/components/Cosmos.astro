@@ -13,6 +13,7 @@ const { mode } = Astro.props;
 const twinkles = mode === 'home' ? 14 : 8;
 ---
 
+{/* 三张背景图是装饰，整个容器 aria-hidden，读屏软件不会读到；alt 写上文字是因为 Bing 站长工具把空 alt 报为“缺少图像的 Alt 属性” */}
 <div class="cosmos" data-mode={mode} aria-hidden="true">
   <div class="cosmos__nebula">
     <picture>
@@ -20,7 +21,7 @@ const twinkles = mode === 'home' ? 14 : 8;
       <source media="(max-width: 720px)" type="image/webp" srcset="/images/space/nebula-800.webp" />
       <source type="image/avif" srcset="/images/space/nebula-1280.avif 1280w, /images/space/nebula-1920.avif 1920w" sizes="100vw" />
       <source type="image/webp" srcset="/images/space/nebula-1280.webp 1280w, /images/space/nebula-1920.webp 1920w" sizes="100vw" />
-      <img src="/images/space/nebula-1280.webp" alt="" width="1280" height="800" decoding="async" fetchpriority="high" />
+      <img src="/images/space/nebula-1280.webp" alt="深空星云背景" width="1280" height="800" decoding="async" fetchpriority="high" />
     </picture>
   </div>
   <div class="cosmos__glow cosmos__glow--a"></div>
@@ -33,9 +34,9 @@ const twinkles = mode === 'home' ? 14 : 8;
           <source media="(max-width: 720px)" type="image/avif" srcset="/images/space/planet-520.avif" />
           <source media="(max-width: 720px)" type="image/webp" srcset="/images/space/planet-520.webp" />
           <source type="image/avif" srcset="/images/space/planet-900.avif" />
-          <img src="/images/space/planet-900.webp" alt="" width="900" height="900" loading="lazy" decoding="async" />
+          <img src="/images/space/planet-900.webp" alt="带光环的行星" width="900" height="900" loading="lazy" decoding="async" />
         </picture>
-        <img class="cosmos__station" src="/images/space/station.svg" alt="" width="320" height="160" loading="lazy" decoding="async" />
+        <img class="cosmos__station" src="/images/space/station.svg" alt="空间站剪影" width="320" height="160" loading="lazy" decoding="async" />
       </div>
     )
   }

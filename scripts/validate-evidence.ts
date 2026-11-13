@@ -179,7 +179,7 @@ if (r.check(!!report, `找不到旗舰报告页面 ${LDY_REPORT_PATH}`)) {
   for (const s of text.split(/[。；]/).filter((x) => /4K/i.test(x))) r.check(/没有|未|不能|不代表|只观察/.test(s), `旗舰报告里提到 4K 的句子必须是否定/说明局限：“${s.slice(0, 40)}…”`);
   for (const s of text.split(/[。；]/).filter((x) => /所有\s*AI|全部\s*AI|AI 工具均|全部节点/.test(x))) r.check(/不|没|未/.test(s), `旗舰报告不得断言“所有 AI/全部节点”可用：“${s.slice(0, 40)}…”`);
   // 图片：整理图必须挂载在站内路径下，且页面上有“数据整理图”说明
-  // 只检查正文里的图片：页面背景层（.cosmos）的装饰图是空 alt 的纯装饰图，不属于报告内容
+  // 只检查正文里的图片：页面背景层（.cosmos）的三张图是纯装饰（容器 aria-hidden，alt 只是给 Bing 站长工具看的短标签），不属于报告内容
   const contentImgs = p.root.querySelectorAll('main img');
   const imgs = p.root.querySelectorAll('img').map((i) => i.getAttribute('src') ?? '');
   r.check(
